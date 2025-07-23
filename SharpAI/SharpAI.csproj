@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+	  <TargetFramework>net8.0</TargetFramework>
+	  <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+	  <Title>SharpAI</Title>
+	  <Authors>Joel Christner</Authors>
+	  <Description>SharpAI</Description>
+	  <Copyright>(c)2025 Joel Christner</Copyright>
+	  <GenerateDocumentationFile>True</GenerateDocumentationFile>
+	  <DocumentationFile>SharpAI.xml</DocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Inputty" Version="1.0.12" />
+    <PackageReference Include="LLamaSharp" Version="0.24.0" />
+    <PackageReference Include="LLamaSharp.Backend.Cpu" Version="0.24.0" />
+    <PackageReference Include="LLamaSharp.Backend.Cuda12" Version="0.24.0" />
+    <PackageReference Include="RestWrapper" Version="3.1.5" />
+    <PackageReference Include="SyslogLogging" Version="2.0.8" />
+    <PackageReference Include="System.Text.Json" Version="9.0.7" />
+    <PackageReference Include="WatsonORM.Sqlite" Version="3.0.14" />
+  </ItemGroup>
+
+</Project>

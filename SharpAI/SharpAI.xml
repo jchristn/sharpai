@@ -1,0 +1,2004 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>SharpAI</name>
+    </assembly>
+    <members>
+        <member name="T:SharpAI.Constants">
+            <summary>
+            Constants.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Constants.Logo">
+            <summary>
+            Logo.
+            Gracias, as always, to: https://patorjk.com/ using font Rectangles
+            </summary>
+        </member>
+        <member name="F:SharpAI.Constants.HtmlHomepage">
+            <summary>
+            Default HTML homepage.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Constants.TimestampFormat">
+            <summary>
+            Timestamp format.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Constants.SettingsFile">
+            <summary>
+            Settings file.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Constants.DatabaseFile">
+            <summary>
+            Database filename.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Constants.LogFilename">
+            <summary>
+            Log filename.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Constants.LogDirectory">
+            <summary>
+            Log directory.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Constants.ProductName">
+            <summary>
+            Product name.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Constants.Copyright">
+            <summary>
+            Copyright.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Constants.BinaryContentType">
+            <summary>
+            Binary content type.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Constants.JsonContentType">
+            <summary>
+            JSON content type.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Constants.NdJsonContentType">
+            <summary>
+            Newline-delimited JSON content type.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Constants.HtmlContentType">
+            <summary>
+            HTML content type.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Constants.PngContentType">
+            <summary>
+            PNG content type.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Constants.TextContentType">
+            <summary>
+            Text content type.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Constants.FaviconFilename">
+            <summary>
+            Favicon filename.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Constants.FaviconContentType">
+            <summary>
+            Favicon content type.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Engines.ChatMessage">
+            <summary>
+            Represents a chat message with role, content, and timestamp information.
+            Used for building conversation histories in chat completion scenarios.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Engines.ChatMessage.Role">
+            <summary>
+            Gets or sets the role of the message sender.
+            Common values include "system", "user", and "assistant".
+            </summary>
+        </member>
+        <member name="P:SharpAI.Engines.ChatMessage.Content">
+            <summary>
+            Gets or sets the content of the message.
+            Contains the actual text content of the chat message.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Engines.ChatMessage.Timestamp">
+            <summary>
+            Gets or sets the timestamp when the message was created.
+            Defaults to the current UTC time when the ChatMessage instance is created.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Engines.ChatMessage.#ctor">
+            <summary>
+            Represents a chat message with role, content, and timestamp information.
+            Used for building conversation histories in chat completion scenarios.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Engines.EngineBase">
+            <summary>
+            Base class for AI providers that support embeddings and text generation.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Engines.EngineBase.ModelPath">
+            <summary>
+            Path to the model file (ONNX, GGUF, etc.).
+            </summary>
+        </member>
+        <member name="M:SharpAI.Engines.EngineBase.GetOptimalGpuLayers">
+            <summary>
+            Gets the number of GPU layers to use for inference.
+            </summary>
+            <returns>
+            0 = CPU only (no GPU layers)
+            -1 = Use all available GPU layers  
+            >0 = Use specified number of GPU layers
+            </returns>
+        </member>
+        <member name="P:SharpAI.Engines.EngineBase.EmbeddingDimensions">
+            <summary>
+            Gets the dimensionality of embeddings produced by this model.
+            </summary>
+            <returns>Number of dimensions in each embedding vector.</returns>
+        </member>
+        <member name="P:SharpAI.Engines.EngineBase.SupportsGpu">
+            <summary>
+            Gets whether this provider supports GPU acceleration.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Engines.EngineBase.SupportsEmbeddings">
+            <summary>
+            Gets whether this provider supports embeddings.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Engines.EngineBase.SupportsGeneration">
+            <summary>
+            Gets whether this provider supports chat/text generation.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Engines.EngineBase.GenerateEmbeddingsAsync(System.String)">
+            <summary>
+            Generates embeddings for a single text input.
+            </summary>
+            <param name="text">Input text to embed.</param>
+            <returns>Embedding vector as a float array.</returns>
+        </member>
+        <member name="M:SharpAI.Engines.EngineBase.GenerateEmbeddingsAsync(System.String[])">
+            <summary>
+            Generates embeddings for multiple text inputs.
+            </summary>
+            <param name="texts">Array of input texts to embed.</param>
+            <returns>Array of embedding vectors, one per input text.</returns>
+        </member>
+        <member name="M:SharpAI.Engines.EngineBase.GenerateTextAsync(System.String,System.Int32,System.Single,System.String[])">
+            <summary>
+            Generates a text completion for the given prompt.
+            </summary>
+            <param name="prompt">Input prompt.</param>
+            <param name="maxTokens">Maximum number of tokens to generate.</param>
+            <param name="temperature">Sampling temperature (0.0 to 2.0).</param>
+            <param name="stopSequences">Sequences that will stop generation.</param>
+            <returns>Generated text.</returns>
+        </member>
+        <member name="M:SharpAI.Engines.EngineBase.GenerateTextStreamAsync(System.String,System.Int32,System.Single,System.String[])">
+            <summary>
+            Generates a streaming text completion for the given prompt.
+            </summary>
+            <param name="prompt">Input prompt.</param>
+            <param name="maxTokens">Maximum number of tokens to generate.</param>
+            <param name="temperature">Sampling temperature (0.0 to 2.0).</param>
+            <param name="stopSequences">Sequences that will stop generation.</param>
+            <returns>Async enumerable of generated text tokens.</returns>
+        </member>
+        <member name="M:SharpAI.Engines.EngineBase.GenerateChatCompletionAsync(SharpAI.Engines.ChatMessage[],System.Int32,System.Single,System.String[])">
+            <summary>
+            Generates a chat completion given a conversation history.
+            </summary>
+            <param name="messages">Conversation history.</param>
+            <param name="maxTokens">Maximum number of tokens to generate.</param>
+            <param name="temperature">Sampling temperature (0.0 to 2.0).</param>
+            <param name="stopSequences">Sequences that will stop generation.</param>
+            <returns>Generated chat response.</returns>
+        </member>
+        <member name="M:SharpAI.Engines.EngineBase.GenerateChatCompletionStreamAsync(SharpAI.Engines.ChatMessage[],System.Int32,System.Single,System.String[])">
+            <summary>
+            Generates a streaming chat completion given a conversation history.
+            </summary>
+            <param name="messages">Conversation history.</param>
+            <param name="maxTokens">Maximum number of tokens to generate.</param>
+            <param name="temperature">Sampling temperature (0.0 to 2.0).</param>
+            <param name="stopSequences">Sequences that will stop generation.</param>
+            <returns>Async enumerable of generated chat response tokens.</returns>
+        </member>
+        <member name="M:SharpAI.Engines.EngineBase.InitializeAsync(System.String)">
+            <summary>
+            Initializes the provider with the specified model.
+            </summary>
+            <param name="modelPath">Path to the model file.</param>
+            <returns>Task representing the initialization.</returns>
+        </member>
+        <member name="P:SharpAI.Engines.EngineBase.IsInitialized">
+            <summary>
+            Gets whether the provider is initialized and ready for use.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Engines.EngineBase.Dispose">
+            <summary>
+            Disposes of the provider and releases resources.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Engines.LlamaSharpEngine">
+            <summary>
+            LlamaSharp implementation of the AI provider base class.
+            Provides text generation, embeddings, and chat completion capabilities using the LlamaSharp library.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Engines.LlamaSharpEngine.EmbeddingDimensions">
+            <summary>
+            Gets the number of dimensions in the embedding vectors generated by this engine.
+            Returns -1 if not yet determined, 0 if embeddings are not supported.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Engines.LlamaSharpEngine.SupportsGpu">
+            <summary>
+            Gets a value indicating whether this engine supports GPU acceleration.
+            LlamaSharp supports GPU acceleration when CUDA is available.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Engines.LlamaSharpEngine.SupportsEmbeddings">
+            <summary>
+            Gets a value indicating whether this engine supports generating embeddings.
+            Support depends on whether the embedder was successfully initialized.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Engines.LlamaSharpEngine.SupportsGeneration">
+            <summary>
+            Gets a value indicating whether this engine supports text generation.
+            LlamaSharp always supports text generation.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Engines.LlamaSharpEngine.IsInitialized">
+            <summary>
+            Gets a value indicating whether this engine has been successfully initialized.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Engines.LlamaSharpEngine.#ctor(SyslogLogging.LoggingModule)">
+            <summary>
+            Initializes a new instance of the LlamaSharpEngine class.
+            </summary>
+            <param name="logging">Optional logging module for capturing debug and error information. If null, a new LoggingModule will be created.</param>
+        </member>
+        <member name="M:SharpAI.Engines.LlamaSharpEngine.Dispose">
+            <summary>
+            Releases all resources used by the LlamaSharpEngine.
+            Properly disposes of the model, context, and embedder instances.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Engines.LlamaSharpEngine.InitializeAsync(System.String)">
+            <summary>
+            Initializes the LlamaSharp engine with the specified model file.
+            Loads the model, creates context, and sets up executors for text generation and embeddings.
+            </summary>
+            <param name="modelPath">The file path to the GGUF model file to load.</param>
+            <returns>A task that represents the asynchronous initialization operation.</returns>
+            <exception cref="T:System.Exception">Thrown when the model fails to load or initialize.</exception>
+        </member>
+        <member name="M:SharpAI.Engines.LlamaSharpEngine.GetOptimalGpuLayers">
+            <summary>
+            Determines the optimal number of GPU layers to use based on available hardware.
+            </summary>
+            <returns>The number of GPU layers to use, or 0 if GPU acceleration is not available. Returns -1 to use all available GPU layers.</returns>
+        </member>
+        <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateEmbeddingsAsync(System.String)">
+            <summary>
+            Generates embeddings for the specified text using the loaded model.
+            </summary>
+            <param name="text">The text to generate embeddings for.</param>
+            <returns>A task that represents the asynchronous operation. The task result contains a float array representing the text embeddings.</returns>
+            <exception cref="T:System.InvalidOperationException">Thrown when the engine is not initialized or embeddings are not supported.</exception>
+            <exception cref="T:System.Exception">Thrown when embedding generation fails.</exception>
+        </member>
+        <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateEmbeddingsAsync(System.String[])">
+            <summary>
+            Generates embeddings for multiple texts using the loaded model.
+            </summary>
+            <param name="texts">An array of texts to generate embeddings for.</param>
+            <returns>A task that represents the asynchronous operation. The task result contains a jagged array of float arrays, where each inner array represents embeddings for the corresponding input text.</returns>
+            <exception cref="T:System.InvalidOperationException">Thrown when the engine is not initialized or embeddings are not supported.</exception>
+            <exception cref="T:System.Exception">Thrown when embedding generation fails.</exception>
+        </member>
+        <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateTextAsync(System.String,System.Int32,System.Single,System.String[])">
+            <summary>
+            Generates text based on the provided prompt using the loaded model.
+            </summary>
+            <param name="prompt">The input prompt to generate text from.</param>
+            <param name="maxTokens">The maximum number of tokens to generate. Default is 512.</param>
+            <param name="temperature">The sampling temperature for text generation. Higher values produce more random output. Default is 0.7.</param>
+            <param name="stopSequences">Optional array of strings that will stop text generation when encountered.</param>
+            <returns>A task that represents the asynchronous operation. The task result contains the generated text.</returns>
+            <exception cref="T:System.InvalidOperationException">Thrown when the engine is not initialized.</exception>
+            <exception cref="T:System.Exception">Thrown when text generation fails.</exception>
+        </member>
+        <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateTextStreamAsync(System.String,System.Int32,System.Single,System.String[])">
+            <summary>
+            Generates text based on the provided prompt and returns it as a stream of tokens.
+            </summary>
+            <param name="prompt">The input prompt to generate text from.</param>
+            <param name="maxTokens">The maximum number of tokens to generate. Default is 512.</param>
+            <param name="temperature">The sampling temperature for text generation. Higher values produce more random output. Default is 0.7.</param>
+            <param name="stopSequences">Optional array of strings that will stop text generation when encountered.</param>
+            <returns>An async enumerable that yields generated tokens as they are produced.</returns>
+            <exception cref="T:System.InvalidOperationException">Thrown when the engine is not initialized.</exception>
+        </member>
+        <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateChatCompletionAsync(SharpAI.Engines.ChatMessage[],System.Int32,System.Single,System.String[])">
+            <summary>
+            Generates a chat completion response based on the provided conversation messages.
+            </summary>
+            <param name="messages">An array of ChatMessage objects representing the conversation history.</param>
+            <param name="maxTokens">The maximum number of tokens to generate in the response. Default is 512.</param>
+            <param name="temperature">The sampling temperature for response generation. Higher values produce more random output. Default is 0.7.</param>
+            <param name="stopSequences">Optional array of strings that will stop response generation when encountered.</param>
+            <returns>A task that represents the asynchronous operation. The task result contains the generated chat response.</returns>
+            <exception cref="T:System.InvalidOperationException">Thrown when the engine is not initialized.</exception>
+            <exception cref="T:System.Exception">Thrown when chat completion generation fails.</exception>
+        </member>
+        <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateChatCompletionStreamAsync(SharpAI.Engines.ChatMessage[],System.Int32,System.Single,System.String[])">
+            <summary>
+            Generates a chat completion response based on the provided conversation messages and returns it as a stream of tokens.
+            </summary>
+            <param name="messages">An array of ChatMessage objects representing the conversation history.</param>
+            <param name="maxTokens">The maximum number of tokens to generate in the response. Default is 512.</param>
+            <param name="temperature">The sampling temperature for response generation. Higher values produce more random output. Default is 0.7.</param>
+            <param name="stopSequences">Optional array of strings that will stop response generation when encountered.</param>
+            <returns>An async enumerable that yields generated tokens as they are produced.</returns>
+            <exception cref="T:System.InvalidOperationException">Thrown when the engine is not initialized.</exception>
+        </member>
+        <member name="T:SharpAI.Helpers.DataTableHelper">
+            <summary>
+            Data table helper.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Helpers.DataTableHelper.GetBooleanValue(System.Data.DataRow,System.String)">
+            <summary>
+            Retrieve Boolean value.
+            </summary>
+            <param name="row">DataRow.</param>
+            <param name="columnName"></param>
+            <returns>Boolean value.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.DataTableHelper.GetNullableBooleanValue(System.Data.DataRow,System.String)">
+            <summary>
+            Retrieve nullable Boolean value.
+            </summary>
+            <param name="row">DataRow.</param>
+            <param name="columnName">Name of the column.</param>
+            <returns>Boolean value if valid, null if unknown or invalid.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.DataTableHelper.GetStringValue(System.Data.DataRow,System.String)">
+            <summary>
+            Retrieve string value.
+            </summary>
+            <param name="row">DataRow.</param>
+            <param name="columnName"></param>
+            <returns>String.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.DataTableHelper.GetInt32Value(System.Data.DataRow,System.String)">
+            <summary>
+            Retrieve integer value.  Returns 0 if the cell is null.
+            </summary>
+            <param name="row">DataRow.</param>
+            <param name="columnName"></param>
+            <returns>Integer.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.DataTableHelper.GetNullableInt32Value(System.Data.DataRow,System.String)">
+            <summary>
+            Retrieve nullable integer value.
+            </summary>
+            <param name="row">DataRow.</param>
+            <param name="columnName"></param>
+            <returns>Integer.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.DataTableHelper.GetInt64Value(System.Data.DataRow,System.String)">
+            <summary>
+            Retrieve long value.  Returns 0 if the cell is null.
+            </summary>
+            <param name="row">DataRow.</param>
+            <param name="columnName"></param>
+            <returns>Long.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.DataTableHelper.GetNullableInt64Value(System.Data.DataRow,System.String)">
+            <summary>
+            Retrieve nullable integer value.
+            </summary>
+            <param name="row">DataRow.</param>
+            <param name="columnName"></param>
+            <returns>Integer.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.DataTableHelper.GetGuidValue(System.Data.DataRow,System.String)">
+            <summary>
+            Retrieve GUID value.  Returns the default GUID if the cell is null.
+            </summary>
+            <param name="row">DataRow.</param>
+            <param name="columnName"></param>
+            <returns>GUID.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.DataTableHelper.GetNullableGuidValue(System.Data.DataRow,System.String)">
+            <summary>
+            Retrieve nullable GUID value.
+            </summary>
+            <param name="row">DataRow.</param>
+            <param name="columnName"></param>
+            <returns>GUID.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.DataTableHelper.GetEnumValue``1(System.Data.DataRow,System.String)">
+            <summary>
+            Retrieve enum value.
+            </summary>
+            <param name="row">DataRow.</param>
+            <param name="columnName"></param>
+            <returns>Enum.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.DataTableHelper.GetDateTimeValue(System.Data.DataRow,System.String)">
+            <summary>
+            Retrieve DateTime value.  Returns the default DateTime if the cell is null.
+            </summary>
+            <param name="row">DataRow.</param>
+            <param name="columnName"></param>
+            <returns>DateTime.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.DataTableHelper.GetNullableDateTimeValue(System.Data.DataRow,System.String)">
+            <summary>
+            Retrieve nullable DateTime value.
+            </summary>
+            <param name="row">DataRow.</param>
+            <param name="columnName"></param>
+            <returns>Nullable DateTime.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.DataTableHelper.GetDecimalValue(System.Data.DataRow,System.String)">
+            <summary>
+            Retrieve decimal value.  Returns 0 if the cell is null.
+            </summary>
+            <param name="row">DataRow.</param>
+            <param name="columnName"></param>
+            <returns>Decimal.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.DataTableHelper.GetNullableDecimalValue(System.Data.DataRow,System.String)">
+            <summary>
+            Retrieve nullable decimal value.
+            </summary>
+            <param name="row">DataRow.</param>
+            <param name="columnName"></param>
+            <returns>Nullable decimal.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.DataTableHelper.GetNullableBinaryValue(System.Data.DataRow,System.String)">
+            <summary>
+            Retrieve binary value or null.
+            </summary>
+            <param name="row">DataRow.</param>
+            <param name="columnName"></param>
+            <returns>Byte array or null.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.DataTableHelper.DataTableToListDynamic(System.Data.DataTable)">
+            <summary>
+            Convert a data table to a dynamic list.
+            </summary>
+            <param name="dt">Data table.</param>
+            <returns>List of dynamic.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.DataTableHelper.DataTableToDynamic(System.Data.DataTable)">
+            <summary>
+            Convert a data table to a dynamic.
+            </summary>
+            <param name="dt">Data table.</param>
+            <returns>Dynamic.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.DataTableHelper.DataTableToListDictionary(System.Data.DataTable)">
+            <summary>
+            Convert a data table to a list of dictionaries.
+            </summary>
+            <param name="dt">Data table.</param>
+            <returns>List of dictionaries.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.DataTableHelper.DataTableToDictionary(System.Data.DataTable)">
+            <summary>
+            Convert a data table to a dictionary.
+            </summary>
+            <param name="dt">Data table.</param>
+            <returns>Dictionary.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.DataTableHelper.ObjectToDictionary(System.Object)">
+            <summary>
+            Convert an object to a dictionary.
+            </summary>
+            <param name="obj">Object.</param>
+            <returns>Dictionary.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.DataTableHelper.IsDictionary(System.Object)">
+            <summary>
+            Check if an object is a dictionary.
+            </summary>
+            <param name="obj">Object.</param>
+            <returns>True if dictionary.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.DataTableHelper.DataTableToListGuid(System.Data.DataTable,System.String)">
+            <summary>
+            Extract a list of GUIDs from a table by column name.
+            </summary>
+            <param name="table">Data table.</param>
+            <param name="columnName">Column name.</param>
+            <returns>List of GUIDs.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.DataTableHelper.GetLength(System.Data.DataTable)">
+            <summary>
+            Calculate DataTable length.
+            This calculation adds the length of column names and row values.
+            </summary>
+            <param name="dt">DataTable.</param>
+            <returns>Length.</returns>
+        </member>
+        <member name="T:SharpAI.Helpers.DirectoryHelper">
+            <summary>
+            Directory helper.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Helpers.DirectoryHelper.NormalizeDirectory(System.String)">
+            <summary>
+            Normalize directory path.
+            </summary>
+            <param name="directory">Directory.</param>
+            <returns>Normalized directory.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.DirectoryHelper.RecursiveDelete(System.String,System.Boolean)">
+            <summary>
+            Recursively delete a directory.
+            </summary>
+            <param name="baseDir">Base directory.</param>
+            <param name="deleteRootDirectory">True to delete the root directory.</param>
+        </member>
+        <member name="M:SharpAI.Helpers.DirectoryHelper.RecursiveDelete(System.IO.DirectoryInfo,System.Boolean)">
+            <summary>
+            Recursively delete a directory.
+            </summary>
+            <param name="baseDir">Base directory.</param>
+            <param name="deleteRootDirectory">True to delete the root directory.</param>
+        </member>
+        <member name="T:SharpAI.Helpers.GgufSelector">
+            <summary>
+            GGUF selector.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Helpers.GgufSelector.SortByOllamaPreference(System.Collections.Generic.IEnumerable{SharpAI.Hosting.GgufFileInfo})">
+            <summary>
+            Sorts a list of GGUF files based on Ollama's quantization preference order.
+            </summary>
+            <param name="files">The list of GGUF files to sort.</param>
+            <returns>A sorted list of GGUF files ordered by Ollama's preference.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.GgufSelector.ExtractBaseQuantizationType(System.String)">
+            <summary>
+            Extracts the base quantization type from a potentially complex quantization string.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Helpers.GgufSelector.GetBestForOllama(System.Collections.Generic.IEnumerable{SharpAI.Hosting.GgufFileInfo})">
+            <summary>
+            Gets the best GGUF file according to Ollama's preferences.
+            </summary>
+            <param name="files">The list of GGUF files to choose from.</param>
+            <returns>The best GGUF file according to Ollama's preferences, or null if the list is empty.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.GgufSelector.GetMainModelsInPreferenceOrder(System.Collections.Generic.IEnumerable{SharpAI.Hosting.GgufFileInfo})">
+            <summary>
+            Filters and sorts GGUF files to get only main model files in Ollama preference order.
+            </summary>
+            <param name="files">The list of GGUF files to filter and sort.</param>
+            <returns>A sorted list of main model GGUF files.</returns>
+        </member>
+        <member name="T:SharpAI.Helpers.HashHelper">
+            <summary>
+            Hash methods.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Helpers.HashHelper.MD5Hash(System.Byte[])">
+            <summary>
+            Generate an MD5 hash.
+            </summary>
+            <param name="data">Data.</param>
+            <returns>MD5 hash.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.HashHelper.MD5Hash(System.IO.Stream)">
+            <summary>
+            Generate an MD5 hash.
+            </summary>
+            <param name="stream">Stream.</param>
+            <returns>MD5 hash.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.HashHelper.MD5Hash(System.String)">
+            <summary>
+            Generate an MD5 hash of a string.
+            </summary>
+            <param name="str">String.</param>
+            <returns>MD5 hash.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.HashHelper.MD5Hash(System.Collections.Generic.List{System.String})">
+            <summary>
+            Generate an MD5 hash of a list of strings.
+            </summary>
+            <param name="strings">Strings.</param>
+            <returns>MD5 hash.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.HashHelper.MD5Hash(System.Data.DataTable)">
+            <summary>
+            Generate an MD5 hash of a DataTable.
+            This method concatenates column names (separated by a null character) and all cell values (separated by a null character).  Any null cells have their value replaced with the string NULL.
+            </summary>
+            <param name="dt">DataTable. </param>
+            <returns>MD5 hash.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.HashHelper.SHA1Hash(System.Byte[])">
+            <summary>
+            Generate a SHA1 hash of a byte array.
+            </summary>
+            <param name="data">Data.</param>
+            <returns>SHA1 hash.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.HashHelper.SHA1Hash(System.IO.Stream)">
+            <summary>
+            Generate a SHA1 hash.
+            </summary>
+            <param name="stream">Stream.</param>
+            <returns>MD5 hash.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.HashHelper.SHA1Hash(System.String)">
+            <summary>
+            Generate a SHA1 hash of a string.
+            </summary>
+            <param name="str">String.</param>
+            <returns>SHA1 hash.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.HashHelper.SHA1Hash(System.Collections.Generic.List{System.String})">
+            <summary>
+            Generate a SHA1 hash of a list of strings.
+            </summary>
+            <param name="strings">Strings.</param>
+            <returns>SHA1 hash.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.HashHelper.SHA1Hash(System.Data.DataTable)">
+            <summary>
+            Generate a SHA1 hash of a DataTable.
+            This method concatenates column names (separated by a null character) and all cell values (separated by a null character).  Any null cells have their value replaced with the string NULL.
+            </summary>
+            <param name="dt">DataTable. </param>
+            <returns>SHA1 hash.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.HashHelper.SHA256Hash(System.Byte[])">
+            <summary>
+            Generate a SHA256 hash of a byte array.
+            </summary>
+            <param name="data">Data.</param>
+            <returns>SHA256 hash.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.HashHelper.SHA256Hash(System.IO.Stream)">
+            <summary>
+            Generate a SHA256 hash.
+            </summary>
+            <param name="stream">Stream.</param>
+            <returns>MD5 hash.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.HashHelper.SHA256Hash(System.String)">
+            <summary>
+            Generate a SHA256 hash of a string.
+            </summary>
+            <param name="str">String.</param>
+            <returns>SHA256 hash.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.HashHelper.SHA256Hash(System.Collections.Generic.List{System.String})">
+            <summary>
+            Generate a SHA256 hash of a list of strings.
+            </summary>
+            <param name="strings">Strings.</param>
+            <returns>SHA256 hash.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.HashHelper.SHA256Hash(System.Data.DataTable)">
+            <summary>
+            Generate a SHA256 hash of a DataTable.
+            This method concatenates column names (separated by a null character) and all cell values (separated by a null character).  Any null cells have their value replaced with the string NULL.
+            </summary>
+            <param name="dt">DataTable. </param>
+            <returns>SHA256 hash.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.HashHelper.ComputeAllHashes(System.IO.Stream)">
+            <summary>
+            Compute MD5, SHA1, and SHA256 hashes in a single pass.
+            </summary>
+            <param name="stream">Stream.</param>
+            <returns>Tuple containing MD5, SHA1, and SHA256 hashes.</returns>
+        </member>
+        <member name="T:SharpAI.Helpers.StreamHelper">
+            <summary>
+            Stream helpers.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Helpers.StreamHelper.ReadFully(System.IO.Stream,System.Int32)">
+            <summary>
+            Read a stream fully.
+            </summary>
+            <param name="stream">Stream.</param>
+            <param name="position">Position from which to read.</param>
+            <returns>Bytes.</returns>
+        </member>
+        <member name="T:SharpAI.Helpers.StringHelpers">
+            <summary>
+            String collection helpers.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Helpers.StringHelpers.Combine(System.Collections.Generic.List{System.String},System.Collections.Generic.List{System.String})">
+            <summary>
+            Combine two string lists.
+            </summary>
+            <param name="list1">String list 1.</param>
+            <param name="list2">String list 2.</param>
+            <returns>String list.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.StringHelpers.RedactTail(System.String,System.String,System.Int32)">
+            <summary>
+            Redact a string.
+            </summary>
+            <param name="str">String.</param>
+            <param name="replacementChar">Replacement character.</param>
+            <param name="charsToRetain">Number of characters to retain.</param>
+            <returns>Redacted string.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.StringHelpers.StringToGuidList(System.String)">
+            <summary>
+            Convert a CSV string list of GUIDs to a List of Guid.
+            </summary>
+            <param name="str">Input string.</param>
+            <returns>List of GUIDs.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.StringHelpers.IsValidBase64(System.String)">
+            <summary>
+            Tests if a string is a valid base64 encoded string.
+            </summary>
+            <param name="input">String.</param>
+            <returns>True if valid.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.StringHelpers.IsValidHex(System.String)">
+            <summary>
+            Tests if a string is a valid hexadecimal string.
+            </summary>
+            <param name="input">String.</param>
+            <returns>True if valid.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.StringHelpers.IsValidHex(System.String,System.Boolean)">
+            <summary>
+            Tests if a string is a valid hexadecimal string with strict length requirement.
+            </summary>
+            <param name="input">String.</param>
+            <param name="requireEvenLength">If true, requires even number of hex digits (for byte representation).</param>
+            <returns>True if valid.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.StringHelpers.IsValidEmail(System.String)">
+            <summary>
+            Tests if a string is a reasonable email address format
+            </summary>
+            <param name="input">The string to test</param>
+            <returns>True if the string appears to be a valid email format, false otherwise</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.StringHelpers.IsValidLocalPart(System.String)">
+            <summary>
+            Validates the local part (before @) of an email address
+            </summary>
+            <param name="localPart">The local part to validate</param>
+            <returns>True if valid, false otherwise</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.StringHelpers.IsValidDomainPart(System.String)">
+            <summary>
+            Validates the domain part (after @) of an email address
+            </summary>
+            <param name="domainPart">The domain part to validate</param>
+            <returns>True if valid, false otherwise</returns>
+        </member>
+        <member name="T:SharpAI.Helpers.TimeHelper">
+            <summary>
+            Time helper.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Helpers.TimeHelper.TotalMsBetween(System.DateTime,System.DateTime,System.Int32)">
+            <summary>
+            Determine the total number of milliseconds between a start and end time.
+            </summary>
+            <param name="start">Start time.</param>
+            <param name="end">End time.</param>
+            <param name="decimalPlaces">Number of decimal places.</param>
+            <returns>Milliseconds.</returns>
+        </member>
+        <member name="T:SharpAI.Hosting.GgufFileInfo">
+            <summary>
+            Represents a GGUF file with enhanced metadata including quantization information.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.GgufFileInfo.SizeFormatted">
+            <summary>
+            Gets or sets the human-readable formatted file size.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.GgufFileInfo.QuantizationType">
+            <summary>
+            Gets or sets the detected quantization type (e.g., "Q4_K_M", "Q5_K_S").
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.GgufFileInfo.IsMainModel">
+            <summary>
+            Gets or sets a value indicating whether this is the main model file (not a shard).
+            </summary>
+        </member>
+        <member name="M:SharpAI.Hosting.GgufFileInfo.#ctor">
+            <summary>
+            Initializes a new instance of the GgufFileInfo class.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Hosting.GgufFileInfo.ToString">
+            <summary>
+            Returns a string representation of the GGUF file information.
+            </summary>
+            <returns>A formatted string containing GGUF-specific information.</returns>
+        </member>
+        <member name="T:SharpAI.Hosting.HuggingFaceClient">
+            <summary>
+            Client for interacting with HuggingFace model repositories to retrieve file information and download files.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Hosting.HuggingFaceClient.#ctor(SyslogLogging.LoggingModule,System.String)">
+            <summary>
+            Initializes a new instance of the HuggingFace client.
+            </summary>
+            <param name="logging">LoggingModule instance for logging operations.</param>
+            <param name="apiKey">HuggingFace API key for authentication.</param>
+        </member>
+        <member name="M:SharpAI.Hosting.HuggingFaceClient.GetModelFilesAsync(System.String)">
+            <summary>
+            Retrieves all files from a HuggingFace model repository.
+            </summary>
+            <param name="modelName">The name of the model (e.g., "microsoft/DialoGPT-medium").</param>
+            <returns>A list of HuggingFaceModelFile objects representing all files in the repository.</returns>
+            <exception cref="T:System.Exception">Thrown when API request fails or JSON parsing fails.</exception>
+        </member>
+        <member name="M:SharpAI.Hosting.HuggingFaceClient.GetGgufFilesAsync(System.String)">
+            <summary>
+            Retrieves only GGUF files from a HuggingFace model repository.
+            </summary>
+            <param name="modelName">The name of the model to search for GGUF files.</param>
+            <returns>A list of GgufFileInfo objects containing only .gguf files with enhanced metadata.</returns>
+        </member>
+        <member name="M:SharpAI.Hosting.HuggingFaceClient.GetGgufFilesByQuantizationAsync(System.String,System.String)">
+            <summary>
+            Retrieves GGUF files filtered by a specific quantization type.
+            </summary>
+            <param name="modelName">The name of the model to search.</param>
+            <param name="quantizationType">The quantization type to filter by (e.g., "Q4_K_M", "Q5_K_S").</param>
+            <returns>A list of GgufFileInfo objects matching the specified quantization type.</returns>
+        </member>
+        <member name="M:SharpAI.Hosting.HuggingFaceClient.GetAvailableQuantizationTypesAsync(System.String)">
+            <summary>
+            Retrieves all available quantization types for GGUF files in a model repository.
+            </summary>
+            <param name="modelName">The name of the model to analyze.</param>
+            <returns>A sorted list of unique quantization type strings.</returns>
+        </member>
+        <member name="M:SharpAI.Hosting.HuggingFaceClient.GetDownloadUrls(System.String,SharpAI.Hosting.HuggingFaceModelFile)">
+            <summary>
+            Gets the proper download URLs for a HuggingFace file, prioritizing the most reliable options.
+            </summary>
+            <param name="modelName">The model name (e.g., "microsoft/phi-2").</param>
+            <param name="file">The HuggingFaceModelFile containing path and OID.</param>
+            <returns>List of URLs to try in order of preference.</returns>
+        </member>
+        <member name="M:SharpAI.Hosting.HuggingFaceClient.TestDownloadUrlAsync(System.String)">
+            <summary>
+            Tests if a download URL is accessible.
+            </summary>
+            <param name="url">The URL to test.</param>
+            <returns>True if the URL is accessible, false otherwise.</returns>
+        </member>
+        <member name="M:SharpAI.Hosting.HuggingFaceClient.TryDownloadFileAsync(System.String,System.String)">
+            <summary>
+            Try to download a file from HuggingFace to the specified destination.
+            </summary>
+            <param name="sourceUrl">The HuggingFace URL of the file to download.</param>
+            <param name="destinationFilename">The full path where the file should be saved.</param>
+            <returns>True if successful.</returns>
+        </member>
+        <member name="M:SharpAI.Hosting.HuggingFaceClient.DownloadFileAsync(System.String,System.String)">
+            <summary>
+            Downloads a file from HuggingFace to the specified destination.
+            </summary>
+            <param name="sourceUrl">The HuggingFace URL of the file to download.</param>
+            <param name="destinationFilename">The full path where the file should be saved.</param>
+            <returns>Task representing the asynchronous download operation.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when destinationFilename or sourceUrl is null or empty.</exception>
+            <exception cref="T:System.Exception">Thrown when download fails or file operations fail.</exception>
+        </member>
+        <member name="M:SharpAI.Hosting.HuggingFaceClient.DownloadFilesAsync(System.String,System.Collections.Generic.List{SharpAI.Hosting.HuggingFaceModelFile},System.String,System.Action{System.String,System.Boolean,System.String})">
+            <summary>
+            Downloads multiple files from HuggingFace with progress tracking and error handling.
+            </summary>
+            <param name="modelName">The name of the model.</param>
+            <param name="files">List of files to download.</param>
+            <param name="downloadDirectory">Directory to save files to.</param>
+            <param name="progressCallback">Optional callback for progress updates (filename, isSuccess, message).</param>
+            <returns>Number of successfully downloaded files.</returns>
+        </member>
+        <member name="T:SharpAI.Hosting.HuggingFaceModelFile">
+            <summary>
+            Represents a file from a HuggingFace model repository with metadata.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelFile.Path">
+            <summary>
+            Gets or sets the file path within the repository.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelFile.Type">
+            <summary>
+            Gets or sets the file type ("file" or "directory").
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelFile.Size">
+            <summary>
+            Gets or sets the file size in bytes (null for directories).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelFile.LastModified">
+            <summary>
+            Gets or sets the last modified timestamp.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelFile.Oid">
+            <summary>
+            Gets or sets the Git object ID.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelFile.Lfs">
+            <summary>
+            Gets or sets the Large File Storage information.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelFile.SecurityStatus">
+            <summary>
+            Gets or sets the security scan status.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Hosting.HuggingFaceModelFile.#ctor">
+            <summary>
+            Initializes a new instance of the HuggingFaceModelFile class.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Hosting.HuggingFaceModelFile.ToString">
+            <summary>
+            Returns a string representation of the HuggingFace model file.
+            </summary>
+            <returns>A formatted string containing path, type, and size information.</returns>
+        </member>
+        <member name="T:SharpAI.Models.EnumerationOrderEnum">
+            <summary>
+            Enumeration order.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Models.EnumerationOrderEnum.CreatedAscending">
+            <summary>
+            CreatedAscending.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Models.EnumerationOrderEnum.CreatedDescending">
+            <summary>
+            CreatedDescending.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Models.EnumerationOrderEnum.SizeAscending">
+            <summary>
+            SizeAscending.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Models.EnumerationOrderEnum.SizeDescending">
+            <summary>
+            SizeDescending.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Models.EnumerationOrderEnum.NameAscending">
+            <summary>
+            NameAscending.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Models.EnumerationOrderEnum.NameDescending">
+            <summary>
+            KeyDescending.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.EnumerationResult`1">
+            <summary>
+            Object returned as the result of an enumeration.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.EnumerationResult`1.Success">
+            <summary>
+            Indicates if the statistics operation was successful.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.EnumerationResult`1.Timestamp">
+            <summary>
+            Start and end timestamps.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.EnumerationResult`1.MaxResults">
+            <summary>
+            Maximum number of results to retrieve.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.EnumerationResult`1.Skip">
+            <summary>
+            Skip.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.EnumerationResult`1.IterationsRequired">
+            <summary>
+            Iterations required.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.EnumerationResult`1.ContinuationToken">
+            <summary>
+            Continuation token.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.EnumerationResult`1.EndOfResults">
+            <summary>
+            Boolean indicating end of results.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.EnumerationResult`1.TotalRecords">
+            <summary>
+            Total number of records.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.EnumerationResult`1.RecordsRemaining">
+            <summary>
+            Number of candidate records remaining in the enumeration.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.EnumerationResult`1.Objects">
+            <summary>
+            Objects.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.EnumerationResult`1.#ctor">
+            <summary>
+            Instantiates the object.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.ModelFile">
+            <summary>
+            Metadata about a model.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.ModelFile.Id">
+            <summary>
+            ID.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.ModelFile.GUID">
+            <summary>
+            GUID.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.ModelFile.Name">
+            <summary>
+            Name.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.ModelFile.ParentModel">
+            <summary>
+            Parent model name.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.ModelFile.Format">
+            <summary>
+            Model format.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.ModelFile.Family">
+            <summary>
+            Model family.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.ModelFile.ContentLength">
+            <summary>
+            Content length of the file.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.ModelFile.MD5Hash">
+            <summary>
+            MD5.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.ModelFile.SHA1Hash">
+            <summary>
+            SHA1.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.ModelFile.SHA256Hash">
+            <summary>
+            SHA256.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.ModelFile.SourceUrl">
+            <summary>
+            Source URL.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.ModelFile.ParameterSize">
+            <summary>
+            Parameter size.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.ModelFile.Quantization">
+            <summary>
+            Quantization.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.ModelFile.ModelCreationUtc">
+            <summary>
+            Timestamp from the hosting provider, generally a last modified timestamp, in UTC time.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.ModelFile.CreatedUtc">
+            <summary>
+            Timestamp from creation, in UTC time.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.ModelFile.#ctor">
+            <summary>
+            Metadata about a model.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.ModelFile.ToOllamaModelDetails">
+            <summary>
+            Convert to an Ollama model details API object.
+            </summary>
+            <returns>Object.</returns>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.DeleteModelRequest">
+            <summary>
+            Ollama delete model request.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.DeleteModelRequest.Name">
+            <summary>
+            Name.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.DeleteModelRequest.#ctor">
+            <summary>
+            Ollama delete model request.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.GenerateChatCompletionRequest">
+            <summary>
+            Ollama generate chat completion request.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerateChatCompletionRequest.Model">
+            <summary>
+            Model.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerateChatCompletionRequest.Messages">
+            <summary>
+            Messages.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerateChatCompletionRequest.Stream">
+            <summary>
+            True to enable response streaming.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerateChatCompletionRequest.Options">
+            <summary>
+            Generation options.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.GenerateCompletionRequest">
+            <summary>
+            Ollama generate completion request.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerateCompletionRequest.Model">
+            <summary>
+            Model.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerateCompletionRequest.Prompt">
+            <summary>
+            Prompt.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerateCompletionRequest.Stream">
+            <summary>
+            True to enable response streaming.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerateCompletionRequest.Options">
+            <summary>
+            Generation options.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.GenerateCompletionRequest.#ctor">
+            <summary>
+            Ollama generate completion request.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.GenerateEmbeddingsRequest">
+            <summary>
+            Ollama generate embeddings request.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerateEmbeddingsRequest.Model">
+            <summary>
+            Model.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerateEmbeddingsRequest.Input">
+            <summary>
+            Input object, either a single string or an array of strings.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerateEmbeddingsRequest.Options">
+            <summary>
+            Generation options.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerateEmbeddingsRequest.KeepAlive">
+            <summary>
+            Controls how long the model will stay loaded into memory following the request.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerateEmbeddingsRequest.IsInputSingleton">
+            <summary>
+            Indicates whether the input is a singleton string.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerateEmbeddingsRequest.IsInputArray">
+            <summary>
+            Indicates whether the input is an array of strings.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.GenerateEmbeddingsRequest.#ctor">
+            <summary>
+            Ollama generate embeddings request.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.GenerateEmbeddingsRequest.GetInputAsSingleton">
+            <summary>
+            Get the input as a single string. Throws exception if input is not a singleton.
+            </summary>
+            <returns>Single input string.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.GenerateEmbeddingsRequest.GetInputAsArray">
+            <summary>
+            Get the input as an array of strings. Handles both array and singleton inputs.
+            </summary>
+            <returns>Array of input strings.</returns>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.GenerateEmbeddingsResult">
+            <summary>
+            Ollama generate embeddings result.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerateEmbeddingsResult.Model">
+            <summary>
+            Model identifier.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerateEmbeddingsResult.Embeddings">
+            <summary>
+            Embeddings.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.GenerateEmbeddingsResult.#ctor">
+            <summary>
+            Ollama generate embeddings result.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.GenerationOptions">
+            <summary>
+            Ollama generation options.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerationOptions.NumKeep">
+            <summary>
+            Number of tokens from prompt to keep when context fills.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerationOptions.Seed">
+            <summary>
+            Random seed for reproducible outputs (-1 = random).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerationOptions.NumPredict">
+            <summary>
+            Maximum tokens to generate (-1 = unlimited, -2 = fill context).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerationOptions.TopK">
+            <summary>
+            Limits vocabulary to top K most likely tokens.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerationOptions.TopP">
+            <summary>
+            Nucleus sampling - cumulative probability cutoff.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerationOptions.MinP">
+            <summary>
+            Minimum probability threshold for token selection.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerationOptions.TfsZ">
+            <summary>
+            Tail-free sampling parameter.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerationOptions.TypicalP">
+            <summary>
+            Typical sampling parameter.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerationOptions.RepeatLastN">
+            <summary>
+            How many tokens to consider for repetition penalty (-1 = num_ctx).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerationOptions.Temperature">
+            <summary>
+            Controls randomness. Lower = more deterministic, higher = more creative.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerationOptions.RepeatPenalty">
+            <summary>
+            Penalty for repeating tokens (1.0 = no penalty).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerationOptions.PresencePenalty">
+            <summary>
+            Penalty for token presence (positive = discourage).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerationOptions.FrequencyPenalty">
+            <summary>
+            Penalty based on token frequency.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerationOptions.Mirostat">
+            <summary>
+            Mirostat algorithm (0=disabled, 1=v1, 2=v2).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerationOptions.MirostatTau">
+            <summary>
+            Mirostat target entropy.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerationOptions.MirostatEta">
+            <summary>
+            Mirostat learning rate.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerationOptions.PenalizeNewline">
+            <summary>
+            Whether to penalize newline tokens.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerationOptions.Numa">
+            <summary>
+            Enable NUMA optimization.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerationOptions.NumCtx">
+            <summary>
+            Context window size (model dependent).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerationOptions.NumBatch">
+            <summary>
+            Batch size for prompt processing.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerationOptions.NumGpu">
+            <summary>
+            Number of GPU layers to use (-1 = auto).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerationOptions.MainGpu">
+            <summary>
+            Primary GPU device ID.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerationOptions.LowVram">
+            <summary>
+            Reduce VRAM usage (slower).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerationOptions.F16Kv">
+            <summary>
+            Use 16-bit floats for key/value cache.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerationOptions.VocabOnly">
+            <summary>
+            Load vocabulary only (for embeddings).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerationOptions.UseMmap">
+            <summary>
+            Use memory mapping for model loading.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerationOptions.UseMlock">
+            <summary>
+            Lock model in memory (prevents swapping).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.GenerationOptions.NumThread">
+            <summary>
+            Number of CPU threads to use.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.GenerationOptions.#ctor">
+            <summary>
+            Ollama generation options.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.ListLocalModelsResult">
+            <summary>
+            Ollama list local models result.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.ListLocalModelsResult.Models">
+            <summary>
+            Models.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.ListLocalModelsResult.#ctor">
+            <summary>
+            Ollama list local models result.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.Message">
+            <summary>
+            Ollama message.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.Message.Role">
+            <summary>
+            Role, generally system, user, or assistant.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.Message.Content">
+            <summary>
+            Content.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.Message.TimestampUtc">
+            <summary>
+            Timestamp, in UTC time.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.Message.#ctor">
+            <summary>
+            Ollama message.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.ModelInfo">
+            <summary>
+            Model info for Ollama API response.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.ModelInfo.Name">
+            <summary>
+            Model name.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.ModelInfo.Model">
+            <summary>
+            Model identifier.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.ModelInfo.ModifiedAt">
+            <summary>
+            Timestamp when the model was last modified.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.ModelInfo.Size">
+            <summary>
+            Size of the model in bytes.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.ModelInfo.Digest">
+            <summary>
+            SHA256 digest of the model.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.ModelInfo.Details">
+            <summary>
+            Model info details object.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.ModelInfo.#ctor">
+            <summary>
+            Model info for Ollama API response.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.ModelInfo.FromModelFile(SharpAI.Models.ModelFile)">
+            <summary>
+            Convert from ModelFile to ModelInfo.
+            </summary>
+            <param name="mf">ModelFile instance.</param>
+            <returns>ModelInfo instance.</returns>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.ModelInfoDetails">
+            <summary>
+            Model info details object for nested details in Ollama API response.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.ModelInfoDetails.ParentModel">
+            <summary>
+            Parent model name.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.ModelInfoDetails.Format">
+            <summary>
+            Model format.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.ModelInfoDetails.Family">
+            <summary>
+            Model family.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.ModelInfoDetails.Families">
+            <summary>
+            Model families.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.ModelInfoDetails.ParameterSize">
+            <summary>
+            Parameter size.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.ModelInfoDetails.QuantizationLevel">
+            <summary>
+            Quantization level.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.ModelInfoDetails.#ctor">
+            <summary>
+            Model info details object for nested details in Ollama API response.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.PullModelRequest">
+            <summary>
+            Ollama pull model request.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.PullModelRequest.Model">
+            <summary>
+            Model.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.PullModelRequest.Stream">
+            <summary>
+            True to enable response streaming.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.PullModelRequest.#ctor">
+            <summary>
+            Ollama pull model request.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.PullModelStatus">
+            <summary>
+            Ollama pull model status message.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.PullModelStatus.Status">
+            <summary>
+            Status.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.PullModelStatus.Digest">
+            <summary>
+            Digest (SHA-256).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.PullModelStatus.Total">
+            <summary>
+            Total bytes.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.PullModelStatus.Completed">
+            <summary>
+            Completed bytes.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.ShowModelInfoRequest">
+            <summary>
+            Ollama show model information request.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.ShowModelInfoRequest.Name">
+            <summary>
+            Name.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.ShowModelInfoRequest.#ctor">
+            <summary>
+            Ollama show model information request.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Serialization.DateTimeConverter">
+            <summary>
+            DateTime converter.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Serialization.DateTimeConverter.Read(System.Text.Json.Utf8JsonReader@,System.Type,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Read.
+            </summary>
+            <param name="reader">Reader.</param>
+            <param name="typeToConvert">Type to convert.</param>
+            <param name="options">JSON serializer options.</param>
+            <returns>DateTime.</returns>
+        </member>
+        <member name="M:SharpAI.Serialization.DateTimeConverter.Write(System.Text.Json.Utf8JsonWriter,System.DateTime,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Write.
+            </summary>
+            <param name="writer">Writer.</param>
+            <param name="dateTimeValue">Value.</param>
+            <param name="options">JSON serializer options.</param>
+        </member>
+        <member name="T:SharpAI.Serialization.ExceptionConverter`1">
+            <summary>
+            Exception converter.
+            </summary>
+            <typeparam name="TExceptionType">Exception type.</typeparam>
+        </member>
+        <member name="M:SharpAI.Serialization.ExceptionConverter`1.CanConvert(System.Type)">
+            <summary>
+            Can convert.
+            </summary>
+            <param name="typeToConvert">Type to convert.</param>
+            <returns>True if convertible.</returns>
+        </member>
+        <member name="M:SharpAI.Serialization.ExceptionConverter`1.Read(System.Text.Json.Utf8JsonReader@,System.Type,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Read.
+            </summary>
+            <param name="reader">Reader.</param>
+            <param name="typeToConvert">Type to convert.</param>
+            <param name="options">JSON serializer options.</param>
+            <returns>Instance.</returns>
+        </member>
+        <member name="M:SharpAI.Serialization.ExceptionConverter`1.Write(System.Text.Json.Utf8JsonWriter,`0,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Write.
+            </summary>
+            <param name="writer">Writer.</param>
+            <param name="value">Value.</param>
+            <param name="options">JSON serializer options.</param>
+        </member>
+        <member name="T:SharpAI.Serialization.IPAddressConverter">
+            <summary>
+            IP address converter.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Serialization.IPAddressConverter.Read(System.Text.Json.Utf8JsonReader@,System.Type,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Read.
+            </summary>
+            <param name="reader">Reader.</param>
+            <param name="typeToConvert">Type to convert.</param>
+            <param name="options">JSON serializer options.</param>
+            <returns>IPAddress.</returns>
+        </member>
+        <member name="M:SharpAI.Serialization.IPAddressConverter.Write(System.Text.Json.Utf8JsonWriter,System.Net.IPAddress,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Write.
+            </summary>
+            <param name="writer">Writer.</param>
+            <param name="value">Value.</param>
+            <param name="options">JSON serializer options.</param>
+        </member>
+        <member name="T:SharpAI.Serialization.NameValueCollectionConverter">
+            <summary>
+            NameValueCollection converter.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Serialization.NameValueCollectionConverter.Read(System.Text.Json.Utf8JsonReader@,System.Type,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Read.
+            </summary>
+            <param name="reader">Reader.</param>
+            <param name="typeToConvert">Type to convert.</param>
+            <param name="options">JSON serializer options.</param>
+            <returns>NameValueCollection.</returns>
+        </member>
+        <member name="M:SharpAI.Serialization.NameValueCollectionConverter.Write(System.Text.Json.Utf8JsonWriter,System.Collections.Specialized.NameValueCollection,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Write.
+            </summary>
+            <param name="writer">Writer.</param>
+            <param name="value">Value.</param>
+            <param name="options">JSON serializer options.</param>
+        </member>
+        <member name="T:SharpAI.Serialization.Serializer">
+            <summary>
+            Serializer.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Serialization.Serializer.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Serialization.Serializer.InstantiateConverters">
+            <summary>
+            Instantiation method to support fixups for various environments, e.g. Unity.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Serialization.Serializer.DeserializeJson``1(System.String)">
+            <summary>
+            Deserialize JSON to an instance.
+            </summary>
+            <typeparam name="T">Type.</typeparam>
+            <param name="json">JSON string.</param>
+            <returns>Instance.</returns>
+        </member>
+        <member name="M:SharpAI.Serialization.Serializer.DeserializeJson``1(System.Byte[])">
+            <summary>
+            Deserialize JSON to an instance.
+            </summary>
+            <typeparam name="T">Type.</typeparam>
+            <param name="bytes">Bytes containing JSON.</param>
+            <returns>Instance.</returns>
+        </member>
+        <member name="M:SharpAI.Serialization.Serializer.DeserializeJsonFromFile``1(System.String)">
+            <summary>
+            Deserialize JSON from a file to an instance.
+            </summary>
+            <typeparam name="T">Type.</typeparam>
+            <param name="filename">Filename.</param>
+            <returns>Instance.</returns>
+        </member>
+        <member name="M:SharpAI.Serialization.Serializer.SerializeJson(System.Object,System.Boolean)">
+            <summary>
+            Serialize object to JSON.
+            </summary>
+            <param name="obj">Object.</param>
+            <param name="pretty">Pretty print.</param>
+            <returns>JSON.</returns>
+        </member>
+        <member name="M:SharpAI.Serialization.Serializer.SerializeJsonToFile(System.String,System.Object,System.Boolean)">
+            <summary>
+            Serialize obejct to JSON and write to a file.
+            </summary>
+            <param name="filename">Filename.</param>
+            <param name="obj">Object.</param>
+            <param name="pretty">Pretty print.</param>
+        </member>
+        <member name="M:SharpAI.Serialization.Serializer.SerializeJson(System.Exception,System.Boolean)">
+            <summary>
+            Serialize an exception to JSON.
+            </summary>
+            <param name="e">Exception.</param>
+            <param name="pretty">Pretty print.</param>
+            <returns>JSON.</returns>
+        </member>
+        <member name="M:SharpAI.Serialization.Serializer.CopyObject``1(System.Object)">
+            <summary>
+            Copy an object.
+            </summary>
+            <typeparam name="T">Type.</typeparam>
+            <param name="o">Object.</param>
+            <returns>Instance.</returns>
+        </member>
+        <member name="M:SharpAI.Serialization.Serializer.DeserializeXml``1(System.Byte[])">
+            <summary>
+            Deserialize XML.
+            </summary>
+            <typeparam name="T">Type.</typeparam>
+            <param name="bytes">XML data.</param>
+            <returns>Instance.</returns>
+        </member>
+        <member name="M:SharpAI.Serialization.Serializer.DeserializeXml``1(System.String)">
+            <summary>
+            Deserialize XML.
+            </summary>
+            <typeparam name="T">Type.</typeparam>
+            <param name="xml">XML string.</param>
+            <returns>Instance.</returns>
+        </member>
+        <member name="M:SharpAI.Serialization.Serializer.SerializeXml(System.Object,System.Boolean)">
+            <summary>
+            Serialize XML.
+            </summary>
+            <param name="obj">Object.</param>
+            <param name="pretty">Pretty print.</param>
+            <returns>XML string.</returns>
+        </member>
+        <member name="T:SharpAI.Serialization.StrictEnumConverter`1">
+            <summary>
+            Strict enum converter.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Serialization.StrictEnumConverter`1.Read(System.Text.Json.Utf8JsonReader@,System.Type,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Read.
+            </summary>
+            <param name="reader">Reader.</param>
+            <param name="typeToConvert">Type to convert.</param>
+            <param name="options">JSON serializer options.</param>
+            <returns>DateTime.</returns>
+        </member>
+        <member name="M:SharpAI.Serialization.StrictEnumConverter`1.Write(System.Text.Json.Utf8JsonWriter,`0,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Write.
+            </summary>
+            <param name="writer">Writer.</param>
+            <param name="value">Value.</param>
+            <param name="options">JSON serializer options.</param>
+        </member>
+        <member name="T:SharpAI.Serialization.StrictEnumConverterFactory">
+            <summary>
+            Strict enum converter factory.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Serialization.StrictEnumConverterFactory.CanConvert(System.Type)">
+            <summary>
+            Can convert.
+            </summary>
+            <param name="typeToConvert">Type to convert.</param>
+            <returns>True if convertible.</returns>
+        </member>
+        <member name="M:SharpAI.Serialization.StrictEnumConverterFactory.CreateConverter(System.Type,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Create converter.
+            </summary>
+            <param name="typeToConvert">Type to convert.</param>
+            <param name="options">JSON serializer options.</param>
+            <returns>JsonConverter.</returns>
+        </member>
+        <member name="T:SharpAI.Services.ModelEngineService">
+            <summary>
+            Model engine service.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Services.ModelEngineService.#ctor(SyslogLogging.LoggingModule)">
+            <summary>
+            Model engine service.
+            </summary>
+            <param name="logging">Logging.</param>
+        </member>
+        <member name="M:SharpAI.Services.ModelEngineService.GetByModelFile(System.String)">
+            <summary>
+            Get the engine for a given model file.
+            </summary>
+            <param name="filename">Path and filename to the model.</param>
+            <returns>Instance.</returns>
+        </member>
+        <member name="T:SharpAI.Services.ModelFileService">
+            <summary>
+            Model file service.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Services.ModelFileService.#ctor(SyslogLogging.LoggingModule,Watson.ORM.Sqlite.WatsonORM,System.String)">
+            <summary>
+            Model file service.
+            </summary>
+            <param name="logging">Logging module.</param>
+            <param name="orm">ORM.</param>
+            <param name="storageDirectory">Storage directory.</param>
+        </member>
+        <member name="M:SharpAI.Services.ModelFileService.All">
+            <summary>
+            Retrieve all.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SharpAI.Services.ModelFileService.Enumerate(System.Nullable{System.Guid},System.Int32,System.Int32,System.Collections.Generic.Dictionary{System.String,System.String},SharpAI.Models.EnumerationOrderEnum)">
+            <summary>
+            Enumerate.
+            </summary>
+            <param name="continuationToken">Continuation token.</param>
+            <param name="maxResults">Maximum number of results to retrieve.</param>
+            <param name="skip">The number of records to skip.</param>
+            <param name="filter">Filters to add to the request.</param>
+            <param name="ordering">Ordering.</param>
+            <returns>Enumeration result.</returns>
+        </member>
+        <member name="M:SharpAI.Services.ModelFileService.Search(ExpressionTree.Expr,System.Int32,System.Int32,DatabaseWrapper.Core.ResultOrder[])">
+            <summary>
+            Search.
+            </summary>
+            <param name="expr">Expr.</param>
+            <param name="indexStart">Index start.</param>
+            <param name="maxResults">Max results.</param>
+            <param name="resultOrder">Result order.</param>
+            <returns>List.</returns>
+        </member>
+        <member name="M:SharpAI.Services.ModelFileService.GetByGuid(System.Guid)">
+            <summary>
+            Get by GUID.
+            </summary>
+            <param name="guid">GUID.</param>
+            <returns>Instance.</returns>
+        </member>
+        <member name="M:SharpAI.Services.ModelFileService.GetByName(System.String)">
+            <summary>
+            Get by name.
+            </summary>
+            <param name="name">Name.</param>
+            <returns>Instance.</returns>
+        </member>
+        <member name="M:SharpAI.Services.ModelFileService.GetFilename(System.String)">
+            <summary>
+            Retrieve the full path and filename of a given model by name.
+            </summary>
+            <param name="name">Name.</param>
+            <returns>Path and filename.</returns>
+        </member>
+        <member name="M:SharpAI.Services.ModelFileService.GetMany(System.Collections.Generic.List{System.Guid})">
+            <summary>
+            Get many.
+            </summary>
+            <param name="guids">GUIDs.</param>
+            <returns>List.</returns>
+        </member>
+        <member name="M:SharpAI.Services.ModelFileService.ExistsByGuid(System.Guid,System.Guid)">
+            <summary>
+            Exists by GUID.
+            </summary>        /// <param name="tenantGuid">Tenant GUID.</param>
+            <param name="guid">GUID.</param>
+            <returns>True if exists.</returns>
+        </member>
+        <member name="M:SharpAI.Services.ModelFileService.First(ExpressionTree.Expr)">
+            <summary>
+            Retrieve first.
+            </summary>
+            <param name="expr">Expr.</param>
+            <returns>Instance.</returns>
+        </member>
+        <member name="M:SharpAI.Services.ModelFileService.Add(SharpAI.Models.ModelFile)">
+            <summary>
+            Add.
+            </summary>
+            <param name="obj">ModelFile.</param>
+            <returns>Instance.</returns>
+        </member>
+        <member name="M:SharpAI.Services.ModelFileService.Delete(System.Guid)">
+            <summary>
+            Delete.
+            </summary>
+            <param name="guid">GUID.</param>
+        </member>
+    </members>
+</doc>

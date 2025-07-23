@@ -1,0 +1,198 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>SharpAI.Server</name>
+    </assembly>
+    <members>
+        <member name="T:SharpAI.Server.Classes.Settings.HuggingFaceSettings">
+            <summary>
+            HuggingFace settings.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.HuggingFaceSettings.ApiKey">
+            <summary>
+            API key.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Server.Classes.Settings.HuggingFaceSettings.#ctor">
+            <summary>
+            HuggingFace settings.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Server.Classes.Settings.LoggingSettings">
+            <summary>
+            Logging settings.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.LoggingSettings.Servers">
+            <summary>
+            List of syslog servers.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.LoggingSettings.LogDirectory">
+            <summary>
+            Log directory.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.LoggingSettings.LogFilename">
+            <summary>
+            Log filename.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.LoggingSettings.ConsoleLogging">
+            <summary>
+            Enable or disable console logging.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.LoggingSettings.EnableColors">
+            <summary>
+            Enable colors in logging.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.LoggingSettings.MinimumSeverity">
+            <summary>
+            Minimum severity.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Server.Classes.Settings.LoggingSettings.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Server.Classes.Settings.Settings">
+            <summary>
+            Settings.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.Settings.CreatedUtc">
+            <summary>
+            Timestamp from creation, in UTC time.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.Settings.SoftwareVersion">
+            <summary>
+            Software version.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.Settings.Logging">
+            <summary>
+            Logging settings.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.Settings.Storage">
+            <summary>
+            Storage settings.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.Settings.Database">
+            <summary>
+            Database settings.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.Settings.HuggingFace">
+            <summary>
+            HuggingFace settings.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.Settings.Rest">
+            <summary>
+            REST settings.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Server.Classes.Settings.Settings.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Server.Classes.Settings.StorageSettings">
+            <summary>
+            Storage settings.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.StorageSettings.TempDirectory">
+            <summary>
+            Temporary storage directory.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.StorageSettings.ModelsDirectory">
+            <summary>
+            Models directory.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Server.Classes.Settings.StorageSettings.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Server.Classes.Settings.StorageSettings.NormalizeDirectory(System.String)">
+            <summary>
+            Normalize directory path.
+            </summary>
+            <param name="directory">Directory.</param>
+            <returns>Normalized directory.</returns>
+        </member>
+        <member name="T:SharpAI.Server.Classes.Settings.SyslogServer">
+            <summary>
+            Syslog server settings.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.SyslogServer.Hostname">
+            <summary>
+            Hostname.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.SyslogServer.Port">
+            <summary>
+            Port.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.SyslogServer.RandomizePorts">
+            <summary>
+            Boolean to indicate whether or not randomized port numbers should be used.
+            If false, the value in 'Port' will be used.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.SyslogServer.MinimumPort">
+            <summary>
+            Minimum port.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.SyslogServer.MaximumPort">
+            <summary>
+            Maximum port.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Server.Classes.Settings.SyslogServer.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Server.Classes.Settings.SyslogServer.#ctor(System.String,System.Int32)">
+            <summary>
+            Instantiate.
+            </summary>
+            <param name="hostname">Hostname.</param>
+            <param name="port">Port.</param>
+        </member>
+        <member name="M:SharpAI.Server.Classes.Settings.SyslogServer.#ctor(System.String,System.Int32,System.Int32)">
+            <summary>
+            Instantiate.
+            </summary>
+            <param name="hostname">Hostname.</param>
+            <param name="minPort">Minimum port number.</param>
+            <param name="maxPort">Maximum port number.</param>
+        </member>
+        <member name="T:SharpAI.Server.Program">
+            <summary>
+            SharpAI Server.  We are happy to see you.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Server.Program.Main(System.String[])">
+            <summary>
+            SharpAI Server.  We are happy to see you.
+            </summary>
+            <param name="args">Arguments.</param>
+            <returns>Task.</returns>
+        </member>
+    </members>
+</doc>

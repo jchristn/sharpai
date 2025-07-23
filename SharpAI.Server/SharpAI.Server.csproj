@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net8.0</TargetFramework>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+		<DocumentationFile>SharpAI.Server.xml</DocumentationFile>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="PersistentCollection" Version="2.0.12" />
+		<PackageReference Include="SwiftStack" Version="0.2.1" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\SharpAI\SharpAI.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Update="clean.bat">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	  <None Update="clean.sh">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	</ItemGroup>
+
+</Project>
