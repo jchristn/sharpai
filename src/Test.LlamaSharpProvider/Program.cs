@@ -15,7 +15,7 @@
             Console.WriteLine("AI Provider Demo");
             Console.WriteLine("================");
 
-            EngineBase? provider = null;
+            EngineBase provider = null;
 
             try
             {
@@ -77,7 +77,7 @@
             }
         }
 
-        private static async Task<EngineBase?> InitializeProvider()
+        private static async Task<EngineBase> InitializeProvider()
         {
             Console.Write("Enter model filename (GGUF): ");
             var modelFile = Console.ReadLine();
@@ -120,7 +120,7 @@
             }
         }
 
-        private static async Task GenerateEmbeddings(EngineBase? provider)
+        private static async Task GenerateEmbeddings(EngineBase provider)
         {
             if (provider == null || !provider.IsInitialized)
             {
@@ -158,7 +158,7 @@
             }
         }
 
-        private static async Task GenerateText(EngineBase? provider)
+        private static async Task GenerateText(EngineBase provider)
         {
             if (provider == null || !provider.IsInitialized)
             {
@@ -205,7 +205,7 @@
             }
         }
 
-        private static async Task ChatCompletion(EngineBase? provider)
+        private static async Task ChatCompletion(EngineBase provider)
         {
             if (provider == null || !provider.IsInitialized)
             {
@@ -237,7 +237,7 @@
             }
         }
 
-        private static async Task StreamingChat(EngineBase? provider)
+        private static async Task StreamingChat(EngineBase provider)
         {
             if (provider == null || !provider.IsInitialized)
             {

@@ -15,6 +15,8 @@
 
     public static class Program
     {
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+
         static bool _RunForever = true;
         static bool _Debug = false;
         static AIDriver _AIDriver = null;
@@ -798,5 +800,7 @@
         }
 
         #endregion
+
+#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
     }
 }

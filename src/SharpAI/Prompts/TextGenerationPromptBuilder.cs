@@ -18,7 +18,7 @@
         /// <returns>A formatted prompt string ready for text generation.</returns>
         /// <exception cref="ArgumentNullException">Thrown when input is null.</exception>
         /// <exception cref="ArgumentException">Thrown when input is empty or whitespace.</exception>
-        public static string Build(TextGenerationFormat format, string input, Dictionary<string, string>? context = null)
+        public static string Build(TextGenerationFormat format, string input, Dictionary<string, string> context = null)
         {
             if (input == null)
                 throw new ArgumentNullException(nameof(input));
@@ -54,7 +54,7 @@
             TextGenerationFormat format,
             string input,
             List<(string input, string output)> examples,
-            Dictionary<string, string>? context = null)
+            Dictionary<string, string> context = null)
         {
             if (examples == null || examples.Count == 0)
                 return Build(format, input, context);
@@ -107,7 +107,7 @@
             return sb.ToString();
         }
 
-        private static string BuildCreativeWriting(string input, Dictionary<string, string>? context)
+        private static string BuildCreativeWriting(string input, Dictionary<string, string> context)
         {
             var sb = new StringBuilder();
 
@@ -129,7 +129,7 @@
             return sb.ToString();
         }
 
-        private static string BuildCodeGeneration(string input, Dictionary<string, string>? context)
+        private static string BuildCodeGeneration(string input, Dictionary<string, string> context)
         {
             var sb = new StringBuilder();
 
@@ -152,7 +152,7 @@
             return sb.ToString();
         }
 
-        private static string BuildAcademic(string input, Dictionary<string, string>? context)
+        private static string BuildAcademic(string input, Dictionary<string, string> context)
         {
             var sb = new StringBuilder();
 
@@ -178,7 +178,7 @@
             return sb.ToString();
         }
 
-        private static string BuildListGeneration(string input, Dictionary<string, string>? context)
+        private static string BuildListGeneration(string input, Dictionary<string, string> context)
         {
             var sb = new StringBuilder();
 
@@ -213,7 +213,7 @@
             return sb.ToString();
         }
 
-        private static string BuildDialogue(string input, Dictionary<string, string>? context)
+        private static string BuildDialogue(string input, Dictionary<string, string> context)
         {
             var sb = new StringBuilder();
 
@@ -254,7 +254,7 @@
         /// <param name="instruction">The instruction to follow.</param>
         /// <param name="systemContext">Optional system context to prepend.</param>
         /// <returns>A formatted instruction prompt.</returns>
-        public static string CreateInstruction(string instruction, string? systemContext = null)
+        public static string CreateInstruction(string instruction, string systemContext = null)
         {
             if (string.IsNullOrWhiteSpace(systemContext))
                 return Build(TextGenerationFormat.Instruction, instruction);
