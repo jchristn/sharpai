@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Threading;
     using System.Threading.Tasks;
 
     /// <summary>
@@ -51,15 +52,17 @@
         /// Generates embeddings for a single text input.
         /// </summary>
         /// <param name="text">Input text to embed.</param>
+        /// <param name="token">Cancellation token.</param>
         /// <returns>Embedding vector as a float array.</returns>
-        public abstract Task<float[]> GenerateEmbeddingsAsync(string text);
+        public abstract Task<float[]> GenerateEmbeddingsAsync(string text, CancellationToken token = default);
 
         /// <summary>
         /// Generates embeddings for multiple text inputs.
         /// </summary>
         /// <param name="texts">Array of input texts to embed.</param>
+        /// <param name="token">Cancellation token.</param>
         /// <returns>Array of embedding vectors, one per input text.</returns>
-        public abstract Task<float[][]> GenerateEmbeddingsAsync(string[] texts);
+        public abstract Task<float[][]> GenerateEmbeddingsAsync(string[] texts, CancellationToken token = default);
 
         #endregion
 
@@ -68,46 +71,70 @@
         /// <summary>
         /// Generates a text completion for the given prompt.
         /// </summary>
-        /// <param name="prompt">Input prompt.</param>
+        /// <param name="prompt">Input prompt.  This prompt should be formatted in a manner appropriate for the model you are using.  For example, "User: {question}\nAssistant: ".</param>
         /// <param name="maxTokens">Maximum number of tokens to generate.</param>
         /// <param name="temperature">Sampling temperature (0.0 to 2.0).</param>
         /// <param name="stopSequences">Sequences that will stop generation.</param>
+        /// <param name="token">Cancellation token.</param>
         /// <returns>Generated text.</returns>
-        public abstract Task<string> GenerateTextAsync(string prompt, int maxTokens = 512, float temperature = 0.7f, string[] stopSequences = null);
+        public abstract Task<string> GenerateTextAsync(
+            string prompt, 
+            int maxTokens = 512, 
+            float temperature = 0.7f, 
+            string[] stopSequences = null,
+            CancellationToken token = default);
 
         /// <summary>
         /// Generates a streaming text completion for the given prompt.
         /// </summary>
-        /// <param name="prompt">Input prompt.</param>
+        /// <param name="prompt">Input prompt.  This prompt should be formatted in a manner appropriate for the model you are using.  For example, "User: {question}\nAssistant: ".</param>
         /// <param name="maxTokens">Maximum number of tokens to generate.</param>
         /// <param name="temperature">Sampling temperature (0.0 to 2.0).</param>
         /// <param name="stopSequences">Sequences that will stop generation.</param>
+        /// <param name="token">Cancellation token.</param>
         /// <returns>Async enumerable of generated text tokens.</returns>
-        public abstract IAsyncEnumerable<string> GenerateTextStreamAsync(string prompt, int maxTokens = 512, float temperature = 0.7f, string[] stopSequences = null);
+        public abstract IAsyncEnumerable<string> GenerateTextStreamAsync(
+            string prompt, 
+            int maxTokens = 512, 
+            float temperature = 0.7f, 
+            string[] stopSequences = null,
+            CancellationToken token = default);
 
         #endregion
 
         #region Chat
 
         /// <summary>
-        /// Generates a chat completion given a conversation history.
+        /// Generates a chat completion.
         /// </summary>
-        /// <param name="messages">Conversation history.</param>
+        /// <param name="prompt">Prompt containing conversation history.  Be sure to format this in accordance with the expectations of the model you are using.</param>
         /// <param name="maxTokens">Maximum number of tokens to generate.</param>
         /// <param name="temperature">Sampling temperature (0.0 to 2.0).</param>
         /// <param name="stopSequences">Sequences that will stop generation.</param>
+        /// <param name="token">Cancellation token.</param>
         /// <returns>Generated chat response.</returns>
-        public abstract Task<string> GenerateChatCompletionAsync(ChatMessage[] messages, int maxTokens = 512, float temperature = 0.7f, string[]stopSequences = null);
+        public abstract Task<string> GenerateChatCompletionAsync(
+            string prompt, 
+            int maxTokens = 512, 
+            float temperature = 0.7f, 
+            string[]stopSequences = null,
+            CancellationToken token = default);
 
         /// <summary>
         /// Generates a streaming chat completion given a conversation history.
         /// </summary>
-        /// <param name="messages">Conversation history.</param>
+        /// <param name="prompt">Prompt containing conversation history.  Be sure to format this in accordance with the expectations of the model you are using.</param>
         /// <param name="maxTokens">Maximum number of tokens to generate.</param>
         /// <param name="temperature">Sampling temperature (0.0 to 2.0).</param>
         /// <param name="stopSequences">Sequences that will stop generation.</param>
+        /// <param name="token">Cancellation token.</param>
         /// <returns>Async enumerable of generated chat response tokens.</returns>
-        public abstract IAsyncEnumerable<string> GenerateChatCompletionStreamAsync(ChatMessage[] messages, int maxTokens = 512, float temperature = 0.7f, string[] stopSequences = null);
+        public abstract IAsyncEnumerable<string> GenerateChatCompletionStreamAsync(
+            string prompt,
+            int maxTokens = 512, 
+            float temperature = 0.7f, 
+            string[] stopSequences = null,
+            CancellationToken token = default);
 
         #endregion
 

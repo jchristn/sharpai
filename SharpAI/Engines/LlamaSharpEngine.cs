@@ -4,6 +4,7 @@
     using System.Collections.Generic;
     using System.Linq;
     using System.Runtime.CompilerServices;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using LLama.Common;
@@ -235,177 +236,101 @@
 
         #region Embeddings
 
-        /// <summary>
-        /// Generates embeddings for the specified text using the loaded model.
-        /// </summary>
-        /// <param name="text">The text to generate embeddings for.</param>
-        /// <returns>A task that represents the asynchronous operation. The task result contains a float array representing the text embeddings.</returns>
-        /// <exception cref="InvalidOperationException">Thrown when the engine is not initialized or embeddings are not supported.</exception>
-        /// <exception cref="Exception">Thrown when embedding generation fails.</exception>
-        public override async Task<float[]> GenerateEmbeddingsAsync(string text)
+        /// <inheritdoc />
+        public override async Task<float[]> GenerateEmbeddingsAsync(
+            string text, 
+            CancellationToken token = default)
         {
             ThrowIfNotInitialized();
 
             if (_Embedder == null) throw new InvalidOperationException("Embeddings are not supported. The embedder failed to initialize.");
 
-            try
-            {
-                IReadOnlyList<float[]> embeddings = await _Embedder.GetEmbeddings(text);
-                return embeddings.Single();
-            }
-            catch (Exception ex)
-            {
-                _Logging.Warn(_Header + "embeddings generation exception:" + Environment.NewLine + ex.ToString());
-                throw new Exception($"Failed to generate embeddings: {ex.Message}", ex);
-            }
+            IReadOnlyList<float[]> embeddings = await _Embedder.GetEmbeddings(text, token).ConfigureAwait(false);
+            return embeddings.Single();
         }
 
-        /// <summary>
-        /// Generates embeddings for multiple texts using the loaded model.
-        /// </summary>
-        /// <param name="texts">An array of texts to generate embeddings for.</param>
-        /// <returns>A task that represents the asynchronous operation. The task result contains a jagged array of float arrays, where each inner array represents embeddings for the corresponding input text.</returns>
-        /// <exception cref="InvalidOperationException">Thrown when the engine is not initialized or embeddings are not supported.</exception>
-        /// <exception cref="Exception">Thrown when embedding generation fails.</exception>
-        public override async Task<float[][]> GenerateEmbeddingsAsync(string[] texts)
+        /// <inheritdoc />
+        public override async Task<float[][]> GenerateEmbeddingsAsync(
+            string[] texts,
+            CancellationToken token = default)
         {
             ThrowIfNotInitialized();
 
-            var results = new float[texts.Length][];
+            float[][] embeddings = new float[texts.Length][];
 
             for (int i = 0; i < texts.Length; i++)
             {
-                results[i] = await GenerateEmbeddingsAsync(texts[i]);
+                embeddings[i] = await GenerateEmbeddingsAsync(texts[i], token).ConfigureAwait(false);
             }
 
-            return results;
+            return embeddings;
         }
 
         #endregion
 
         #region Text Generation
 
-        /// <summary>
-        /// Generates text based on the provided prompt using the loaded model.
-        /// </summary>
-        /// <param name="prompt">The input prompt to generate text from.</param>
-        /// <param name="maxTokens">The maximum number of tokens to generate. Default is 512.</param>
-        /// <param name="temperature">The sampling temperature for text generation. Higher values produce more random output. Default is 0.7.</param>
-        /// <param name="stopSequences">Optional array of strings that will stop text generation when encountered.</param>
-        /// <returns>A task that represents the asynchronous operation. The task result contains the generated text.</returns>
-        /// <exception cref="InvalidOperationException">Thrown when the engine is not initialized.</exception>
-        /// <exception cref="Exception">Thrown when text generation fails.</exception>
+        /// <inheritdoc />
         public override async Task<string> GenerateTextAsync(
             string prompt,
             int maxTokens = 512,
             float temperature = 0.7f,
-            string[] stopSequences = null)
+            string[] stopSequences = null,
+            CancellationToken token = default)
         {
             ThrowIfNotInitialized();
 
             try
             {
-                // FIX: hard-coded values
-                string formattedPrompt = $"User: {prompt}\nAssistant:";
-
-                // FIX: hard-coded values
                 InferenceParams inferenceParams = new InferenceParams
                 {
-                    MaxTokens = Math.Min(maxTokens, 100),
-                    AntiPrompts = stopSequences?.ToList() ?? new List<string> { "User:", "Human:", "\n\n" },
+                    MaxTokens = maxTokens,
+                    AntiPrompts = stopSequences?.ToList() ?? new List<string>(),
                     SamplingPipeline = new DefaultSamplingPipeline
                     {
                         Temperature = temperature
                     }
                 };
 
-                string result = "";
+                StringBuilder result = new StringBuilder();
 
-                // Clear any existing context to ensure clean generation
-                _Context!.NativeHandle.KvCacheClear();
-
-                // Use InteractiveExecutor with cleared context
-                await foreach (string token in _Executor!.InferAsync(formattedPrompt, inferenceParams))
+                await foreach (string curr in _StatelessExecutor.InferAsync(prompt, inferenceParams, token).ConfigureAwait(false))
                 {
-                    result += token;
-
-                    // Stop if we hit a natural sentence ending
-                    if (token.EndsWith(".") || token.EndsWith("!") || token.EndsWith("?"))
-                    {
-                        break;
-                    }
-
-                    // Additional safety check to prevent infinite loops
-                    if (result.Length > maxTokens * 2)
-                    {
-                        break;
-                    }
+                    result.Append(curr);
                 }
 
-                return result.Trim();
+                return result.ToString().Trim();
             }
             catch (Exception ex)
             {
                 _Logging.Warn(_Header + "exception generating text:" + Environment.NewLine + ex.ToString());
-                throw new Exception($"Failed to generate text: {ex.Message}", ex);
+                throw new Exception($"Failed to generate text:{Environment.NewLine}{ex.ToString()}", ex);
             }
         }
 
-        /// <summary>
-        /// Generates text based on the provided prompt and returns it as a stream of tokens.
-        /// </summary>
-        /// <param name="prompt">The input prompt to generate text from.</param>
-        /// <param name="maxTokens">The maximum number of tokens to generate. Default is 512.</param>
-        /// <param name="temperature">The sampling temperature for text generation. Higher values produce more random output. Default is 0.7.</param>
-        /// <param name="stopSequences">Optional array of strings that will stop text generation when encountered.</param>
-        /// <returns>An async enumerable that yields generated tokens as they are produced.</returns>
-        /// <exception cref="InvalidOperationException">Thrown when the engine is not initialized.</exception>
+        /// <inheritdoc />
         public override async IAsyncEnumerable<string> GenerateTextStreamAsync(
             string prompt,
             int maxTokens = 512,
             float temperature = 0.7f,
-            string[] stopSequences = null)
+            string[] stopSequences = null,
+            [EnumeratorCancellation] CancellationToken token = default)
         {
             ThrowIfNotInitialized();
 
-            // FIX: hard-coded values
-            string formattedPrompt = $"User: {prompt}\nAssistant:";
-
-            // FIX: hard-coded values
             InferenceParams inferenceParams = new InferenceParams
             {
-                MaxTokens = Math.Min(maxTokens, 100), // Limit tokens for simple responses
-                AntiPrompts = stopSequences?.ToList() ?? new List<string> { "User:", "Human:", "\n\n" },
+                MaxTokens = maxTokens,
+                AntiPrompts = stopSequences?.ToList() ?? new List<string>(),
                 SamplingPipeline = new DefaultSamplingPipeline
                 {
                     Temperature = temperature
                 }
             };
 
-            int tokenCount = 0;
-            string result = "";
-
-            // Clear any existing context to ensure clean generation
-            _Context!.NativeHandle.KvCacheClear();
-
-            // Use InteractiveExecutor with cleared context
-            await foreach (var token in _Executor!.InferAsync(formattedPrompt, inferenceParams))
+            await foreach (var curr in _StatelessExecutor.InferAsync(prompt, inferenceParams, token).ConfigureAwait(false))
             {
-                result += token;
-                yield return token;
-
-                // Stop if we hit a natural sentence ending
-                if (token.EndsWith(".") || token.EndsWith("!") || token.EndsWith("?"))
-                {
-                    break;
-                }
-
-                // Additional safety check to prevent infinite loops
-                tokenCount++;
-                if (tokenCount > maxTokens * 2 || result.Length > maxTokens * 4)
-                {
-                    break;
-                }
+                yield return curr;
             }
         }
 
@@ -413,82 +338,67 @@
 
         #region Chat
 
-        /// <summary>
-        /// Generates a chat completion response based on the provided conversation messages.
-        /// </summary>
-        /// <param name="messages">An array of ChatMessage objects representing the conversation history.</param>
-        /// <param name="maxTokens">The maximum number of tokens to generate in the response. Default is 512.</param>
-        /// <param name="temperature">The sampling temperature for response generation. Higher values produce more random output. Default is 0.7.</param>
-        /// <param name="stopSequences">Optional array of strings that will stop response generation when encountered.</param>
-        /// <returns>A task that represents the asynchronous operation. The task result contains the generated chat response.</returns>
-        /// <exception cref="InvalidOperationException">Thrown when the engine is not initialized.</exception>
-        /// <exception cref="Exception">Thrown when chat completion generation fails.</exception>
-        public override async Task<string> GenerateChatCompletionAsync(ChatMessage[] messages, int maxTokens = 512, float temperature = 0.7f, string[] stopSequences = null)
+        /// <inheritdoc />
+        public override async Task<string> GenerateChatCompletionAsync(
+            string prompt, 
+            int maxTokens = 512, 
+            float temperature = 0.7f, 
+            string[] stopSequences = null,
+            CancellationToken token = default)
         {
             ThrowIfNotInitialized();
 
             try
             {
-                // FIX: hard-coded values
-                string prompt = string.Join("\n", messages.Select(m => $"{m.Role}: {m.Content}")) + "\nassistant:";
-
-                // FIX: hard-coded values
                 InferenceParams inferenceParams = new InferenceParams
                 {
                     MaxTokens = maxTokens,
-                    AntiPrompts = stopSequences?.ToList() ?? new List<string> { "user:", "User:" }, // Default anti-prompt for chat
+                    AntiPrompts = stopSequences?.ToList() ?? new List<string> { "user:", "User:", "human:", "Human:" }, // Default anti-prompt for chat
                     SamplingPipeline = new DefaultSamplingPipeline
                     {
                         Temperature = temperature
                     }
                 };
 
-                string result = "";
+                StringBuilder result = new StringBuilder();
 
-                await foreach (var token in _StatelessExecutor!.InferAsync(prompt, inferenceParams))
+                await foreach (var curr in _StatelessExecutor!.InferAsync(prompt, inferenceParams, token).ConfigureAwait(false))
                 {
-                    result += token;
+                    result.Append(curr);
                 }
 
-                return result.Trim();
+                return result.ToString().Trim();
             }
             catch (Exception ex)
             {
                 _Logging.Warn(_Header + "exception generating chat completion:" + Environment.NewLine + ex.ToString());
-                throw new Exception($"Failed to generate chat completion: {ex.Message}", ex);
+                throw new Exception($"Failed to generate chat completion:{Environment.NewLine}{ex.ToString()}", ex);
             }
         }
 
-        /// <summary>
-        /// Generates a chat completion response based on the provided conversation messages and returns it as a stream of tokens.
-        /// </summary>
-        /// <param name="messages">An array of ChatMessage objects representing the conversation history.</param>
-        /// <param name="maxTokens">The maximum number of tokens to generate in the response. Default is 512.</param>
-        /// <param name="temperature">The sampling temperature for response generation. Higher values produce more random output. Default is 0.7.</param>
-        /// <param name="stopSequences">Optional array of strings that will stop response generation when encountered.</param>
-        /// <returns>An async enumerable that yields generated tokens as they are produced.</returns>
-        /// <exception cref="InvalidOperationException">Thrown when the engine is not initialized.</exception>
-        public override async IAsyncEnumerable<string> GenerateChatCompletionStreamAsync(ChatMessage[] messages, int maxTokens = 512, float temperature = 0.7f, string[] stopSequences = null)
+        /// <inheritdoc />
+        public override async IAsyncEnumerable<string> GenerateChatCompletionStreamAsync(
+            string prompt,
+            int maxTokens = 512, 
+            float temperature = 0.7f, 
+            string[] stopSequences = null,
+            [EnumeratorCancellation] CancellationToken token = default)
         {
             ThrowIfNotInitialized();
 
-            // FIX: hard-coded values
-            string prompt = string.Join("\n", messages.Select(m => $"{m.Role}: {m.Content}")) + "\nassistant:";
-
-            // FIX: hard-coded values
             InferenceParams inferenceParams = new InferenceParams
             {
                 MaxTokens = maxTokens,
-                AntiPrompts = stopSequences?.ToList() ?? new List<string> { "user:", "User:" }, // Default anti-prompt for chat
+                AntiPrompts = stopSequences?.ToList() ?? new List<string> { "user:", "User:", "human:", "Human:" }, // Default anti-prompt for chat
                 SamplingPipeline = new DefaultSamplingPipeline
                 {
                     Temperature = temperature
                 }
             };
 
-            await foreach (var token in _StatelessExecutor!.InferAsync(prompt, inferenceParams))
+            await foreach (var curr in _StatelessExecutor!.InferAsync(prompt, inferenceParams, token).ConfigureAwait(false))
             {
-                yield return token;
+                yield return curr;
             }
         }
 

@@ -125,14 +125,19 @@
 
             #region Download
 
+            ModelFile modelFile = new ModelFile
+            {
+                Name = pmr.Model
+            };
+
             bool success = false;
             string filename = null;
             string successUrl = null;
 
             foreach (string url in urls)
             {
-                filename = Path.Combine(_Settings.Storage.ModelsDirectory, pmr.Model);
-                _Logging.Debug(_Header + "attempting download of model " + pmr.Model + " using URL " + url + " to file " + filename);
+                filename = Path.Combine(_Settings.Storage.ModelsDirectory, modelFile.GUID.ToString());
+                _Logging.Debug(_Header + "attempting download of model " + pmr.Model + " using URL " + url + " to file " + modelFile.GUID.ToString());
                 
                 success = await _HuggingFaceClient.TryDownloadFileAsync(url, filename);
                 if (success && File.Exists(filename) && new FileInfo(filename).Length == preferred.Size)
@@ -162,6 +167,7 @@
 
                 _ModelFileService.Add(new ModelFile
                 {
+                    GUID = modelFile.GUID,
                     Name = pmr.Model,
                     ContentLength = preferred.Size != null ? preferred.Size.Value : 0,
                     MD5Hash = Convert.ToHexString(md5),
@@ -205,7 +211,7 @@
             else
             {
                 _ModelFileService.Delete(modelFile.GUID);
-                File.Delete(Path.Combine(_Settings.Storage.ModelsDirectory, dmr.Name));
+                File.Delete(Path.Combine(_Settings.Storage.ModelsDirectory, modelFile.GUID.ToString()));
                 return null;
             }
         }
@@ -257,7 +263,7 @@
                 };
             }
 
-            LlamaSharpEngine engine = _ModelEngineService.GetByModelFile(Path.Combine(_Settings.Storage.ModelsDirectory, modelFile.Name));
+            LlamaSharpEngine engine = _ModelEngineService.GetByModelFile(Path.Combine(_Settings.Storage.ModelsDirectory, modelFile.GUID.ToString()));
 
             if (!engine.SupportsEmbeddings)
             {
@@ -312,7 +318,20 @@
 
             req.Http.Response.ContentType = Constants.JsonContentType;
 
-            LlamaSharpEngine engine = _ModelEngineService.GetByModelFile(Path.Combine(_Settings.Storage.ModelsDirectory, gcr.Model));
+            ModelFile modelFile = _ModelFileService.GetByName(gcr.Model);
+            if (modelFile == null)
+            {
+                _Logging.Warn(_Header + "model " + gcr.Model + " not found");
+
+                req.Http.Response.StatusCode = 404;
+
+                return new
+                {
+                    error = $"model '{gcr.Model}' not found"
+                };
+            }
+
+            LlamaSharpEngine engine = _ModelEngineService.GetByModelFile(Path.Combine(_Settings.Storage.ModelsDirectory, modelFile.GUID.ToString()));
 
             string json = null;
 
@@ -347,6 +366,7 @@
                 string nextToken = null;
 
                 req.Http.Response.ContentType = Constants.NdJsonContentType;
+                req.Http.Response.ChunkedTransfer = true;
 
                 await foreach (string curr in engine.GenerateTextStreamAsync(
                     gcr.Prompt,
@@ -362,7 +382,7 @@
                             response = nextToken,
                             done = false
 
-                        }, false);
+                        }, false) + Environment.NewLine;
 
                         await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(json), false);
                     }
@@ -392,24 +412,32 @@
 
             req.Http.Response.ContentType = Constants.JsonContentType;
 
-            LlamaSharpEngine engine = _ModelEngineService.GetByModelFile(Path.Combine(_Settings.Storage.ModelsDirectory, gcr.Model));
-
-            string json = null;
-
-            List<ChatMessage> chatMessageList = new List<ChatMessage>();
-            if (gcr.Messages != null && gcr.Messages.Count > 0)
+            ModelFile modelFile = _ModelFileService.GetByName(gcr.Model);
+            if (modelFile == null)
             {
-                foreach (Message msg in gcr.Messages)
+                _Logging.Warn(_Header + "model " + gcr.Model + " not found");
+
+                req.Http.Response.StatusCode = 404;
+
+                return new
                 {
-                    chatMessageList.Add(new ChatMessage
-                    {
-                        Role = msg.Role,
-                        Content = msg.Content
-                    });
-                }
+                    error = $"model '{gcr.Model}' not found"
+                };
             }
 
-            ChatMessage[] chatMessages = chatMessageList.ToArray();
+            LlamaSharpEngine engine = _ModelEngineService.GetByModelFile(Path.Combine(_Settings.Storage.ModelsDirectory, modelFile.GUID.ToString()));
+
+            string json = null;
+            StringBuilder promptBuilder = new StringBuilder();
+            if (gcr.Messages != null && gcr.Messages.Count > 0)
+            {
+                int added = 0;
+                foreach (Message msg in gcr.Messages)
+                {
+                    if (added > 0) promptBuilder.Append("\n");
+                    promptBuilder.Append($"{msg.Role}: {msg.Content}"); 
+                }
+            }
 
             if (!engine.SupportsGeneration)
             {
@@ -430,7 +458,7 @@
                     model = gcr.Model,
                     created_at = DateTime.UtcNow.ToString(_TimestampFormat),
                     response = await engine.GenerateChatCompletionAsync(
-                        chatMessages,
+                        promptBuilder.ToString(),
                         gcr.Options.NumPredict != null ? gcr.Options.NumPredict.Value : 128,
                         gcr.Options.Temperature != null ? gcr.Options.Temperature.Value : 0.6f),
                     done = true,
@@ -445,7 +473,7 @@
                 req.Http.Response.ChunkedTransfer = true;
 
                 await foreach (string curr in engine.GenerateChatCompletionStreamAsync(
-                    chatMessages,
+                    promptBuilder.ToString(),
                     gcr.Options.NumPredict != null ? gcr.Options.NumPredict.Value : 128,
                     gcr.Options.Temperature != null ? gcr.Options.Temperature.Value : 0.6f))
                 {

@@ -130,21 +130,6 @@
         }
 
         /// <summary>
-        /// Search.
-        /// </summary>
-        /// <param name="expr">Expr.</param>
-        /// <param name="indexStart">Index start.</param>
-        /// <param name="maxResults">Max results.</param>
-        /// <param name="resultOrder">Result order.</param>
-        /// <returns>List.</returns>
-        public List<ModelFile> Search(Expr expr, int indexStart = 0, int maxResults = 1000, ResultOrder[] resultOrder = null)
-        {
-            if (expr == null) throw new ArgumentNullException(nameof(expr));
-
-            return _ORM.SelectMany<ModelFile>(indexStart, maxResults, expr, resultOrder);
-        }
-
-        /// <summary>
         /// Get by GUID.
         /// </summary>
         /// <param name="guid">GUID.</param>
@@ -216,10 +201,10 @@
 
         /// <summary>
         /// Exists by GUID.
-        /// </summary>        /// <param name="tenantGuid">Tenant GUID.</param>
+        /// </summary>
         /// <param name="guid">GUID.</param>
         /// <returns>True if exists.</returns>
-        public bool ExistsByGuid(Guid tenantGuid, Guid guid)
+        public bool ExistsByGuid(Guid guid)
         {
             Expr expr = new(
                 _ORM.GetColumnName<ModelFile>(nameof(ModelFile.GUID)),

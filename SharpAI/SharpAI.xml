@@ -4,6 +4,108 @@
         <name>SharpAI</name>
     </assembly>
     <members>
+        <member name="T:SharpAI.AIDriver">
+            <summary>
+            AI driver.
+            </summary>
+        </member>
+        <member name="P:SharpAI.AIDriver.Chat">
+            <summary>
+            Chat APIs.
+            </summary>
+        </member>
+        <member name="P:SharpAI.AIDriver.Completion">
+            <summary>
+            Commpletion APIs.
+            </summary>
+        </member>
+        <member name="P:SharpAI.AIDriver.Embeddings">
+            <summary>
+            Embeddings APIs.
+            </summary>
+        </member>
+        <member name="P:SharpAI.AIDriver.Models">
+            <summary>
+            Model APIs.
+            </summary>
+        </member>
+        <member name="M:SharpAI.AIDriver.#ctor(SyslogLogging.LoggingModule,System.String,System.String,System.String)">
+            <summary>
+            AI driver.
+            </summary>
+            <param name="logging">Logging module.</param>
+            <param name="databaseFilename">Database filename.</param>
+            <param name="huggingFaceApiKey">HuggingFace API key.</param>
+            <param name="modelDirectory">Model storage directory.</param>
+        </member>
+        <member name="T:SharpAI.ChatDriver">
+            <summary>
+            Chat driver.
+            </summary>
+        </member>
+        <member name="M:SharpAI.ChatDriver.#ctor(SyslogLogging.LoggingModule,SharpAI.ModelDriver)">
+            <summary>
+            Chat driver.
+            </summary>
+            <param name="logging">Logging module.</param>
+            <param name="models">Model driver.</param>
+        </member>
+        <member name="M:SharpAI.ChatDriver.GenerateCompletionStreaming(System.String,System.String,System.Int32,System.Single,System.Threading.CancellationToken)">
+            <summary>
+            Generate a chat completion using streaming.
+            </summary>
+            <param name="model">Model.</param>
+            <param name="prompt">Prompt containing conversation history.  Be sure to format this in accordance with the expectations of the model you are using.</param>
+            <param name="maxTokens">Maximum number of tokens to generate.  Minimum is 100.</param>
+            <param name="temperature">Temperature.  Minimum is 0.0, maximum is 1.0</param>
+            <param name="token">Cancellation token.</param>
+            <returns>Enumerable of strings.</returns>
+        </member>
+        <member name="M:SharpAI.ChatDriver.GenerateCompletion(System.String,System.String,System.Int32,System.Single,System.Threading.CancellationToken)">
+            <summary>
+            Generate a chat completion without streaming.
+            </summary>
+            <param name="model">Model.</param>
+            <param name="prompt">Prompt containing conversation history.  Be sure to format this in accordance with the expectations of the model you are using.</param>
+            <param name="maxTokens">Maximum number of tokens to generate.  Minimum is 100.</param>
+            <param name="temperature">Temperature.  Minimum is 0.0, maximum is 1.0</param>
+            <param name="token">Cancellation token.</param>
+            <returns>String.</returns>
+        </member>
+        <member name="T:SharpAI.CompletionDriver">
+            <summary>
+            Completion driver.
+            </summary>
+        </member>
+        <member name="M:SharpAI.CompletionDriver.#ctor(SyslogLogging.LoggingModule,SharpAI.ModelDriver)">
+            <summary>
+            Completion driver.
+            </summary>
+            <param name="logging">Logging module.</param>
+            <param name="models">Model driver.</param>
+        </member>
+        <member name="M:SharpAI.CompletionDriver.GenerateCompletionStreaming(System.String,System.String,System.Int32,System.Single,System.Threading.CancellationToken)">
+            <summary>
+            Generate a chat completion using streaming.
+            </summary>
+            <param name="model">Model.</param>
+            <param name="prompt">Prompt.</param>
+            <param name="maxTokens">Maximum number of tokens to generate.  Minimum is 100.</param>
+            <param name="temperature">Temperature.  Minimum is 0.0, maximum is 1.0</param>
+            <param name="token">Cancellation token.</param>
+            <returns>Enumerable of strings.</returns>
+        </member>
+        <member name="M:SharpAI.CompletionDriver.GenerateCompletion(System.String,System.String,System.Int32,System.Single,System.Threading.CancellationToken)">
+            <summary>
+            Generate a chat completion without streaming.
+            </summary>
+            <param name="model">Model.</param>
+            <param name="prompt">Prompt.</param>
+            <param name="maxTokens">Maximum number of tokens to generate.  Minimum is 100.</param>
+            <param name="temperature">Temperature.  Minimum is 0.0, maximum is 1.0</param>
+            <param name="token">Cancellation token.</param>
+            <returns>String.</returns>
+        </member>
         <member name="T:SharpAI.Constants">
             <summary>
             Constants.
@@ -95,35 +197,35 @@
             Favicon content type.
             </summary>
         </member>
-        <member name="T:SharpAI.Engines.ChatMessage">
+        <member name="T:SharpAI.EmbeddingsDriver">
             <summary>
-            Represents a chat message with role, content, and timestamp information.
-            Used for building conversation histories in chat completion scenarios.
+            Embeddings driver.
             </summary>
         </member>
-        <member name="P:SharpAI.Engines.ChatMessage.Role">
+        <member name="M:SharpAI.EmbeddingsDriver.#ctor(SyslogLogging.LoggingModule,SharpAI.ModelDriver)">
             <summary>
-            Gets or sets the role of the message sender.
-            Common values include "system", "user", and "assistant".
+            Embeddings driver.
             </summary>
+            <param name="logging">Logging module.</param>
+            <param name="models">Model driver.</param>
         </member>
-        <member name="P:SharpAI.Engines.ChatMessage.Content">
+        <member name="M:SharpAI.EmbeddingsDriver.Generate(System.String,System.String,System.Threading.CancellationToken)">
             <summary>
-            Gets or sets the content of the message.
-            Contains the actual text content of the chat message.
+            Generate embeddings.
             </summary>
+            <param name="model">Model.</param>
+            <param name="input">String input.</param>
+            <param name="token">Cancellation token.</param>
+            <returns>Vectors.</returns>
         </member>
-        <member name="P:SharpAI.Engines.ChatMessage.Timestamp">
+        <member name="M:SharpAI.EmbeddingsDriver.Generate(System.String,System.String[],System.Threading.CancellationToken)">
             <summary>
-            Gets or sets the timestamp when the message was created.
-            Defaults to the current UTC time when the ChatMessage instance is created.
+            Generate embeddings.
             </summary>
-        </member>
-        <member name="M:SharpAI.Engines.ChatMessage.#ctor">
-            <summary>
-            Represents a chat message with role, content, and timestamp information.
-            Used for building conversation histories in chat completion scenarios.
-            </summary>
+            <param name="model">Model.</param>
+            <param name="inputs">Array of string inputs.</param>
+            <param name="token">Cancellation token.</param>
+            <returns>Array of vectors.</returns>
         </member>
         <member name="T:SharpAI.Engines.EngineBase">
             <summary>
@@ -166,58 +268,64 @@
             Gets whether this provider supports chat/text generation.
             </summary>
         </member>
-        <member name="M:SharpAI.Engines.EngineBase.GenerateEmbeddingsAsync(System.String)">
+        <member name="M:SharpAI.Engines.EngineBase.GenerateEmbeddingsAsync(System.String,System.Threading.CancellationToken)">
             <summary>
             Generates embeddings for a single text input.
             </summary>
             <param name="text">Input text to embed.</param>
+            <param name="token">Cancellation token.</param>
             <returns>Embedding vector as a float array.</returns>
         </member>
-        <member name="M:SharpAI.Engines.EngineBase.GenerateEmbeddingsAsync(System.String[])">
+        <member name="M:SharpAI.Engines.EngineBase.GenerateEmbeddingsAsync(System.String[],System.Threading.CancellationToken)">
             <summary>
             Generates embeddings for multiple text inputs.
             </summary>
             <param name="texts">Array of input texts to embed.</param>
+            <param name="token">Cancellation token.</param>
             <returns>Array of embedding vectors, one per input text.</returns>
         </member>
-        <member name="M:SharpAI.Engines.EngineBase.GenerateTextAsync(System.String,System.Int32,System.Single,System.String[])">
+        <member name="M:SharpAI.Engines.EngineBase.GenerateTextAsync(System.String,System.Int32,System.Single,System.String[],System.Threading.CancellationToken)">
             <summary>
             Generates a text completion for the given prompt.
             </summary>
-            <param name="prompt">Input prompt.</param>
+            <param name="prompt">Input prompt.  This prompt should be formatted in a manner appropriate for the model you are using.  For example, "User: {question}\nAssistant: ".</param>
             <param name="maxTokens">Maximum number of tokens to generate.</param>
             <param name="temperature">Sampling temperature (0.0 to 2.0).</param>
             <param name="stopSequences">Sequences that will stop generation.</param>
+            <param name="token">Cancellation token.</param>
             <returns>Generated text.</returns>
         </member>
-        <member name="M:SharpAI.Engines.EngineBase.GenerateTextStreamAsync(System.String,System.Int32,System.Single,System.String[])">
+        <member name="M:SharpAI.Engines.EngineBase.GenerateTextStreamAsync(System.String,System.Int32,System.Single,System.String[],System.Threading.CancellationToken)">
             <summary>
             Generates a streaming text completion for the given prompt.
             </summary>
-            <param name="prompt">Input prompt.</param>
+            <param name="prompt">Input prompt.  This prompt should be formatted in a manner appropriate for the model you are using.  For example, "User: {question}\nAssistant: ".</param>
             <param name="maxTokens">Maximum number of tokens to generate.</param>
             <param name="temperature">Sampling temperature (0.0 to 2.0).</param>
             <param name="stopSequences">Sequences that will stop generation.</param>
+            <param name="token">Cancellation token.</param>
             <returns>Async enumerable of generated text tokens.</returns>
         </member>
-        <member name="M:SharpAI.Engines.EngineBase.GenerateChatCompletionAsync(SharpAI.Engines.ChatMessage[],System.Int32,System.Single,System.String[])">
+        <member name="M:SharpAI.Engines.EngineBase.GenerateChatCompletionAsync(System.String,System.Int32,System.Single,System.String[],System.Threading.CancellationToken)">
             <summary>
-            Generates a chat completion given a conversation history.
+            Generates a chat completion.
             </summary>
-            <param name="messages">Conversation history.</param>
+            <param name="prompt">Prompt containing conversation history.  Be sure to format this in accordance with the expectations of the model you are using.</param>
             <param name="maxTokens">Maximum number of tokens to generate.</param>
             <param name="temperature">Sampling temperature (0.0 to 2.0).</param>
             <param name="stopSequences">Sequences that will stop generation.</param>
+            <param name="token">Cancellation token.</param>
             <returns>Generated chat response.</returns>
         </member>
-        <member name="M:SharpAI.Engines.EngineBase.GenerateChatCompletionStreamAsync(SharpAI.Engines.ChatMessage[],System.Int32,System.Single,System.String[])">
+        <member name="M:SharpAI.Engines.EngineBase.GenerateChatCompletionStreamAsync(System.String,System.Int32,System.Single,System.String[],System.Threading.CancellationToken)">
             <summary>
             Generates a streaming chat completion given a conversation history.
             </summary>
-            <param name="messages">Conversation history.</param>
+            <param name="prompt">Prompt containing conversation history.  Be sure to format this in accordance with the expectations of the model you are using.</param>
             <param name="maxTokens">Maximum number of tokens to generate.</param>
             <param name="temperature">Sampling temperature (0.0 to 2.0).</param>
             <param name="stopSequences">Sequences that will stop generation.</param>
+            <param name="token">Cancellation token.</param>
             <returns>Async enumerable of generated chat response tokens.</returns>
         </member>
         <member name="M:SharpAI.Engines.EngineBase.InitializeAsync(System.String)">
@@ -299,69 +407,23 @@
             </summary>
             <returns>The number of GPU layers to use, or 0 if GPU acceleration is not available. Returns -1 to use all available GPU layers.</returns>
         </member>
-        <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateEmbeddingsAsync(System.String)">
-            <summary>
-            Generates embeddings for the specified text using the loaded model.
-            </summary>
-            <param name="text">The text to generate embeddings for.</param>
-            <returns>A task that represents the asynchronous operation. The task result contains a float array representing the text embeddings.</returns>
-            <exception cref="T:System.InvalidOperationException">Thrown when the engine is not initialized or embeddings are not supported.</exception>
-            <exception cref="T:System.Exception">Thrown when embedding generation fails.</exception>
+        <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateEmbeddingsAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
         </member>
-        <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateEmbeddingsAsync(System.String[])">
-            <summary>
-            Generates embeddings for multiple texts using the loaded model.
-            </summary>
-            <param name="texts">An array of texts to generate embeddings for.</param>
-            <returns>A task that represents the asynchronous operation. The task result contains a jagged array of float arrays, where each inner array represents embeddings for the corresponding input text.</returns>
-            <exception cref="T:System.InvalidOperationException">Thrown when the engine is not initialized or embeddings are not supported.</exception>
-            <exception cref="T:System.Exception">Thrown when embedding generation fails.</exception>
+        <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateEmbeddingsAsync(System.String[],System.Threading.CancellationToken)">
+            <inheritdoc />
         </member>
-        <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateTextAsync(System.String,System.Int32,System.Single,System.String[])">
-            <summary>
-            Generates text based on the provided prompt using the loaded model.
-            </summary>
-            <param name="prompt">The input prompt to generate text from.</param>
-            <param name="maxTokens">The maximum number of tokens to generate. Default is 512.</param>
-            <param name="temperature">The sampling temperature for text generation. Higher values produce more random output. Default is 0.7.</param>
-            <param name="stopSequences">Optional array of strings that will stop text generation when encountered.</param>
-            <returns>A task that represents the asynchronous operation. The task result contains the generated text.</returns>
-            <exception cref="T:System.InvalidOperationException">Thrown when the engine is not initialized.</exception>
-            <exception cref="T:System.Exception">Thrown when text generation fails.</exception>
+        <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateTextAsync(System.String,System.Int32,System.Single,System.String[],System.Threading.CancellationToken)">
+            <inheritdoc />
         </member>
-        <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateTextStreamAsync(System.String,System.Int32,System.Single,System.String[])">
-            <summary>
-            Generates text based on the provided prompt and returns it as a stream of tokens.
-            </summary>
-            <param name="prompt">The input prompt to generate text from.</param>
-            <param name="maxTokens">The maximum number of tokens to generate. Default is 512.</param>
-            <param name="temperature">The sampling temperature for text generation. Higher values produce more random output. Default is 0.7.</param>
-            <param name="stopSequences">Optional array of strings that will stop text generation when encountered.</param>
-            <returns>An async enumerable that yields generated tokens as they are produced.</returns>
-            <exception cref="T:System.InvalidOperationException">Thrown when the engine is not initialized.</exception>
+        <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateTextStreamAsync(System.String,System.Int32,System.Single,System.String[],System.Threading.CancellationToken)">
+            <inheritdoc />
         </member>
-        <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateChatCompletionAsync(SharpAI.Engines.ChatMessage[],System.Int32,System.Single,System.String[])">
-            <summary>
-            Generates a chat completion response based on the provided conversation messages.
-            </summary>
-            <param name="messages">An array of ChatMessage objects representing the conversation history.</param>
-            <param name="maxTokens">The maximum number of tokens to generate in the response. Default is 512.</param>
-            <param name="temperature">The sampling temperature for response generation. Higher values produce more random output. Default is 0.7.</param>
-            <param name="stopSequences">Optional array of strings that will stop response generation when encountered.</param>
-            <returns>A task that represents the asynchronous operation. The task result contains the generated chat response.</returns>
-            <exception cref="T:System.InvalidOperationException">Thrown when the engine is not initialized.</exception>
-            <exception cref="T:System.Exception">Thrown when chat completion generation fails.</exception>
+        <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateChatCompletionAsync(System.String,System.Int32,System.Single,System.String[],System.Threading.CancellationToken)">
+            <inheritdoc />
         </member>
-        <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateChatCompletionStreamAsync(SharpAI.Engines.ChatMessage[],System.Int32,System.Single,System.String[])">
-            <summary>
-            Generates a chat completion response based on the provided conversation messages and returns it as a stream of tokens.
-            </summary>
-            <param name="messages">An array of ChatMessage objects representing the conversation history.</param>
-            <param name="maxTokens">The maximum number of tokens to generate in the response. Default is 512.</param>
-            <param name="temperature">The sampling temperature for response generation. Higher values produce more random output. Default is 0.7.</param>
-            <param name="stopSequences">Optional array of strings that will stop response generation when encountered.</param>
-            <returns>An async enumerable that yields generated tokens as they are produced.</returns>
-            <exception cref="T:System.InvalidOperationException">Thrown when the engine is not initialized.</exception>
+        <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateChatCompletionStreamAsync(System.String,System.Int32,System.Single,System.String[],System.Threading.CancellationToken)">
+            <inheritdoc />
         </member>
         <member name="T:SharpAI.Helpers.DataTableHelper">
             <summary>
@@ -865,34 +927,38 @@
             <param name="logging">LoggingModule instance for logging operations.</param>
             <param name="apiKey">HuggingFace API key for authentication.</param>
         </member>
-        <member name="M:SharpAI.Hosting.HuggingFaceClient.GetModelFilesAsync(System.String)">
+        <member name="M:SharpAI.Hosting.HuggingFaceClient.GetModelFilesAsync(System.String,System.Threading.CancellationToken)">
             <summary>
             Retrieves all files from a HuggingFace model repository.
             </summary>
             <param name="modelName">The name of the model (e.g., "microsoft/DialoGPT-medium").</param>
+            <param name="token">Cancellation token.</param>
             <returns>A list of HuggingFaceModelFile objects representing all files in the repository.</returns>
             <exception cref="T:System.Exception">Thrown when API request fails or JSON parsing fails.</exception>
         </member>
-        <member name="M:SharpAI.Hosting.HuggingFaceClient.GetGgufFilesAsync(System.String)">
+        <member name="M:SharpAI.Hosting.HuggingFaceClient.GetGgufFilesAsync(System.String,System.Threading.CancellationToken)">
             <summary>
             Retrieves only GGUF files from a HuggingFace model repository.
             </summary>
             <param name="modelName">The name of the model to search for GGUF files.</param>
+            <param name="token">Cancellation token.</param>
             <returns>A list of GgufFileInfo objects containing only .gguf files with enhanced metadata.</returns>
         </member>
-        <member name="M:SharpAI.Hosting.HuggingFaceClient.GetGgufFilesByQuantizationAsync(System.String,System.String)">
+        <member name="M:SharpAI.Hosting.HuggingFaceClient.GetGgufFilesByQuantizationAsync(System.String,System.String,System.Threading.CancellationToken)">
             <summary>
             Retrieves GGUF files filtered by a specific quantization type.
             </summary>
             <param name="modelName">The name of the model to search.</param>
             <param name="quantizationType">The quantization type to filter by (e.g., "Q4_K_M", "Q5_K_S").</param>
+            <param name="token">Cancellation token.</param>
             <returns>A list of GgufFileInfo objects matching the specified quantization type.</returns>
         </member>
-        <member name="M:SharpAI.Hosting.HuggingFaceClient.GetAvailableQuantizationTypesAsync(System.String)">
+        <member name="M:SharpAI.Hosting.HuggingFaceClient.GetAvailableQuantizationTypesAsync(System.String,System.Threading.CancellationToken)">
             <summary>
             Retrieves all available quantization types for GGUF files in a model repository.
             </summary>
             <param name="modelName">The name of the model to analyze.</param>
+            <param name="token">Cancellation token.</param>
             <returns>A sorted list of unique quantization type strings.</returns>
         </member>
         <member name="M:SharpAI.Hosting.HuggingFaceClient.GetDownloadUrls(System.String,SharpAI.Hosting.HuggingFaceModelFile)">
@@ -903,32 +969,35 @@
             <param name="file">The HuggingFaceModelFile containing path and OID.</param>
             <returns>List of URLs to try in order of preference.</returns>
         </member>
-        <member name="M:SharpAI.Hosting.HuggingFaceClient.TestDownloadUrlAsync(System.String)">
+        <member name="M:SharpAI.Hosting.HuggingFaceClient.TestDownloadUrlAsync(System.String,System.Threading.CancellationToken)">
             <summary>
             Tests if a download URL is accessible.
             </summary>
             <param name="url">The URL to test.</param>
+            <param name="token">Cancellation token.</param>
             <returns>True if the URL is accessible, false otherwise.</returns>
         </member>
-        <member name="M:SharpAI.Hosting.HuggingFaceClient.TryDownloadFileAsync(System.String,System.String)">
+        <member name="M:SharpAI.Hosting.HuggingFaceClient.TryDownloadFileAsync(System.String,System.String,System.Threading.CancellationToken)">
             <summary>
             Try to download a file from HuggingFace to the specified destination.
             </summary>
             <param name="sourceUrl">The HuggingFace URL of the file to download.</param>
             <param name="destinationFilename">The full path where the file should be saved.</param>
+            <param name="token">Cancellation token.</param>
             <returns>True if successful.</returns>
         </member>
-        <member name="M:SharpAI.Hosting.HuggingFaceClient.DownloadFileAsync(System.String,System.String)">
+        <member name="M:SharpAI.Hosting.HuggingFaceClient.DownloadFileAsync(System.String,System.String,System.Threading.CancellationToken)">
             <summary>
             Downloads a file from HuggingFace to the specified destination.
             </summary>
             <param name="sourceUrl">The HuggingFace URL of the file to download.</param>
             <param name="destinationFilename">The full path where the file should be saved.</param>
+            <param name="token">Cancellation token.</param>
             <returns>Task representing the asynchronous download operation.</returns>
             <exception cref="T:System.ArgumentNullException">Thrown when destinationFilename or sourceUrl is null or empty.</exception>
             <exception cref="T:System.Exception">Thrown when download fails or file operations fail.</exception>
         </member>
-        <member name="M:SharpAI.Hosting.HuggingFaceClient.DownloadFilesAsync(System.String,System.Collections.Generic.List{SharpAI.Hosting.HuggingFaceModelFile},System.String,System.Action{System.String,System.Boolean,System.String})">
+        <member name="M:SharpAI.Hosting.HuggingFaceClient.DownloadFilesAsync(System.String,System.Collections.Generic.List{SharpAI.Hosting.HuggingFaceModelFile},System.String,System.Action{System.String,System.Boolean,System.String},System.Threading.CancellationToken)">
             <summary>
             Downloads multiple files from HuggingFace with progress tracking and error handling.
             </summary>
@@ -936,6 +1005,7 @@
             <param name="files">List of files to download.</param>
             <param name="downloadDirectory">Directory to save files to.</param>
             <param name="progressCallback">Optional callback for progress updates (filename, isSuccess, message).</param>
+            <param name="token">Cancellation token.</param>
             <returns>Number of successfully downloaded files.</returns>
         </member>
         <member name="T:SharpAI.Hosting.HuggingFaceModelFile">
@@ -988,6 +1058,110 @@
             Returns a string representation of the HuggingFace model file.
             </summary>
             <returns>A formatted string containing path, type, and size information.</returns>
+        </member>
+        <member name="T:SharpAI.ModelDriver">
+            <summary>
+            Model driver.
+            </summary>
+        </member>
+        <member name="P:SharpAI.ModelDriver.HuggingFaceApiKey">
+            <summary>
+            HuggingFace API key.
+            </summary>
+        </member>
+        <member name="P:SharpAI.ModelDriver.ModelDirectory">
+            <summary>
+            Model directory.
+            </summary>
+        </member>
+        <member name="M:SharpAI.ModelDriver.#ctor(SyslogLogging.LoggingModule,Watson.ORM.Sqlite.WatsonORM,System.String,System.String)">
+            <summary>
+            Model driver.
+            </summary>
+            <param name="logging">Logging module.</param>
+            <param name="orm">ORM.</param>
+            <param name="huggingFaceApiKey">HuggingFace API key.</param>
+            <param name="modelDirectory">Model storage directory.</param>
+        </member>
+        <member name="M:SharpAI.ModelDriver.All">
+            <summary>
+            Retrieve all.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:SharpAI.ModelDriver.Enumerate(System.Nullable{System.Guid},System.Int32,System.Int32,System.Collections.Generic.Dictionary{System.String,System.String},SharpAI.Models.EnumerationOrderEnum)">
+            <summary>
+            Enumerate.
+            </summary>
+            <param name="continuationToken">Continuation token.</param>
+            <param name="maxResults">Maximum number of results to retrieve.</param>
+            <param name="skip">The number of records to skip.</param>
+            <param name="filter">Filters to add to the request.</param>
+            <param name="ordering">Ordering.</param>
+            <returns>Enumeration result.</returns>
+        </member>
+        <member name="M:SharpAI.ModelDriver.GetByGuid(System.Guid)">
+            <summary>
+            Get by GUID.
+            </summary>
+            <param name="guid">GUID.</param>
+            <returns>Instance.</returns>
+        </member>
+        <member name="M:SharpAI.ModelDriver.GetByName(System.String)">
+            <summary>
+            Get by name.
+            </summary>
+            <param name="name">Name.</param>
+            <returns>Instance.</returns>
+        </member>
+        <member name="M:SharpAI.ModelDriver.GetFilename(System.String)">
+            <summary>
+            Retrieve the full path and filename of a given model by name.
+            </summary>
+            <param name="name">Name.</param>
+            <returns>Path and filename.</returns>
+        </member>
+        <member name="M:SharpAI.ModelDriver.GetMany(System.Collections.Generic.List{System.Guid})">
+            <summary>
+            Get many.
+            </summary>
+            <param name="guids">GUIDs.</param>
+            <returns>List.</returns>
+        </member>
+        <member name="M:SharpAI.ModelDriver.ExistsByGuid(System.Guid)">
+            <summary>
+            Exists by GUID.
+            </summary>        
+            <param name="guid">GUID.</param>
+            <returns>True if exists.</returns>
+        </member>
+        <member name="M:SharpAI.ModelDriver.First(ExpressionTree.Expr)">
+            <summary>
+            Retrieve first.
+            </summary>
+            <param name="expr">Expr.</param>
+            <returns>Instance.</returns>
+        </member>
+        <member name="M:SharpAI.ModelDriver.Add(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Add.
+            </summary>
+            <param name="name">Model name.</param>
+            <param name="token">Cancellation token.</param>
+            <returns>Instance.</returns>
+        </member>
+        <member name="M:SharpAI.ModelDriver.Delete(System.String)">
+            <summary>
+            Delete.
+            </summary>
+            <param name="name">Model name.</param>
+        </member>
+        <member name="M:SharpAI.ModelDriver.GetEngine(System.String)">
+            <summary>
+            Get the engine for a given model.
+            </summary>
+            <param name="name">Model name.</param>
+            <returns>Engine.</returns>
         </member>
         <member name="T:SharpAI.Models.EnumerationOrderEnum">
             <summary>
@@ -1654,6 +1828,354 @@
             Ollama show model information request.
             </summary>
         </member>
+        <member name="T:SharpAI.Prompts.ChatFormat">
+            <summary>
+            Defines common chat/prompt formats used by different language models.
+            Each format has specific tokens and structure that the model was trained to recognize.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Prompts.ChatFormat.Simple">
+            <summary>
+            Simple role-based format using "role: content" structure.
+            Compatible with many base models and general-purpose LLMs.
+            </summary>
+            <example>
+            system: You are a helpful assistant.
+            user: What is 2+2?
+            assistant: 4
+            user: Why?
+            assistant:
+            </example>
+        </member>
+        <member name="F:SharpAI.Prompts.ChatFormat.ChatML">
+            <summary>
+            ChatML (Chat Markup Language) format used by OpenAI models and many modern LLMs.
+            Uses special tokens: &lt;|im_start|&gt;, &lt;|im_end|&gt;
+            </summary>
+            <example>
+            &lt;|im_start|&gt;system
+            You are a helpful assistant.&lt;|im_end|&gt;
+            &lt;|im_start|&gt;user
+            What is 2+2?&lt;|im_end|&gt;
+            &lt;|im_start|&gt;assistant
+            4&lt;|im_end|&gt;
+            &lt;|im_start|&gt;user
+            Why?&lt;|im_end|&gt;
+            &lt;|im_start|&gt;assistant
+            </example>
+        </member>
+        <member name="F:SharpAI.Prompts.ChatFormat.Llama2">
+            <summary>
+            Llama 2 Chat format with instruction tags.
+            Uses [INST], [/INST] tags and &lt;&lt;SYS&gt;&gt; for system prompts.
+            </summary>
+            <example>
+            &lt;s&gt;[INST] &lt;&lt;SYS&gt;&gt;
+            You are a helpful assistant.
+            &lt;&lt;/SYS&gt;&gt;
+            
+            What is 2+2? [/INST] 4 &lt;/s&gt;&lt;s&gt;[INST] Why? [/INST]
+            </example>
+        </member>
+        <member name="F:SharpAI.Prompts.ChatFormat.Llama3">
+            <summary>
+            Llama 3 format with header-based structure.
+            Uses header IDs and special tokens for role demarcation.
+            </summary>
+            <example>
+            &lt;|begin_of_text|&gt;&lt;|start_header_id|&gt;system&lt;|end_header_id|&gt;
+            
+            You are a helpful assistant.&lt;|eot_id|&gt;&lt;|start_header_id|&gt;user&lt;|end_header_id|&gt;
+            
+            What is 2+2?&lt;|eot_id|&gt;&lt;|start_header_id|&gt;assistant&lt;|end_header_id|&gt;
+            </example>
+        </member>
+        <member name="F:SharpAI.Prompts.ChatFormat.Alpaca">
+            <summary>
+            Alpaca instruction format using ### markers.
+            Commonly used by instruction-tuned models based on LLaMA.
+            </summary>
+            <example>
+            ### System:
+            You are a helpful assistant.
+            
+            ### Instruction:
+            What is 2+2?
+            
+            ### Response:
+            4
+            
+            ### Instruction:
+            Why?
+            
+            ### Response:
+            </example>
+        </member>
+        <member name="F:SharpAI.Prompts.ChatFormat.Mistral">
+            <summary>
+            Mistral/Mixtral instruction format.
+            Uses [INST] tags similar to Llama 2 but with simpler structure.
+            </summary>
+            <example>
+            &lt;s&gt;[INST] What is 2+2? [/INST] 4&lt;/s&gt;[INST] Why? [/INST]
+            </example>
+        </member>
+        <member name="F:SharpAI.Prompts.ChatFormat.HumanAssistant">
+            <summary>
+            Human/Assistant conversational format.
+            Used by Anthropic's Claude and some other conversational models.
+            </summary>
+            <example>
+            Human: What is 2+2?
+            
+            Assistant: 4
+            
+            Human: Why?
+            
+            Assistant:
+            </example>
+        </member>
+        <member name="F:SharpAI.Prompts.ChatFormat.Zephyr">
+            <summary>
+            Zephyr model format with role tags.
+            Uses &lt;|role|&gt; tags with &lt;/s&gt; as separators.
+            </summary>
+            <example>
+            &lt;|system|&gt;
+            You are a helpful assistant.&lt;/s&gt;
+            &lt;|user|&gt;
+            What is 2+2?&lt;/s&gt;
+            &lt;|assistant|&gt;
+            4&lt;/s&gt;
+            &lt;|user|&gt;
+            Why?&lt;/s&gt;
+            &lt;|assistant|&gt;
+            </example>
+        </member>
+        <member name="F:SharpAI.Prompts.ChatFormat.Phi">
+            <summary>
+            Phi model format used by Microsoft's Phi series.
+            Uses specific instruction and response markers.
+            </summary>
+            <example>
+            Instruct: What is 2+2?
+            Output: 4
+            Instruct: Why?
+            Output:
+            </example>
+        </member>
+        <member name="F:SharpAI.Prompts.ChatFormat.DeepSeek">
+            <summary>
+            DeepSeek model format.
+            Similar to simple format but with specific markers.
+            </summary>
+            <example>
+            User: What is 2+2?
+            
+            Assistant: 4
+            
+            User: Why?
+            
+            Assistant:
+            </example>
+        </member>
+        <member name="T:SharpAI.Prompts.ChatMessage">
+            <summary>
+            Represents a chat message with role, content, and timestamp information.
+            Used for building conversation histories in chat completion scenarios.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Prompts.ChatMessage.Role">
+            <summary>
+            Gets or sets the role of the message sender.
+            Common values include "system", "user", and "assistant".
+            </summary>
+        </member>
+        <member name="P:SharpAI.Prompts.ChatMessage.Content">
+            <summary>
+            Gets or sets the content of the message.
+            Contains the actual text content of the chat message.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Prompts.ChatMessage.Timestamp">
+            <summary>
+            Gets or sets the timestamp when the message was created.
+            Defaults to the current UTC time when the ChatMessage instance is created.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Prompts.ChatMessage.#ctor">
+            <summary>
+            Represents a chat message with role, content, and timestamp information.
+            Used for building conversation histories in chat completion scenarios.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Prompts.PromptBuilder">
+            <summary>
+            Provides methods for building prompts in various chat formats used by different language models.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Prompts.PromptBuilder.Build(SharpAI.Prompts.ChatFormat,System.Collections.Generic.List{SharpAI.Prompts.ChatMessage})">
+            <summary>
+            Builds a formatted prompt string based on the specified chat format and messages.
+            </summary>
+            <param name="chatFormat">The chat format to use for formatting the messages.</param>
+            <param name="messages">List of chat messages to format into a prompt.</param>
+            <returns>A formatted prompt string ready for model inference.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when messages is null.</exception>
+            <exception cref="T:System.ArgumentException">Thrown when messages is empty.</exception>
+        </member>
+        <member name="T:SharpAI.Prompts.TextGenerationFormat">
+            <summary>
+            Defines common text generation prompt patterns.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Prompts.TextGenerationFormat.Raw">
+            <summary>
+            Raw text with no formatting. The prompt is used as-is.
+            </summary>
+            <example>
+            Write a story about a robot learning to paint.
+            </example>
+        </member>
+        <member name="F:SharpAI.Prompts.TextGenerationFormat.Completion">
+            <summary>
+            Completion format where the model continues from the prompt.
+            </summary>
+            <example>
+            Once upon a time, in a small village by the sea,
+            </example>
+        </member>
+        <member name="F:SharpAI.Prompts.TextGenerationFormat.Instruction">
+            <summary>
+            Instruction following format with clear directive.
+            </summary>
+            <example>
+            ### Instruction:
+            Write a haiku about summer rain.
+            
+            ### Response:
+            </example>
+        </member>
+        <member name="F:SharpAI.Prompts.TextGenerationFormat.QuestionAnswer">
+            <summary>
+            Question-answer format for knowledge queries.
+            </summary>
+            <example>
+            Question: What are the main causes of climate change?
+            
+            Answer:
+            </example>
+        </member>
+        <member name="F:SharpAI.Prompts.TextGenerationFormat.CreativeWriting">
+            <summary>
+            Creative writing format with genre and style hints.
+            </summary>
+            <example>
+            Genre: Science Fiction
+            Style: Descriptive, atmospheric
+            Topic: First contact with aliens
+            
+            Story:
+            </example>
+        </member>
+        <member name="F:SharpAI.Prompts.TextGenerationFormat.CodeGeneration">
+            <summary>
+            Code generation format with language specification.
+            </summary>
+            <example>
+            Language: Python
+            Task: Implement a binary search algorithm
+            
+            ```python
+            </example>
+        </member>
+        <member name="F:SharpAI.Prompts.TextGenerationFormat.Academic">
+            <summary>
+            Academic/formal writing format.
+            </summary>
+            <example>
+            Title: The Impact of Artificial Intelligence on Healthcare
+            Type: Research Summary
+            
+            Abstract:
+            </example>
+        </member>
+        <member name="F:SharpAI.Prompts.TextGenerationFormat.ListGeneration">
+            <summary>
+            List generation format for structured output.
+            </summary>
+            <example>
+            Create a list of 10 creative business ideas for sustainable technology:
+            
+            1.
+            </example>
+        </member>
+        <member name="F:SharpAI.Prompts.TextGenerationFormat.TemplateFilling">
+            <summary>
+            Template filling format with placeholders.
+            </summary>
+            <example>
+            Complete the following template:
+            
+            Subject: [TOPIC]
+            Dear [RECIPIENT],
+            
+            I am writing to inform you about
+            </example>
+        </member>
+        <member name="F:SharpAI.Prompts.TextGenerationFormat.Dialogue">
+            <summary>
+            Dialogue generation format for conversational content.
+            </summary>
+            <example>
+            Characters: Alice (scientist), Bob (journalist)
+            Setting: Research laboratory
+            Topic: New discovery
+            
+            Alice:
+            </example>
+        </member>
+        <member name="T:SharpAI.Prompts.TextPromptBuilder">
+            <summary>
+            Provides methods for building text generation prompts in various formats.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Prompts.TextPromptBuilder.Build(SharpAI.Prompts.TextGenerationFormat,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
+            <summary>
+            Builds a formatted prompt for text generation based on the specified format.
+            </summary>
+            <param name="format">The text generation format to use.</param>
+            <param name="input">The main input text or instruction.</param>
+            <param name="context">Optional context parameters specific to the format.</param>
+            <returns>A formatted prompt string ready for text generation.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when input is null.</exception>
+            <exception cref="T:System.ArgumentException">Thrown when input is empty or whitespace.</exception>
+        </member>
+        <member name="M:SharpAI.Prompts.TextPromptBuilder.BuildWithExamples(SharpAI.Prompts.TextGenerationFormat,System.String,System.Collections.Generic.List{System.ValueTuple{System.String,System.String}},System.Collections.Generic.Dictionary{System.String,System.String})">
+            <summary>
+            Builds a prompt with additional context for few-shot learning.
+            </summary>
+            <param name="format">The text generation format to use.</param>
+            <param name="input">The main input text or instruction.</param>
+            <param name="examples">List of example input-output pairs for few-shot learning.</param>
+            <param name="context">Optional context parameters.</param>
+            <returns>A formatted prompt with examples.</returns>
+        </member>
+        <member name="M:SharpAI.Prompts.TextPromptBuilder.CreateContinuation(System.String)">
+            <summary>
+            Creates a simple continuation prompt from the given text.
+            </summary>
+            <param name="text">The text to continue from.</param>
+            <returns>The text formatted for continuation.</returns>
+        </member>
+        <member name="M:SharpAI.Prompts.TextPromptBuilder.CreateInstruction(System.String,System.String)">
+            <summary>
+            Creates an instruction prompt with optional system context.
+            </summary>
+            <param name="instruction">The instruction to follow.</param>
+            <param name="systemContext">Optional system context to prepend.</param>
+            <returns>A formatted instruction prompt.</returns>
+        </member>
         <member name="T:SharpAI.Serialization.DateTimeConverter">
             <summary>
             DateTime converter.
@@ -1935,16 +2457,6 @@
             <param name="ordering">Ordering.</param>
             <returns>Enumeration result.</returns>
         </member>
-        <member name="M:SharpAI.Services.ModelFileService.Search(ExpressionTree.Expr,System.Int32,System.Int32,DatabaseWrapper.Core.ResultOrder[])">
-            <summary>
-            Search.
-            </summary>
-            <param name="expr">Expr.</param>
-            <param name="indexStart">Index start.</param>
-            <param name="maxResults">Max results.</param>
-            <param name="resultOrder">Result order.</param>
-            <returns>List.</returns>
-        </member>
         <member name="M:SharpAI.Services.ModelFileService.GetByGuid(System.Guid)">
             <summary>
             Get by GUID.
@@ -1973,10 +2485,10 @@
             <param name="guids">GUIDs.</param>
             <returns>List.</returns>
         </member>
-        <member name="M:SharpAI.Services.ModelFileService.ExistsByGuid(System.Guid,System.Guid)">
+        <member name="M:SharpAI.Services.ModelFileService.ExistsByGuid(System.Guid)">
             <summary>
             Exists by GUID.
-            </summary>        /// <param name="tenantGuid">Tenant GUID.</param>
+            </summary>
             <param name="guid">GUID.</param>
             <returns>True if exists.</returns>
         </member>

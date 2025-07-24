@@ -7,6 +7,7 @@
     using System.Net.Http;
     using System.Text.Json;
     using System.Text.Json.Serialization;
+    using System.Threading;
     using System.Threading.Tasks;
     using RestWrapper;
     using SyslogLogging;
@@ -42,8 +43,10 @@
         /// <param name="apiKey">HuggingFace API key for authentication.</param>
         public HuggingFaceClient(LoggingModule logging, string apiKey)
         {
-            _ApiKey = apiKey ?? throw new ArgumentNullException(nameof(apiKey));
-            _Logging = logging ?? throw new ArgumentNullException(nameof(logging));
+            if (String.IsNullOrEmpty(apiKey)) throw new ArgumentNullException(nameof(apiKey));
+
+            _ApiKey = apiKey;
+            _Logging = logging ?? new LoggingModule();
 
             _JsonOptions = new JsonSerializerOptions
             {
@@ -51,7 +54,7 @@
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase
             };
 
-            _Logging.Debug(_Header + "initialized successfully");
+            _Logging.Debug(_Header + "initialized");
         }
 
         #endregion
@@ -62,9 +65,10 @@
         /// Retrieves all files from a HuggingFace model repository.
         /// </summary>
         /// <param name="modelName">The name of the model (e.g., "microsoft/DialoGPT-medium").</param>
+        /// <param name="token">Cancellation token.</param>
         /// <returns>A list of HuggingFaceModelFile objects representing all files in the repository.</returns>
         /// <exception cref="Exception">Thrown when API request fails or JSON parsing fails.</exception>
-        public async Task<List<HuggingFaceModelFile>> GetModelFilesAsync(string modelName)
+        public async Task<List<HuggingFaceModelFile>> GetModelFilesAsync(string modelName, CancellationToken token = default)
         {
             try
             {
@@ -77,7 +81,7 @@
                     request.Headers.Add("Authorization", $"Bearer {_ApiKey}");
                     request.Headers.Add("User-Agent", "SharpAI");
 
-                    using (RestResponse response = await request.SendAsync())
+                    using (RestResponse response = await request.SendAsync(token).ConfigureAwait(false))
                     {
                         if (response.StatusCode < 200 || response.StatusCode >= 300)
                         {
@@ -112,7 +116,7 @@
             catch (Exception ex)
             {
                 _Logging.Warn(_Header + "exception retrieving model files:" + Environment.NewLine + ex.ToString());
-                throw new Exception($"Error retrieving model files: {ex.Message}", ex);
+                throw new Exception($"Error retrieving model files:{Environment.NewLine}{ex.ToString()}", ex);
             }
         }
 
@@ -120,12 +124,13 @@
         /// Retrieves only GGUF files from a HuggingFace model repository.
         /// </summary>
         /// <param name="modelName">The name of the model to search for GGUF files.</param>
+        /// <param name="token">Cancellation token.</param>
         /// <returns>A list of GgufFileInfo objects containing only .gguf files with enhanced metadata.</returns>
-        public async Task<List<GgufFileInfo>> GetGgufFilesAsync(string modelName)
+        public async Task<List<GgufFileInfo>> GetGgufFilesAsync(string modelName, CancellationToken token = default)
         {
             _Logging.Debug(_Header + $"filtering GGUF files for model {modelName}");
 
-            List<HuggingFaceModelFile> allFiles = await GetModelFilesAsync(modelName);
+            List<HuggingFaceModelFile> allFiles = await GetModelFilesAsync(modelName, token).ConfigureAwait(false);
 
             List<GgufFileInfo> ggufFiles = allFiles.Where(f =>
                 f.Type?.Equals("file", StringComparison.OrdinalIgnoreCase) == true &&
@@ -153,12 +158,13 @@
         /// </summary>
         /// <param name="modelName">The name of the model to search.</param>
         /// <param name="quantizationType">The quantization type to filter by (e.g., "Q4_K_M", "Q5_K_S").</param>
+        /// <param name="token">Cancellation token.</param>
         /// <returns>A list of GgufFileInfo objects matching the specified quantization type.</returns>
-        public async Task<List<GgufFileInfo>> GetGgufFilesByQuantizationAsync(string modelName, string quantizationType)
+        public async Task<List<GgufFileInfo>> GetGgufFilesByQuantizationAsync(string modelName, string quantizationType, CancellationToken token = default)
         {
             _Logging.Debug(_Header + $"getting GGUF files with quantization {quantizationType} for model: {modelName}");
 
-            List<GgufFileInfo> allGgufFiles = await GetGgufFilesAsync(modelName);
+            List<GgufFileInfo> allGgufFiles = await GetGgufFilesAsync(modelName, token).ConfigureAwait(false);
 
             List<GgufFileInfo> filteredFiles = allGgufFiles.Where(f =>
                 f.QuantizationType?.Equals(quantizationType, StringComparison.OrdinalIgnoreCase) == true
@@ -172,12 +178,13 @@
         /// Retrieves all available quantization types for GGUF files in a model repository.
         /// </summary>
         /// <param name="modelName">The name of the model to analyze.</param>
+        /// <param name="token">Cancellation token.</param>
         /// <returns>A sorted list of unique quantization type strings.</returns>
-        public async Task<List<string>> GetAvailableQuantizationTypesAsync(string modelName)
+        public async Task<List<string>> GetAvailableQuantizationTypesAsync(string modelName, CancellationToken token = default)
         {
             _Logging.Debug(_Header + $"getting available quantization types for model: {modelName}");
 
-            List<GgufFileInfo> ggufFiles = await GetGgufFilesAsync(modelName);
+            List<GgufFileInfo> ggufFiles = await GetGgufFilesAsync(modelName, token).ConfigureAwait(false);
 
             List<string> quantTypes = ggufFiles
                 .Where(f => !string.IsNullOrEmpty(f.QuantizationType))
@@ -227,17 +234,17 @@
         /// Tests if a download URL is accessible.
         /// </summary>
         /// <param name="url">The URL to test.</param>
+        /// <param name="token">Cancellation token.</param>
         /// <returns>True if the URL is accessible, false otherwise.</returns>
-        public async Task<bool> TestDownloadUrlAsync(string url)
+        public async Task<bool> TestDownloadUrlAsync(string url, CancellationToken token = default)
         {
             try
             {
                 using (RestRequest request = new RestRequest(url, HttpMethod.Head))
                 {
-                    request.Headers.Add("User-Agent", "SharpAI");
                     request.AllowAutoRedirect = true;
 
-                    using (RestResponse response = await request.SendAsync())
+                    using (RestResponse response = await request.SendAsync(token).ConfigureAwait(false))
                     {
                         bool isAccessible = (response.StatusCode >= 200 && response.StatusCode < 400);
                         _Logging.Debug(_Header + $"URL test for {url}: {response.StatusCode} - {(isAccessible ? "accessible" : "not accessible")}");
@@ -247,7 +254,7 @@
             }
             catch (Exception ex)
             {
-                _Logging.Debug(_Header + $"URL test failed for {url}: {ex.Message}");
+                _Logging.Debug(_Header + $"URL test failed for {url}:{Environment.NewLine}{ex.ToString()}");
                 return false;
             }
         }
@@ -257,12 +264,13 @@
         /// </summary>
         /// <param name="sourceUrl">The HuggingFace URL of the file to download.</param>
         /// <param name="destinationFilename">The full path where the file should be saved.</param>
+        /// <param name="token">Cancellation token.</param>
         /// <returns>True if successful.</returns>
-        public async Task<bool> TryDownloadFileAsync(string sourceUrl, string destinationFilename)
+        public async Task<bool> TryDownloadFileAsync(string sourceUrl, string destinationFilename, CancellationToken token = default)
         {
             try
             {
-                await DownloadFileAsync(sourceUrl, destinationFilename);
+                await DownloadFileAsync(sourceUrl, destinationFilename, token).ConfigureAwait(false);
                 return true;
             }
             catch (Exception e)
@@ -277,10 +285,11 @@
         /// </summary>
         /// <param name="sourceUrl">The HuggingFace URL of the file to download.</param>
         /// <param name="destinationFilename">The full path where the file should be saved.</param>
+        /// <param name="token">Cancellation token.</param>
         /// <returns>Task representing the asynchronous download operation.</returns>
         /// <exception cref="ArgumentNullException">Thrown when destinationFilename or sourceUrl is null or empty.</exception>
         /// <exception cref="Exception">Thrown when download fails or file operations fail.</exception>
-        public async Task DownloadFileAsync(string sourceUrl, string destinationFilename)
+        public async Task DownloadFileAsync(string sourceUrl, string destinationFilename, CancellationToken token = default)
         {
             if (string.IsNullOrWhiteSpace(destinationFilename))
                 throw new ArgumentNullException(nameof(destinationFilename));
@@ -300,14 +309,13 @@
                 }
 
                 // First, get the metadata to find the actual download URL for LFS files
-                string actualDownloadUrl = await GetActualDownloadUrlAsync(sourceUrl);
+                string actualDownloadUrl = await GetActualDownloadUrlAsync(sourceUrl, token).ConfigureAwait(false);
 
                 using (RestRequest request = new RestRequest(actualDownloadUrl, HttpMethod.Get))
                 {
-                    request.Headers.Add("User-Agent", "SharpAI");
                     request.AllowAutoRedirect = true;
 
-                    using (RestResponse response = await request.SendAsync())
+                    using (RestResponse response = await request.SendAsync(token).ConfigureAwait(false))
                     {
                         if (response.StatusCode < 200 || response.StatusCode >= 300)
                         {
@@ -321,16 +329,16 @@
                         {
                             if (response.Data != null && response.Data.CanRead)
                             {
-                                await response.Data.CopyToAsync(fileStream);
+                                await response.Data.CopyToAsync(fileStream, token).ConfigureAwait(false);
                             }
                             else if (response.DataAsBytes != null && response.DataAsBytes.Length > 0)
                             {
-                                await fileStream.WriteAsync(response.DataAsBytes, 0, response.DataAsBytes.Length);
+                                await fileStream.WriteAsync(response.DataAsBytes, 0, response.DataAsBytes.Length, token).ConfigureAwait(false);
                             }
                             else if (!string.IsNullOrEmpty(response.DataAsString))
                             {
                                 byte[] data = System.Text.Encoding.UTF8.GetBytes(response.DataAsString);
-                                await fileStream.WriteAsync(data, 0, data.Length);
+                                await fileStream.WriteAsync(data, 0, data.Length, token).ConfigureAwait(false);
                             }
                             else
                             {
@@ -348,7 +356,7 @@
             catch (Exception ex)
             {
                 _Logging.Warn(_Header + "exception in download:" + Environment.NewLine + ex.ToString());
-                string errorMsg = $"error downloading file: {ex.Message}";
+                string errorMsg = $"error downloading file:{Environment.NewLine}{ex.ToString()}";
                 throw new Exception(errorMsg, ex);
             }
         }
@@ -360,12 +368,14 @@
         /// <param name="files">List of files to download.</param>
         /// <param name="downloadDirectory">Directory to save files to.</param>
         /// <param name="progressCallback">Optional callback for progress updates (filename, isSuccess, message).</param>
+        /// <param name="token">Cancellation token.</param>
         /// <returns>Number of successfully downloaded files.</returns>
         public async Task<int> DownloadFilesAsync(
             string modelName, 
             List<HuggingFaceModelFile> files, 
             string downloadDirectory, 
-            Action<string, bool, string> progressCallback = null)
+            Action<string, bool, string> progressCallback = null, 
+            CancellationToken token = default)
         {
             if (string.IsNullOrWhiteSpace(downloadDirectory))
                 throw new ArgumentNullException(nameof(downloadDirectory));
@@ -402,14 +412,14 @@
                     {
                         try
                         {
-                            await DownloadFileAsync(url, destinationPath);
+                            await DownloadFileAsync(url, destinationPath, token).ConfigureAwait(false);
                             downloadSuccessful = true;
                             break;
                         }
                         catch (Exception ex)
                         {
                             lastError = ex.Message;
-                            _Logging.Debug(_Header + $"download attempt failed for {url}: {ex.Message}");
+                            _Logging.Debug(_Header + $"download attempt failed for {url}:{Environment.NewLine}{ex.ToString()}");
                         }
                     }
 
@@ -429,7 +439,7 @@
                 {
                     string fileName = Path.GetFileName(file.Path);
                     progressCallback?.Invoke(fileName, false, ex.Message);
-                    _Logging.Error(_Header + $"download failed for {fileName}: {ex.Message}");
+                    _Logging.Error(_Header + $"download failed for {fileName}:{Environment.NewLine}{ex.ToString()}");
                 }
             }
 
@@ -441,17 +451,16 @@
 
         #region Private-Methods
 
-        private async Task<string> GetActualDownloadUrlAsync(string sourceUrl)
+        private async Task<string> GetActualDownloadUrlAsync(string sourceUrl, CancellationToken token = default)
         {
             try
             {
                 using (RestRequest request = new RestRequest(sourceUrl, HttpMethod.Head))
                 {
-                    if (!string.IsNullOrEmpty(_ApiKey)) request.Headers.Add("Authorization", $"Bearer {_ApiKey}");
-                    request.Headers.Add("User-Agent", "SharpAI");
+                    request.Headers.Add("Authorization", $"Bearer {_ApiKey}");
                     request.AllowAutoRedirect = false; // Don't follow redirects, we want to capture them
 
-                    using (RestResponse response = await request.SendAsync())
+                    using (RestResponse response = await request.SendAsync(token).ConfigureAwait(false))
                     {
                         if (response.StatusCode >= 300 && response.StatusCode < 400)
                         {
@@ -469,7 +478,7 @@
             }
             catch (Exception ex)
             {
-                _Logging.Debug(_Header + $"failed to get metadata for {sourceUrl}: {ex.Message}");
+                _Logging.Debug(_Header + $"failed to get metadata for {sourceUrl}:{Environment.NewLine}{ex.ToString()}");
                 return sourceUrl;
             }
         }
@@ -568,7 +577,7 @@
             }
             catch (Exception ex)
             {
-                _Logging.Debug(_Header + $"failed to extract string value for property '{propertyName}': {ex.Message}");
+                _Logging.Debug(_Header + $"failed to extract string value for property '{propertyName}':{Environment.NewLine}{ex.ToString()}");
                 return null;
             }
         }
@@ -595,7 +604,7 @@
             }
             catch (Exception ex)
             {
-                _Logging.Debug(_Header + $"failed to extract long value for property '{propertyName}': {ex.Message}");
+                _Logging.Debug(_Header + $"failed to extract long value for property '{propertyName}':{Environment.NewLine}{ex.ToString()}");
             }
 
             return null;
@@ -619,7 +628,7 @@
             }
             catch (Exception ex)
             {
-                _Logging.Debug(_Header + $"failed to extract DateTime value for property '{propertyName}': {ex.Message}");
+                _Logging.Debug(_Header + $"failed to extract DateTime value for property '{propertyName}':{Environment.NewLine}{ex.ToString()}");
             }
 
             return null;

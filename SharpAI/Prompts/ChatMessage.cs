@@ -1,4 +1,4 @@
-﻿namespace SharpAI.Engines
+﻿namespace SharpAI.Prompts
 {
     using System;
     using System.Collections.Generic;

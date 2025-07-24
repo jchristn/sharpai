@@ -70,8 +70,8 @@
             }
             catch (Exception ex)
             {
-                _Logging?.Error(_Header + $"unhandled exception: {ex.Message}");
-                Console.WriteLine($"An error occurred: {ex.Message}");
+                _Logging?.Error(_Header + $"unhandled exception:{Environment.NewLine}{ex.ToString()}");
+                Console.WriteLine($"An error occurred:{Environment.NewLine}{ex.ToString()}");
                 Console.WriteLine("Press any key to exit...");
                 Console.ReadKey();
             }
@@ -464,7 +464,7 @@
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error with download directory: {ex.Message}");
+                Console.WriteLine($"Error with download directory:{Environment.NewLine}{ex.ToString()}");
                 return null;
             }
         }

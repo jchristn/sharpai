@@ -22,38 +22,42 @@
                 while (true)
                 {
                     Console.WriteLine("\nOptions:");
-                    Console.WriteLine("1. Initialize Provider");
-                    Console.WriteLine("2. Generate Embeddings");
-                    Console.WriteLine("3. Generate Text");
-                    Console.WriteLine("4. Chat Completion");
-                    Console.WriteLine("5. Streaming Chat");
-                    Console.WriteLine("0. Exit");
+                    Console.WriteLine("1. List models");
+                    Console.WriteLine("2. Initialize Provider");
+                    Console.WriteLine("3. Generate Embeddings");
+                    Console.WriteLine("4. Generate Text");
+                    Console.WriteLine("5. Chat Completion");
+                    Console.WriteLine("6. Streaming Chat");
+                    Console.WriteLine();
                     Console.Write("Choice: ");
 
                     var choice = Console.ReadLine();
 
                     switch (choice)
                     {
-                        case "0":
-                            return;
-
                         case "1":
-                            provider = await InitializeProvider();
+                            Console.WriteLine();
+                            foreach (string file in Directory.GetFiles("models/"))
+                                Console.WriteLine(Path.GetFileName(file));
                             break;
 
                         case "2":
-                            await GenerateEmbeddings(provider);
+                            provider = await InitializeProvider();
                             break;
 
                         case "3":
-                            await GenerateText(provider);
+                            await GenerateEmbeddings(provider);
                             break;
 
                         case "4":
-                            await ChatCompletion(provider);
+                            await GenerateText(provider);
                             break;
 
                         case "5":
+                            await ChatCompletion(provider);
+                            break;
+
+                        case "6":
                             await StreamingChat(provider);
                             break;
 
@@ -65,7 +69,7 @@
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error: {ex.Message}");
+                Console.WriteLine($"Error:{Environment.NewLine}{ex.ToString()}");
             }
             finally
             {
@@ -110,7 +114,7 @@
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed to initialize provider: {ex.Message}");
+                Console.WriteLine($"Failed to initialize provider:{Environment.NewLine}{ex.ToString()}");
                 provider.Dispose();
                 return null;
             }
@@ -150,7 +154,7 @@
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed to generate embeddings: {ex.Message}");
+                Console.WriteLine($"Failed to generate embeddings:{Environment.NewLine}{ex.ToString()}");
             }
         }
 
@@ -168,8 +172,9 @@
                 return;
             }
 
-            Console.Write("Enter prompt: ");
-            var prompt = Console.ReadLine();
+            Console.WriteLine("Be sure to format your prompt in a way appropriate for the selected model.");
+            Console.Write("Prompt: ");
+            string prompt = Console.ReadLine();
 
             if (string.IsNullOrWhiteSpace(prompt))
             {
@@ -196,7 +201,7 @@
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed to generate text: {ex.Message}");
+                Console.WriteLine($"Failed to generate text:{Environment.NewLine}{ex.ToString()}");
             }
         }
 
@@ -214,47 +219,21 @@
                 return;
             }
 
-            Console.Write("Enter system message (optional): ");
-            var systemMessage = Console.ReadLine();
-
-            Console.Write("Enter user message: ");
-            var userMessage = Console.ReadLine();
-
-            if (string.IsNullOrWhiteSpace(userMessage))
-            {
-                Console.WriteLine("User message cannot be empty.");
-                return;
-            }
-
-            var messages = new List<ChatMessage>();
-
-            if (!string.IsNullOrWhiteSpace(systemMessage))
-            {
-                messages.Add(new ChatMessage
-                {
-                    Role = "system",
-                    Content = systemMessage
-                });
-            }
-
-            messages.Add(new ChatMessage
-            {
-                Role = "user",
-                Content = userMessage
-            });
+            Console.WriteLine("Be sure to format your prompt in a way appropriate for the selected model.");
+            Console.Write("Prompt: ");
+            string prompt = Console.ReadLine();
 
             try
             {
                 Console.WriteLine("\nGenerating chat completion...");
-                var result = await provider.GenerateChatCompletionAsync(messages.ToArray());
+                var result = await provider.GenerateChatCompletionAsync(prompt);
 
-                Console.WriteLine($"\nAssistant:");
-                Console.WriteLine($"==========");
+                Console.WriteLine();
                 Console.WriteLine(result);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed to generate chat completion: {ex.Message}");
+                Console.WriteLine($"Failed to generate chat completion:{Environment.NewLine}{ex.ToString()}");
             }
         }
 
@@ -272,30 +251,15 @@
                 return;
             }
 
-            Console.Write("Enter user message: ");
-            var userMessage = Console.ReadLine();
-
-            if (string.IsNullOrWhiteSpace(userMessage))
-            {
-                Console.WriteLine("User message cannot be empty.");
-                return;
-            }
-
-            var messages = new[]
-            {
-                new ChatMessage
-                {
-                    Role = "user",
-                    Content = userMessage
-                }
-            };
+            Console.WriteLine("Be sure to format your prompt in a way appropriate for the selected model.");
+            Console.Write("Prompt: ");
+            string prompt = Console.ReadLine();
 
             try
             {
-                Console.WriteLine("\nAssistant: ");
-                Console.Write("==========\n");
+                Console.WriteLine();
 
-                await foreach (var token in provider.GenerateChatCompletionStreamAsync(messages))
+                await foreach (var token in provider.GenerateChatCompletionStreamAsync(prompt))
                 {
                     Console.Write(token);
                 }
@@ -304,7 +268,7 @@
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed to generate streaming chat: {ex.Message}");
+                Console.WriteLine($"Failed to generate chat completion:{Environment.NewLine}{ex.ToString()}");
             }
         }
     }

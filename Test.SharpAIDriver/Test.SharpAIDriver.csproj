@@ -3,20 +3,16 @@
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
 		<TargetFramework>net8.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
 	</PropertyGroup>
 
 	<ItemGroup>
+		<PackageReference Include="Inputty" Version="1.0.12" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<ProjectReference Include="..\SharpAI\SharpAI.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<Folder Include="Models\" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<None Update="Models\**\*">
-			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
-		</None>
 	</ItemGroup>
 
 </Project>
