@@ -284,7 +284,7 @@
             {
                 InferenceParams inferenceParams = new InferenceParams
                 {
-                    MaxTokens = maxTokens,
+                    MaxTokens = Math.Max(maxTokens, 100),
                     AntiPrompts = stopSequences?.ToList() ?? new List<string>(),
                     SamplingPipeline = new DefaultSamplingPipeline
                     {
@@ -320,7 +320,7 @@
 
             InferenceParams inferenceParams = new InferenceParams
             {
-                MaxTokens = maxTokens,
+                MaxTokens = Math.Max(maxTokens, 100),
                 AntiPrompts = stopSequences?.ToList() ?? new List<string>(),
                 SamplingPipeline = new DefaultSamplingPipeline
                 {
@@ -352,7 +352,7 @@
             {
                 InferenceParams inferenceParams = new InferenceParams
                 {
-                    MaxTokens = maxTokens,
+                    MaxTokens = Math.Max(maxTokens, 100),
                     AntiPrompts = stopSequences?.ToList() ?? new List<string> { "user:", "User:", "human:", "Human:" }, // Default anti-prompt for chat
                     SamplingPipeline = new DefaultSamplingPipeline
                     {
@@ -388,7 +388,7 @@
 
             InferenceParams inferenceParams = new InferenceParams
             {
-                MaxTokens = maxTokens,
+                MaxTokens = Math.Max(maxTokens, 100),
                 AntiPrompts = stopSequences?.ToList() ?? new List<string> { "user:", "User:", "human:", "Human:" }, // Default anti-prompt for chat
                 SamplingPipeline = new DefaultSamplingPipeline
                 {

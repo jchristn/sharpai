@@ -92,7 +92,7 @@
 
             #region Identify-GGUF-Files
 
-            List<GgufFileInfo> ggufFiles = await _HuggingFaceClient.GetGgufFilesAsync(pmr.Model).ConfigureAwait(false);
+            List<GgufFileInfo> ggufFiles = await _HuggingFaceClient.GetGgufFilesAsync(pmr.Model, token).ConfigureAwait(false);
             if (ggufFiles == null || ggufFiles.Count < 1)
             {
                 _Logging.Warn(_Header + "no GGUF files found for model " + pmr.Model);
@@ -139,7 +139,7 @@
                 filename = Path.Combine(_Settings.Storage.ModelsDirectory, modelFile.GUID.ToString());
                 _Logging.Debug(_Header + "attempting download of model " + pmr.Model + " using URL " + url + " to file " + modelFile.GUID.ToString());
                 
-                success = await _HuggingFaceClient.TryDownloadFileAsync(url, filename);
+                success = await _HuggingFaceClient.TryDownloadFileAsync(url, filename, token).ConfigureAwait(false);
                 if (success && File.Exists(filename) && new FileInfo(filename).Length == preferred.Size)
                 {
                     _Logging.Info(_Header + "successfully downloaded model " + pmr.Model + " using URL " + url + " to file " + filename);
@@ -284,7 +284,7 @@
 
                 if (!String.IsNullOrEmpty(input))
                 {
-                    ret.Embeddings[0] = await engine.GenerateEmbeddingsAsync(input);
+                    ret.Embeddings[0] = await engine.GenerateEmbeddingsAsync(input, token).ConfigureAwait(false);
                 }
             }
             else
@@ -306,7 +306,7 @@
                     }
                 }
 
-                ret.Embeddings = await engine.GenerateEmbeddingsAsync(inputs);
+                ret.Embeddings = await engine.GenerateEmbeddingsAsync(inputs, token).ConfigureAwait(false);
             }
 
             return ret;
@@ -349,14 +349,18 @@
 
             if (!gcr.Stream)
             {
+                string response = await engine.GenerateTextAsync(
+                    gcr.Prompt,
+                    gcr.Options.NumPredict != null ? gcr.Options.NumPredict.Value : 128,
+                    gcr.Options.Temperature != null ? gcr.Options.Temperature.Value : 0.6f,
+                    null,
+                    token).ConfigureAwait(false);
+
                 return new
                 {
                     model = gcr.Model,
                     created_at = DateTime.UtcNow.ToString(_TimestampFormat),
-                    response = await engine.GenerateTextAsync(
-                        gcr.Prompt,
-                        gcr.Options.NumPredict != null ? gcr.Options.NumPredict.Value : 128,
-                        gcr.Options.Temperature != null ? gcr.Options.Temperature.Value : 0.6f),
+                    response = response,
                     done = true,
                     done_reason = "stop"
                 };
@@ -371,7 +375,9 @@
                 await foreach (string curr in engine.GenerateTextStreamAsync(
                     gcr.Prompt,
                     gcr.Options.NumPredict != null ? gcr.Options.NumPredict.Value : 128,
-                    gcr.Options.Temperature != null ? gcr.Options.Temperature.Value : 0.6f))
+                    gcr.Options.Temperature != null ? gcr.Options.Temperature.Value : 0.6f,
+                    null,
+                    token).ConfigureAwait(false))
                 {
                     if (nextToken != null)
                     {
@@ -384,7 +390,7 @@
 
                         }, false) + Environment.NewLine;
 
-                        await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(json), false);
+                        await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(json), false, token).ConfigureAwait(false);
                     }
 
                     nextToken = curr;
@@ -400,7 +406,7 @@
 
                 }, false);
 
-                await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(json), false);
+                await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(json), true, token).ConfigureAwait(false);
 
                 return null;
             }
@@ -453,14 +459,18 @@
 
             if (!gcr.Stream)
             {
+                string response = await engine.GenerateChatCompletionAsync(
+                    promptBuilder.ToString(),
+                    gcr.Options.NumPredict != null ? gcr.Options.NumPredict.Value : 128,
+                    gcr.Options.Temperature != null ? gcr.Options.Temperature.Value : 0.6f,
+                    null,
+                    token).ConfigureAwait(false);
+
                 return new
                 {
                     model = gcr.Model,
                     created_at = DateTime.UtcNow.ToString(_TimestampFormat),
-                    response = await engine.GenerateChatCompletionAsync(
-                        promptBuilder.ToString(),
-                        gcr.Options.NumPredict != null ? gcr.Options.NumPredict.Value : 128,
-                        gcr.Options.Temperature != null ? gcr.Options.Temperature.Value : 0.6f),
+                    response = response,
                     done = true,
                     done_reason = "stop"
                 };
@@ -475,7 +485,9 @@
                 await foreach (string curr in engine.GenerateChatCompletionStreamAsync(
                     promptBuilder.ToString(),
                     gcr.Options.NumPredict != null ? gcr.Options.NumPredict.Value : 128,
-                    gcr.Options.Temperature != null ? gcr.Options.Temperature.Value : 0.6f))
+                    gcr.Options.Temperature != null ? gcr.Options.Temperature.Value : 0.6f,
+                    null,
+                    token).ConfigureAwait(false))
                 {
                     if (nextToken != null)
                     {
@@ -488,7 +500,7 @@
 
                         }, false) + Environment.NewLine;
 
-                        await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(json), false);
+                        await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(json), false, token).ConfigureAwait(false);
                     }
 
                     nextToken = curr;
@@ -504,7 +516,7 @@
 
                 }, false) + Environment.NewLine;
 
-                await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(json), true);
+                await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(json), true, token).ConfigureAwait(false);
 
                 return null;
             }
