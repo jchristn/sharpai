@@ -431,7 +431,170 @@ LlamaSharp supports multiple GPU backends through LlamaSharp and llama.cpp:
 - **Intel GPUs** - via SYCL or Vulkan
 
 Note: The actual GPU support depends on the LlamaSharp build and backend availability on your system. CUDA support is most mature, while other backends may require specific LlamaSharp builds or additional setup.
+## 🐳 Running in Docker
 
+SharpAI.Server is available as a Docker image, providing an easy way to deploy the Ollama-compatible API server without local installation.
+
+### Quick Start
+
+#### Using Docker Run
+
+For Windows:
+```batch
+run.bat v1.0.0
+```
+
+For Linux/macOS:
+```bash
+./run.sh v1.0.0
+```
+
+#### Using Docker Compose
+
+For Windows:
+```batch
+compose-up.bat
+```
+
+For Linux/macOS:
+```bash
+./compose-up.sh
+```
+
+### Prerequisites
+
+Before running the Docker container, ensure you have:
+
+1. **Configuration file**: Create a `sharpai.json` configuration file in your working directory
+2. **Directory structure**: The container expects the following directories to exist:
+   - `./logs/` - For application logs
+   - `./models/` - For storing downloaded GGUF models
+
+### Docker Image
+
+The official Docker image is available at: [`jchristn/sharpai`](https://hub.docker.com/r/jchristn/sharpai)
+
+### Volume Mappings
+
+The container uses several volume mappings for persistence:
+
+| Host Path | Container Path | Description |
+|-----------|---------------|-------------|
+| `./sharpai.json` | `/app/sharpai.json` | Configuration file |
+| `./sharpai.db` | `/app/sharpai.db` | SQLite database for model registry |
+| `./logs/` | `/app/logs/` | Application logs |
+| `./models/` | `/app/models/` | Downloaded GGUF model files |
+
+### Configuration
+
+Modify the `sharpai.json` file to supply your configuration.
+
+### Networking
+
+The container exposes port 8000 by default. You can access the API at:
+- `http://localhost:8000/api/tags` - List available models
+- `http://localhost:8000/api/generate` - Generate text
+- `http://localhost:8000/api/chat` - Chat completions
+- `http://localhost:8000/api/embeddings` - Generate embeddings
+
+### Example Usage
+
+1. Create the required directory structure:
+   ```bash
+   mkdir logs models
+   ```
+
+2. Create your `sharpai.json` configuration file
+
+3. Run the container:
+   ```bash
+   # Windows
+   run.bat v1.0.0
+   
+   # Linux/macOS
+   ./run.sh v1.0.0
+   ```
+
+4. Download a model using the API:
+   ```bash
+   curl http://localhost:8000/api/pull \
+     -d '{"name":"microsoft/phi-2"}'
+   ```
+
+5. Generate text:
+   ```bash
+   curl http://localhost:8000/api/generate \
+     -d '{
+       "model": "microsoft/phi-2",
+       "prompt": "Why is the sky blue?",
+       "stream": false
+     }'
+   ```
+
+### Docker Compose
+
+For production deployments, you can use Docker Compose. Create a `compose.yaml` file:
+
+```yaml
+version: '3.8'
+
+services:
+  sharpai:
+    image: jchristn/sharpai:v3.1.0
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./sharpai.json:/app/sharpai.json
+      - ./sharpai.db:/app/sharpai.db
+      - ./logs:/app/logs
+      - ./models:/app/models
+    environment:
+      - TERM=xterm-256color
+    restart: unless-stopped
+```
+
+Then run:
+```bash
+docker compose up -d
+```
+
+### GPU Support in Docker
+
+To enable GPU acceleration in Docker:
+
+#### NVIDIA GPUs
+Install the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) and modify your run command:
+
+```bash
+docker run --gpus all \
+  -p 8000:8000 \
+  -v ./sharpai.json:/app/sharpai.json \
+  -v ./sharpai.db:/app/sharpai.db \
+  -v ./logs:/app/logs \
+  -v ./models:/app/models \
+  jchristn/sharpai:v3.1.0
+```
+
+For Docker Compose, add:
+```yaml
+services:
+  sharpai:
+    # ... other configuration ...
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+```
+
+### Troubleshooting
+
+- **Container exits immediately**: Check that `sharpai.json` exists and is valid JSON
+- **Models not persisting**: Ensure the `./models/` directory has proper write permissions
+- **Cannot connect to API**: Verify port 8000 is not already in use and firewall rules allow access
+- **Out of memory errors**: Large models may require significant RAM. Consider using quantized models or adjusting Docker memory limits
 ## 📚 Version History
 
 Please see the [CHANGELOG.md](CHANGELOG.md) file for detailed version history and release notes.
