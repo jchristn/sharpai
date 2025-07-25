@@ -84,9 +84,6 @@ The main entry point that provides access to all functionality:
 using SharpAI;
 using SyslogLogging;
 
-// Create logging module (required)
-var logging = new LoggingModule();
-
 // Initialize the AI driver
 var ai = new AIDriver(
     logging: new LoggingModule(), 
