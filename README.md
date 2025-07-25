@@ -89,10 +89,10 @@ var logging = new LoggingModule();
 
 // Initialize the AI driver
 var ai = new AIDriver(
-    logging: logging,                        // Required: LoggingModule instance
-    databaseFilename: "./sharpai.db",       // Optional: defaults to "./sharpai.db"
-    huggingFaceApiKey: "hf_xxxxxxxxxxxx",  // Optional: required for downloading models
-    modelDirectory: "./models/"             // Optional: defaults to "./models/"
+    logging: new LoggingModule(), 
+    databaseFilename: "./sharpai.db",     
+    huggingFaceApiKey: "hf_xxxxxxxxxxxx", 
+    modelDirectory: "./models/"           
 );
 
 // Download a model from HuggingFace (GGUF format)
@@ -107,7 +107,7 @@ string response = await ai.Completion.GenerateCompletion(
 );
 ```
 
-The AIDriver provides access to:
+The AIDriver provides access to APIs via:
 - `ai.Models` - Model management operations
 - `ai.Embeddings` - Embedding generation
 - `ai.Completion` - Text completion generation
@@ -141,9 +141,10 @@ SharpAI automatically handles downloading GGUF files from HuggingFace. Only GGUF
 - Queries available GGUF files for a model
 - Selects appropriate quantization based on file naming conventions
 - Downloads and stores models with metadata
-- Tracks model information in SQLite database
+- Tracks model information in local Sqlite model registry
 
 Model metadata includes:
+
 - Model name and GUID
 - File size and hashes (MD5, SHA1, SHA256)
 - Quantization type
@@ -269,7 +270,7 @@ assistant:
 
 Supported chat formats:
 - `Simple` - Basic role: content format (generic models, base models)
-- `ChatML` - OpenAI ChatML format (GPT models, models fine-tuned with ChatML)
+- `ChatML` - OpenAI ChatML format (GPT models, models fine-tuned with ChatML) including Qwen
 - `Llama2` - Llama 2 instruction format (Llama-2-Chat models)
 - `Llama3` - Llama 3 format (Llama-3-Instruct models)
 - `Alpaca` - Alpaca instruction format (Alpaca, Vicuna, WizardLM, and many Llama-based fine-tunes)
@@ -278,6 +279,8 @@ Supported chat formats:
 - `Zephyr` - Zephyr model format (Zephyr beta/alpha models)
 - `Phi` - Microsoft Phi format (Phi-2, Phi-3 models)
 - `DeepSeek` - DeepSeek format (DeepSeek-Coder, DeepSeek-LLM models)
+
+If you are unsure which your model supports, choose `Simple`.
 
 ### Text Generation Formatting
 
@@ -391,7 +394,7 @@ Refer to the SharpAI.Server documentation for deployment and configuration detai
 
 ## ⚙️ Requirements
 
-- .NET 6.0 or higher
+- .NET 8.0 or higher
 - Windows, Linux, or macOS
 - HuggingFace API key (for downloading models)
 - (Optional) GPU for acceleration (see GPU Support section)
@@ -424,7 +427,7 @@ Models are stored in the specified `modelDirectory` with files named by their GU
 
 The library automatically detects CUDA availability and optimizes layer allocation. The `LlamaSharpEngine` determines optimal GPU layers based on available hardware.
 
-LlamaSharp supports multiple GPU backends through llama.cpp:
+LlamaSharp supports multiple GPU backends through LlamaSharp and llama.cpp:
 - **NVIDIA GPUs** - via CUDA
 - **AMD GPUs** - via ROCm (Linux) or Vulkan
 - **Apple Silicon** - via Metal (M1, M2, M3, etc.)
@@ -455,5 +458,5 @@ This project is licensed under the MIT License.
 
 - Built on [LlamaSharp](https://github.com/SciSharp/LLamaSharp) for GGUF model inference
 - Model hosting by [HuggingFace](https://huggingface.co/)
-- Inspired by [Ollama](https://ollama.ai/) for API compatibility
+- Inspired by (and forever grateful to) [Ollama](https://ollama.ai/) for API compatibility
 - Special thanks to the community of developers that helped build, test, and refine SharpAI
