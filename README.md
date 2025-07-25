@@ -1,7 +1,6 @@
 <div align="center">
-  <img src="https://github.com/jchristn/sharpai/blob/main/assets/logo.png" width="256" height="256">
+  <img src="https://raw.githubusercontent.com/jchristn/sharpai/main/assets/logo.png" width="256" height="256">
 </div>
-
 # SharpAI
 
 **Transform your .NET applications into AI powerhouses - embed models directly or deploy as an Ollama-compatible API server. No cloud dependencies, no limits, just pure local inference.**
