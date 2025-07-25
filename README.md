@@ -11,8 +11,15 @@
   <img src="https://img.shields.io/badge/C%23-239120?style=for-the-badge&logo=c-sharp&logoColor=white" />
   <img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge" />
 </p>
+
 <p align="center">
-  [![NuGet Version](https://img.shields.io/nuget/v/SharpAI.svg?style=flat)](https://www.nuget.org/packages/SharpAI/) | [![NuGet](https://img.shields.io/nuget/dt/SharpAI.svg)](https://www.nuget.org/packages/SharpAI)
+  <a href="https://www.nuget.org/packages/SharpAI/">
+    <img src="https://img.shields.io/nuget/v/SharpAI.svg?style=flat" alt="NuGet Version">
+  </a>
+  &nbsp;
+  <a href="https://www.nuget.org/packages/SharpAI">
+    <img src="https://img.shields.io/nuget/dt/SharpAI.svg" alt="NuGet Downloads">
+  </a>
 </p>
 
 <p align="center">
