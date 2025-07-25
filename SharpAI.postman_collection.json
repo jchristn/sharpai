@@ -1,0 +1,332 @@
+{
+	"info": {
+		"_postman_id": "d599bc13-0544-4784-90f4-787ff8280a3f",
+		"name": "SharpAI",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "720438"
+	},
+	"item": [
+		{
+			"name": "Validate connectivity",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "HEAD",
+				"header": [
+					{
+						"key": "content-type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"model\": \"llama3\",\r\n  \"prompt\": \"Why is the sky blue?\",\r\n  \"stream\": false,\r\n  \"options\": {\r\n    \"num_keep\": 5,\r\n    \"seed\": 42,\r\n    \"num_predict\": 100,\r\n    \"top_k\": 20,\r\n    \"top_p\": 0.9,\r\n    \"min_p\": 0.0,\r\n    \"tfs_z\": 0.5,\r\n    \"typical_p\": 0.7,\r\n    \"repeat_last_n\": 33,\r\n    \"temperature\": 0.8,\r\n    \"repeat_penalty\": 1.2,\r\n    \"presence_penalty\": 1.5,\r\n    \"frequency_penalty\": 1.0,\r\n    \"mirostat\": 1,\r\n    \"mirostat_tau\": 0.8,\r\n    \"mirostat_eta\": 0.6,\r\n    \"penalize_newline\": true,\r\n    \"stop\": [\"\\n\", \"user:\"],\r\n    \"numa\": false,\r\n    \"num_ctx\": 1024,\r\n    \"num_batch\": 2,\r\n    \"num_gpu\": 1,\r\n    \"main_gpu\": 0,\r\n    \"low_vram\": false,\r\n    \"f16_kv\": true,\r\n    \"vocab_only\": false,\r\n    \"use_mmap\": true,\r\n    \"use_mlock\": false,\r\n    \"num_thread\": 8\r\n  }\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{protocol}}://{{hostname}}:{{port}}/",
+					"protocol": "{{protocol}}",
+					"host": [
+						"{{hostname}}"
+					],
+					"port": "{{port}}",
+					"path": [
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Generate a completion",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "content-type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"model\": \"Qwen/Qwen2.5-0.5B-Instruct-GGUF\",\r\n  \"prompt\": \"why is the sky blue\",\r\n  \"stream\": true,\r\n  \"options\": {\r\n    \"num_keep\": 5,\r\n    \"seed\": 42,\r\n    \"num_predict\": 1000,\r\n    \"top_k\": 20,\r\n    \"top_p\": 0.9,\r\n    \"min_p\": 0.0,\r\n    \"tfs_z\": 0.5,\r\n    \"typical_p\": 0.7,\r\n    \"repeat_last_n\": 33,\r\n    \"temperature\": 0.8,\r\n    \"repeat_penalty\": 1.2,\r\n    \"presence_penalty\": 1.5,\r\n    \"frequency_penalty\": 1.0,\r\n    \"mirostat\": 1,\r\n    \"mirostat_tau\": 0.8,\r\n    \"mirostat_eta\": 0.6,\r\n    \"penalize_newline\": true,\r\n    \"stop\": [\"\\n\", \"user:\"],\r\n    \"numa\": false,\r\n    \"num_ctx\": 1024,\r\n    \"num_batch\": 2,\r\n    \"num_gpu\": 1,\r\n    \"main_gpu\": 0,\r\n    \"low_vram\": false,\r\n    \"f16_kv\": true,\r\n    \"vocab_only\": false,\r\n    \"use_mmap\": true,\r\n    \"use_mlock\": false,\r\n    \"num_thread\": 8\r\n  }\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{protocol}}://{{hostname}}:{{port}}/api/generate",
+					"protocol": "{{protocol}}",
+					"host": [
+						"{{hostname}}"
+					],
+					"port": "{{port}}",
+					"path": [
+						"api",
+						"generate"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Generate a chat completion",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "content-type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"model\": \"Qwen/Qwen2.5-3B-Instruct-GGUF\",\r\n  \"stream\": true,\r\n  \"messages\": [\r\n    {\r\n      \"role\": \"system\",\r\n      \"content\": \"you are a helpful AI assistant.  be nice\"\r\n    },\r\n    {\r\n      \"role\": \"user\",\r\n      \"content\": \"what can you tell me about botox\"\r\n    }\r\n  ],\r\n  \"options\": {\r\n    \"num_keep\": 5,\r\n    \"seed\": 42,\r\n    \"num_predict\": 100,\r\n    \"top_k\": 20,\r\n    \"top_p\": 0.9,\r\n    \"min_p\": 0,\r\n    \"tfs_z\": 0.5,\r\n    \"typical_p\": 0.7,\r\n    \"repeat_last_n\": 33,\r\n    \"temperature\": 0.8,\r\n    \"repeat_penalty\": 1.2,\r\n    \"presence_penalty\": 1.5,\r\n    \"frequency_penalty\": 1,\r\n    \"mirostat\": 1,\r\n    \"mirostat_tau\": 0.8,\r\n    \"mirostat_eta\": 0.6,\r\n    \"penalize_newline\": true,\r\n    \"numa\": false,\r\n    \"num_ctx\": 1024,\r\n    \"num_batch\": 2,\r\n    \"num_gpu\": 1,\r\n    \"main_gpu\": 0,\r\n    \"low_vram\": false,\r\n    \"f16_kv\": true,\r\n    \"vocab_only\": false,\r\n    \"use_mmap\": true,\r\n    \"use_mlock\": false,\r\n    \"num_thread\": 8\r\n  }\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{protocol}}://{{hostname}}:{{port}}/api/chat",
+					"protocol": "{{protocol}}",
+					"host": [
+						"{{hostname}}"
+					],
+					"port": "{{port}}",
+					"path": [
+						"api",
+						"chat"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Pull a model",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "content-type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"model\": \"all-minilm\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{protocol}}://{{hostname}}:{{port}}/api/pull",
+					"protocol": "{{protocol}}",
+					"host": [
+						"{{hostname}}"
+					],
+					"port": "{{port}}",
+					"path": [
+						"api",
+						"pull"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete a model",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "content-type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"name\": \"llama3\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{protocol}}://{{hostname}}:{{port}}/api/delete",
+					"protocol": "{{protocol}}",
+					"host": [
+						"{{hostname}}"
+					],
+					"port": "{{port}}",
+					"path": [
+						"api",
+						"delete"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "List local models",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "content-type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{protocol}}://{{hostname}}:{{port}}/api/tags",
+					"protocol": "{{protocol}}",
+					"host": [
+						"{{hostname}}"
+					],
+					"port": "{{port}}",
+					"path": [
+						"api",
+						"tags"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Generate embeddings (singular)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "content-type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"model\": \"all-minilm\",\r\n  \"input\": \"asdf\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{protocol}}://{{hostname}}:{{port}}/api/embed",
+					"protocol": "{{protocol}}",
+					"host": [
+						"{{hostname}}"
+					],
+					"port": "{{port}}",
+					"path": [
+						"api",
+						"embed"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Generate embeddings (multiple)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "content-type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"model\": \"leliuga/all-MiniLM-L6-v2-GGUF\",\r\n  \"input\": [\r\n    \"Why is the sky blue?\", \r\n    \"Why is the grass green?\"\r\n  ]\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{protocol}}://{{hostname}}:{{port}}/api/embed",
+					"protocol": "{{protocol}}",
+					"host": [
+						"{{hostname}}"
+					],
+					"port": "{{port}}",
+					"path": [
+						"api",
+						"embed"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "protocol",
+			"value": "http",
+			"type": "string"
+		},
+		{
+			"key": "hostname",
+			"value": "localhost",
+			"type": "string"
+		},
+		{
+			"key": "port",
+			"value": "8000",
+			"type": "string"
+		}
+	]
+}
