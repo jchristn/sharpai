@@ -16,7 +16,7 @@ WORKDIR /src
 COPY . .
 
 # Restore dependencies
-RUN dotnet restore "SharpAAI.Server/SharpAI.Server.csproj"
+RUN dotnet restore "SharpAI.Server/SharpAI.Server.csproj"
 
 # Build the application
 WORKDIR /src/SharpAI.Server
@@ -36,7 +36,7 @@ RUN dotnet publish "SharpAI.Server.csproj" -c Release -o /app/publish /p:UseAppH
 # Runtime stage
 #
 #
-FROM viewio/view-server-base:v1.4.0 AS final
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS final
 RUN apt-get update && apt-get install -y iputils-ping traceroute net-tools curl wget dnsutils iproute2 file vim procps && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=publish /app/publish .
