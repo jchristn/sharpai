@@ -1,0 +1,21 @@
+services:
+
+  #
+  # SharpAI
+  # See https://hub.docker.com/r/jchristn/sharpai
+  # and https://github.com/jchristn/sharpai
+  #
+
+  sharpai:
+    container_name: 'sharpai'
+    image: 'jchristn/sharpai:v4.0.0'
+    network_mode: 'host'
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./sharpai.json:/app/sharpai.json
+      - ./sharpai.db:/app/sharpai.db
+      - ./logs/:/app/logs/
+      - ./models/:/app/models/
+    healthcheck:
+      test: curl --fail http://localhost:8000

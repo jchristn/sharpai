@@ -1,0 +1,79 @@
+{
+  "CreatedUtc": "2025-07-25T06:06:25.538911Z",
+  "SoftwareVersion": "1.0.0",
+  "Logging": {
+    "Servers": [
+      {
+        "Hostname": "127.0.0.1",
+        "Port": 514,
+        "RandomizePorts": false,
+        "MinimumPort": 65000,
+        "MaximumPort": 65535
+      }
+    ],
+    "LogDirectory": "./logs/",
+    "LogFilename": "./sharpai.log",
+    "ConsoleLogging": true,
+    "EnableColors": true,
+    "MinimumSeverity": 0
+  },
+  "Storage": {
+    "TempDirectory": "./temp/",
+    "ModelsDirectory": "./models/"
+  },
+  "Database": {
+    "Filename": "./sharpai.db",
+    "Type": "Sqlite",
+    "Port": 0,
+    "RequireEncryption": false,
+    "Debug": {
+      "EnableForQueries": false,
+      "EnableForResults": false
+    }
+  },
+  "HuggingFace": {
+    "ApiKey": "My API key"
+  },
+  "Rest": {
+    "Hostname": "*",
+    "Port": 8000,
+    "IO": {
+      "StreamBufferSize": 65536,
+      "MaxRequests": 1024,
+      "ReadTimeoutMs": 10000,
+      "MaxIncomingHeadersSize": 65536,
+      "EnableKeepAlive": false
+    },
+    "Ssl": {
+      "Enable": false,
+      "MutuallyAuthenticate": false,
+      "AcceptInvalidAcertificates": true
+    },
+    "Headers": {
+      "IncludeContentLength": true,
+      "DefaultHeaders": {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "OPTIONS, HEAD, GET, PUT, POST, DELETE, PATCH",
+        "Access-Control-Allow-Headers": "*",
+        "Access-Control-Expose-Headers": "",
+        "Accept": "*/*",
+        "Accept-Language": "en-US, en",
+        "Accept-Charset": "ISO-8859-1, utf-8",
+        "Cache-Control": "no-cache",
+        "Connection": "close",
+        "Host": "localhost:8000"
+      }
+    },
+    "AccessControl": {
+      "DenyList": {},
+      "PermitList": {},
+      "Mode": "DefaultPermit"
+    },
+    "Debug": {
+      "AccessControl": false,
+      "Routing": false,
+      "Requests": false,
+      "Responses": false
+    }
+  }
+}

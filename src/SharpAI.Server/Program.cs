@@ -188,6 +188,14 @@
 
             _App.Rest.Head("/", async (req) => null, false);
 
+            _App.Rest.Head("/favicon.ico", async (req) => null, false);
+
+            _App.Rest.Get("/favicon.ico", async (req) =>
+            {
+                req.Http.Response.ContentType = Constants.FaviconContentType;
+                return File.ReadAllBytes(Constants.FaviconFilename);
+            }, false);
+
             #endregion
 
             #region Ollama-Endpoints

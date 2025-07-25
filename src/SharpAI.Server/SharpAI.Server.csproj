@@ -8,6 +8,10 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <Content Remove="C:\Users\joelc\.nuget\packages\persistentcollection\2.0.12\contentFiles\any\net8.0\Assets\icon.ico" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="PersistentCollection" Version="2.0.12" />
 		<PackageReference Include="SwiftStack" Version="0.2.1" />
 	</ItemGroup>
@@ -17,6 +21,15 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <None Update="assets\favicon.ico">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	  <None Update="assets\logo.ico">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	  <None Update="assets\logo.png">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
 	  <None Update="clean.bat">
 	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </None>
