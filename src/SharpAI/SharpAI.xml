@@ -977,34 +977,36 @@
             <param name="token">Cancellation token.</param>
             <returns>True if the URL is accessible, false otherwise.</returns>
         </member>
-        <member name="M:SharpAI.Hosting.HuggingFaceClient.TryDownloadFileAsync(System.String,System.String,System.Threading.CancellationToken)">
+        <member name="M:SharpAI.Hosting.HuggingFaceClient.TryDownloadFileAsync(System.String,System.String,System.Action{System.String,System.Int64,System.Decimal},System.Threading.CancellationToken)">
             <summary>
             Try to download a file from HuggingFace to the specified destination.
             </summary>
             <param name="sourceUrl">The HuggingFace URL of the file to download.</param>
             <param name="destinationFilename">The full path where the file should be saved.</param>
+            <param name="progressCallback">Progress callback.</param>
             <param name="token">Cancellation token.</param>
             <returns>True if successful.</returns>
         </member>
-        <member name="M:SharpAI.Hosting.HuggingFaceClient.DownloadFileAsync(System.String,System.String,System.Threading.CancellationToken)">
+        <member name="M:SharpAI.Hosting.HuggingFaceClient.DownloadFileAsync(System.String,System.String,System.Action{System.String,System.Int64,System.Decimal},System.Threading.CancellationToken)">
             <summary>
             Downloads a file from HuggingFace to the specified destination.
             </summary>
             <param name="sourceUrl">The HuggingFace URL of the file to download.</param>
             <param name="destinationFilename">The full path where the file should be saved.</param>
+            <param name="progressCallback">Progress callback (URL, bytes downloaded, percentage 0-1).</param>
             <param name="token">Cancellation token.</param>
             <returns>Task representing the asynchronous download operation.</returns>
             <exception cref="T:System.ArgumentNullException">Thrown when destinationFilename or sourceUrl is null or empty.</exception>
             <exception cref="T:System.Exception">Thrown when download fails or file operations fail.</exception>
         </member>
-        <member name="M:SharpAI.Hosting.HuggingFaceClient.DownloadFilesAsync(System.String,System.Collections.Generic.List{SharpAI.Hosting.HuggingFaceModelFile},System.String,System.Action{System.String,System.Boolean,System.String},System.Threading.CancellationToken)">
+        <member name="M:SharpAI.Hosting.HuggingFaceClient.DownloadFilesAsync(System.String,System.Collections.Generic.List{SharpAI.Hosting.HuggingFaceModelFile},System.String,System.Action{System.String,System.Int64,System.Decimal},System.Threading.CancellationToken)">
             <summary>
             Downloads multiple files from HuggingFace with progress tracking and error handling.
             </summary>
             <param name="modelName">The name of the model.</param>
             <param name="files">List of files to download.</param>
             <param name="downloadDirectory">Directory to save files to.</param>
-            <param name="progressCallback">Optional callback for progress updates (filename, isSuccess, message).</param>
+            <param name="progressCallback">Progress callback (URL, bytes downloaded, percentage 0-1).</param>
             <param name="token">Cancellation token.</param>
             <returns>Number of successfully downloaded files.</returns>
         </member>
@@ -1142,11 +1144,12 @@
             <param name="expr">Expr.</param>
             <returns>Instance.</returns>
         </member>
-        <member name="M:SharpAI.ModelDriver.Add(System.String,System.Threading.CancellationToken)">
+        <member name="M:SharpAI.ModelDriver.Add(System.String,System.Action{System.String,System.Int64,System.Decimal},System.Threading.CancellationToken)">
             <summary>
             Add.
             </summary>
             <param name="name">Model name.</param>
+            <param name="progressCallback">Progress callback (URL, bytes downloaded, percentage 0-1).</param>
             <param name="token">Cancellation token.</param>
             <returns>Instance.</returns>
         </member>

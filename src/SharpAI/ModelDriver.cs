@@ -14,6 +14,7 @@
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Reflection.Metadata.Ecma335;
     using System.Runtime;
     using System.Text;
     using System.Threading;
@@ -191,9 +192,10 @@
         /// Add.
         /// </summary>
         /// <param name="name">Model name.</param>
+        /// <param name="progressCallback">Progress callback (URL, bytes downloaded, percentage 0-1).</param>
         /// <param name="token">Cancellation token.</param>
         /// <returns>Instance.</returns>
-        public async Task<ModelFile> Add(string name, CancellationToken token = default)
+        public async Task<ModelFile> Add(string name, Action<string, long, decimal> progressCallback, CancellationToken token = default)
         {
             if (String.IsNullOrEmpty(name)) throw new ArgumentNullException(nameof(name));
 
@@ -241,9 +243,28 @@
                 filename = Path.Combine(_ModelDirectory, modelFile.GUID.ToString());
                 _Logging.Debug(_Header + "attempting download of model " + name + " using URL " + url + " to file " + modelFile.GUID.ToString());
 
-                success = await _HuggingFace.TryDownloadFileAsync(url, filename, token).ConfigureAwait(false);
+                Action<string, long, decimal> progressCallbackInternal = (url, bytesDownloaded, percentComplete) =>
+                {
+                    if (percentComplete < 0)
+                    {
+                        // handled elsewhere
+                        return;
+                    }
+                    else if (percentComplete >= 1.0m)
+                    {
+                        // handled elsewhere
+                        return;                        
+                    }
+                    else
+                    {
+                        progressCallback?.Invoke(filename, bytesDownloaded, percentComplete);
+                    }
+                };
+
+                success = await _HuggingFace.TryDownloadFileAsync(url, filename, progressCallback, token).ConfigureAwait(false);
                 if (success && File.Exists(filename) && new FileInfo(filename).Length == preferred.Size)
                 {
+                    progressCallback?.Invoke(filename, preferred.Size.Value, 1.0m);
                     _Logging.Info(_Header + "successfully downloaded model " + name + " using URL " + url + " to file " + filename);
                     successUrl = url;
                     success = true;
@@ -251,6 +272,7 @@
                 }
                 else
                 {
+                    progressCallback?.Invoke(filename, 0, -1);
                     success = false;
                 }
             }

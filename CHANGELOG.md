@@ -42,7 +42,7 @@ v1.0.0
   - `/api/chat` - Chat completions  
   - `/api/embeddings` - Generate embeddings
   - `/api/tags` - List available models
-  - `/api/pull` - Download models from HuggingFace (no progress update streaming)
+  - `/api/pull` - Download models from HuggingFace
 - Dependencies
   - LlamaSharp for model inference
   - SyslogLogging for flexible logging

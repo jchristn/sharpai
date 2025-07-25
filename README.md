@@ -382,7 +382,7 @@ Supported text generation formats:
 
 ## 🌐 API Server
 
-SharpAI includes a fully-functional REST API server through the **SharpAI.Server** project, which provides Ollama-compatible endpoints. The server acts and behaves like Ollama, allowing you to use existing Ollama clients and integrations with SharpAI.
+SharpAI includes a fully-functional REST API server through the **SharpAI.Server** project, which provides Ollama-compatible endpoints. The server acts and behaves like Ollama (with minor gaps), allowing you to use existing Ollama clients and integrations with SharpAI.
 
 Key endpoints include:
 - `/api/generate` - Text generation

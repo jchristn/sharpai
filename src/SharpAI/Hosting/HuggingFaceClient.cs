@@ -264,13 +264,14 @@
         /// </summary>
         /// <param name="sourceUrl">The HuggingFace URL of the file to download.</param>
         /// <param name="destinationFilename">The full path where the file should be saved.</param>
+        /// <param name="progressCallback">Progress callback.</param>
         /// <param name="token">Cancellation token.</param>
         /// <returns>True if successful.</returns>
-        public async Task<bool> TryDownloadFileAsync(string sourceUrl, string destinationFilename, CancellationToken token = default)
+        public async Task<bool> TryDownloadFileAsync(string sourceUrl, string destinationFilename, Action<string, long, decimal> progressCallback, CancellationToken token = default)
         {
             try
             {
-                await DownloadFileAsync(sourceUrl, destinationFilename, token).ConfigureAwait(false);
+                await DownloadFileAsync(sourceUrl, destinationFilename, progressCallback, token).ConfigureAwait(false);
                 return true;
             }
             catch (Exception e)
@@ -279,17 +280,17 @@
                 return false;
             }
         }
-
         /// <summary>
         /// Downloads a file from HuggingFace to the specified destination.
         /// </summary>
         /// <param name="sourceUrl">The HuggingFace URL of the file to download.</param>
         /// <param name="destinationFilename">The full path where the file should be saved.</param>
+        /// <param name="progressCallback">Progress callback (URL, bytes downloaded, percentage 0-1).</param>
         /// <param name="token">Cancellation token.</param>
         /// <returns>Task representing the asynchronous download operation.</returns>
         /// <exception cref="ArgumentNullException">Thrown when destinationFilename or sourceUrl is null or empty.</exception>
         /// <exception cref="Exception">Thrown when download fails or file operations fail.</exception>
-        public async Task DownloadFileAsync(string sourceUrl, string destinationFilename, CancellationToken token = default)
+        public async Task DownloadFileAsync(string sourceUrl, string destinationFilename, Action<string, long, decimal> progressCallback, CancellationToken token = default)
         {
             if (string.IsNullOrWhiteSpace(destinationFilename))
                 throw new ArgumentNullException(nameof(destinationFilename));
@@ -311,41 +312,60 @@
                 // First, get the metadata to find the actual download URL for LFS files
                 string actualDownloadUrl = await GetActualDownloadUrlAsync(sourceUrl, token).ConfigureAwait(false);
 
-                using (RestRequest request = new RestRequest(actualDownloadUrl, HttpMethod.Get))
+                using (var httpClient = new HttpClient())
                 {
-                    request.AllowAutoRedirect = true;
-
-                    using (RestResponse response = await request.SendAsync(token).ConfigureAwait(false))
+                    // Get response with headers first to check content length
+                    using (var response = await httpClient.GetAsync(actualDownloadUrl, HttpCompletionOption.ResponseHeadersRead, token).ConfigureAwait(false))
                     {
-                        if (response.StatusCode < 200 || response.StatusCode >= 300)
-                        {
-                            string errorMsg = $"download failed with status code {response.StatusCode} for URL {actualDownloadUrl}";
-                            _Logging.Error(_Header + errorMsg);
-                            throw new Exception(errorMsg);
-                        }
+                        response.EnsureSuccessStatusCode();
 
-                        // For large files, use the Data stream directly to avoid memory issues
-                        using (var fileStream = new FileStream(destinationFilename, FileMode.Create, FileAccess.Write, FileShare.None))
+                        var contentLength = response.Content.Headers.ContentLength;
+                        var isChunked = response.Headers.TransferEncodingChunked ?? false;
+
+                        _Logging.Debug(_Header + $"content length: {contentLength?.ToString() ?? "unknown"}, chunked: {isChunked}");
+
+                        using (var contentStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
+                        using (var fileStream = new FileStream(destinationFilename, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize: 65536, useAsync: true))
                         {
-                            if (response.Data != null && response.Data.CanRead)
+                            var buffer = new byte[65536]; // 64KB buffer
+                            long totalBytesRead = 0;
+                            int bytesRead;
+                            DateTime lastProgressUpdate = DateTime.UtcNow;
+
+                            while ((bytesRead = await contentStream.ReadAsync(buffer, 0, buffer.Length, token).ConfigureAwait(false)) > 0)
                             {
-                                await response.Data.CopyToAsync(fileStream, token).ConfigureAwait(false);
+                                await fileStream.WriteAsync(buffer, 0, bytesRead, token).ConfigureAwait(false);
+                                totalBytesRead += bytesRead;
+
+                                // Report progress
+                                if (progressCallback != null)
+                                {
+                                    var now = DateTime.UtcNow;
+                                    // Update progress at most every 100ms to avoid overwhelming the callback
+                                    if ((now - lastProgressUpdate).TotalMilliseconds >= 100)
+                                    {
+                                        decimal progress;
+                                        if (contentLength.HasValue && contentLength.Value > 0)
+                                        {
+                                            // We know the total size, calculate actual percentage
+                                            progress = (decimal)totalBytesRead / contentLength.Value;
+                                        }
+                                        else
+                                        {
+                                            // Chunked transfer or unknown size
+                                            // Report bytes downloaded as a very small decimal to indicate progress
+                                            // This will be between 0 and 1, but won't represent actual percentage
+                                            progress = Math.Min(0.99m, totalBytesRead / (decimal)int.MaxValue);
+                                        }
+
+                                        progressCallback(sourceUrl, totalBytesRead, progress);
+                                        lastProgressUpdate = now;
+                                    }
+                                }
                             }
-                            else if (response.DataAsBytes != null && response.DataAsBytes.Length > 0)
-                            {
-                                await fileStream.WriteAsync(response.DataAsBytes, 0, response.DataAsBytes.Length, token).ConfigureAwait(false);
-                            }
-                            else if (!string.IsNullOrEmpty(response.DataAsString))
-                            {
-                                byte[] data = System.Text.Encoding.UTF8.GetBytes(response.DataAsString);
-                                await fileStream.WriteAsync(data, 0, data.Length, token).ConfigureAwait(false);
-                            }
-                            else
-                            {
-                                string errorMsg = "download completed but no data received";
-                                _Logging.Error(_Header + errorMsg);
-                                throw new Exception(errorMsg);
-                            }
+
+                            // Final progress callback at 100%
+                            progressCallback?.Invoke(sourceUrl, totalBytesRead, 1.0m);
                         }
 
                         var fileInfo = new FileInfo(destinationFilename);
@@ -356,6 +376,24 @@
             catch (Exception ex)
             {
                 _Logging.Warn(_Header + "exception in download:" + Environment.NewLine + ex.ToString());
+
+                // Report failure through callback
+                progressCallback?.Invoke(sourceUrl, 0, -1);
+
+                // Clean up partial file if it exists
+                try
+                {
+                    if (File.Exists(destinationFilename))
+                    {
+                        File.Delete(destinationFilename);
+                        _Logging.Debug(_Header + "cleaned up partial download file");
+                    }
+                }
+                catch
+                {
+                    // Ignore cleanup errors
+                }
+
                 string errorMsg = $"error downloading file:{Environment.NewLine}{ex.ToString()}";
                 throw new Exception(errorMsg, ex);
             }
@@ -367,14 +405,14 @@
         /// <param name="modelName">The name of the model.</param>
         /// <param name="files">List of files to download.</param>
         /// <param name="downloadDirectory">Directory to save files to.</param>
-        /// <param name="progressCallback">Optional callback for progress updates (filename, isSuccess, message).</param>
+        /// <param name="progressCallback">Progress callback (URL, bytes downloaded, percentage 0-1).</param>
         /// <param name="token">Cancellation token.</param>
         /// <returns>Number of successfully downloaded files.</returns>
         public async Task<int> DownloadFilesAsync(
             string modelName, 
             List<HuggingFaceModelFile> files, 
             string downloadDirectory, 
-            Action<string, bool, string> progressCallback = null, 
+            Action<string, long, decimal> progressCallback = null, 
             CancellationToken token = default)
         {
             if (string.IsNullOrWhiteSpace(downloadDirectory))
@@ -402,7 +440,6 @@
                     string destinationPath = Path.Combine(downloadDirectory, fileName);
 
                     _Logging.Debug(_Header + $"downloading {fileName}");
-                    progressCallback?.Invoke(fileName, false, "Starting download...");
 
                     List<string> urls = GetDownloadUrls(modelName, file);
                     bool downloadSuccessful = false;
@@ -412,7 +449,7 @@
                     {
                         try
                         {
-                            await DownloadFileAsync(url, destinationPath, token).ConfigureAwait(false);
+                            await DownloadFileAsync(url, destinationPath, progressCallback, token).ConfigureAwait(false);
                             downloadSuccessful = true;
                             break;
                         }
@@ -426,19 +463,16 @@
                     if (downloadSuccessful)
                     {
                         successCount++;
-                        progressCallback?.Invoke(fileName, true, "Download completed");
                         _Logging.Info(_Header + $"successfully downloaded {fileName}");
                     }
                     else
                     {
-                        progressCallback?.Invoke(fileName, false, lastError ?? "All download attempts failed");
                         _Logging.Error(_Header + $"failed to download {fileName}: {lastError}");
                     }
                 }
                 catch (Exception ex)
                 {
                     string fileName = Path.GetFileName(file.Path);
-                    progressCallback?.Invoke(fileName, false, ex.Message);
                     _Logging.Error(_Header + $"download failed for {fileName}:{Environment.NewLine}{ex.ToString()}");
                 }
             }

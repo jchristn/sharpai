@@ -413,18 +413,24 @@
 
             Console.WriteLine();
 
-            int successCount = await _HuggingFaceClient.DownloadFilesAsync(modelName, files, downloadDir,
-                (filename, isSuccess, message) =>
+            Action<string, long, decimal> progressCallback = (filename, bytesDownloaded, percentComplete) =>
+            {
+                if (percentComplete < 0)
                 {
-                    if (isSuccess)
-                    {
-                        Console.WriteLine($"✅ {filename}: {message}");
-                    }
-                    else
-                    {
-                        Console.WriteLine($"❌ {filename}: {message}");
-                    }
-                });
+                    Console.WriteLine($"\n\n❌ Download failed: {filename}");
+                }
+                else if (percentComplete >= 1.0m)
+                {
+                    Console.WriteLine($"\n\n✅ Download complete: {filename}");
+                    Console.WriteLine($"   Total size: {bytesDownloaded}");
+                }
+                else
+                {
+                    Console.Write($"\rDownloaded: {bytesDownloaded}        ");
+                }
+            };
+
+            int successCount = await _HuggingFaceClient.DownloadFilesAsync(modelName, files, downloadDir, progressCallback);
 
             Console.WriteLine();
             Console.WriteLine("Download Summary:");

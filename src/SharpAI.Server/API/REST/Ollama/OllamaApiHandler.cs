@@ -134,22 +134,48 @@
             string filename = null;
             string successUrl = null;
 
+            req.Http.Response.ContentType = Constants.NdJsonContentType;
+            req.Http.Response.ChunkedTransfer = true;
+
+            Action<string, long, decimal> progressCallback = async (filename, bytesDownloaded, percentComplete) =>
+            {
+                if (percentComplete > 0 && percentComplete < 1)
+                {
+                    string complete = percentComplete.ToString("F3");
+
+                    string progress = _Serializer.SerializeJson(new
+                    {
+                        status = "pulling " + pmr.Model,
+                        downloaded = bytesDownloaded,
+                        percent = Convert.ToDecimal(complete)
+                    }, false) + Environment.NewLine;
+
+                    await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(progress), false, token).ConfigureAwait(false);
+                }
+            };
+
+            long fileLength = 0;
+
             foreach (string url in urls)
             {
                 filename = Path.Combine(_Settings.Storage.ModelsDirectory, modelFile.GUID.ToString());
                 _Logging.Debug(_Header + "attempting download of model " + pmr.Model + " using URL " + url + " to file " + modelFile.GUID.ToString());
-                
-                success = await _HuggingFaceClient.TryDownloadFileAsync(url, filename, token).ConfigureAwait(false);
-                if (success && File.Exists(filename) && new FileInfo(filename).Length == preferred.Size)
+
+                success = await _HuggingFaceClient.TryDownloadFileAsync(url, filename, progressCallback, token).ConfigureAwait(false);
+                if (success)
                 {
-                    _Logging.Info(_Header + "successfully downloaded model " + pmr.Model + " using URL " + url + " to file " + filename);
-                    successUrl = url;
-                    success = true;
-                    break;
-                }
-                else
-                {
-                    success = false;
+                    fileLength = new FileInfo(filename).Length;
+                    if (File.Exists(filename) && new FileInfo(filename).Length == preferred.Size)
+                    {
+                        _Logging.Info(_Header + "successfully downloaded model " + pmr.Model + " using URL " + url + " to file " + filename);
+                        successUrl = url;
+                        success = true;
+                        break;
+                    }
+                    else
+                    {
+                        success = false;
+                    }
                 }
             }
 
@@ -164,6 +190,15 @@
             using (FileStream fs = new FileStream(filename, FileMode.Open, FileAccess.Read))
             {
                 (byte[] md5, byte[] sha1, byte[] sha256) = HashHelper.ComputeAllHashes(fs);
+
+                string writingManifest = _Serializer.SerializeJson(new
+                {
+                    status = "writing manifest",
+                    downloaded = fileLength,
+                    percent = 1
+                }, false) + Environment.NewLine;
+
+                await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(writingManifest), false, token).ConfigureAwait(false);
 
                 _ModelFileService.Add(new ModelFile
                 {
@@ -181,10 +216,16 @@
 
                 req.Http.Response.ContentType = Constants.JsonContentType;
 
-                return new 
+                string complete = _Serializer.SerializeJson(new
                 {
-                    status = "success"
-                };
+                    status = "success",
+                    downloaded = fileLength,
+                    percent = 1
+                }, false) + Environment.NewLine;
+
+                await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(complete), true, token).ConfigureAwait(false);
+
+                return null;
             }
 
             #endregion

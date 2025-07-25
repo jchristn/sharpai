@@ -259,7 +259,24 @@
 
             try
             {
-                var model = await _AIDriver.Models.Add(modelName);
+                Action<string, long, decimal> progressCallback = (filename, bytesDownloaded, percentComplete) =>
+                {
+                    if (percentComplete < 0)
+                    {
+                        Console.WriteLine($"\n\n❌ Download failed: {filename}");
+                    }
+                    else if (percentComplete >= 1.0m)
+                    {
+                        Console.WriteLine($"\n\n✅ Download complete: {filename}");
+                        Console.WriteLine($"   Total size: {bytesDownloaded}");
+                    }
+                    else
+                    {
+                        Console.Write($"\rDownloaded: {bytesDownloaded}        ");
+                    }
+                };
+
+                var model = await _AIDriver.Models.Add(modelName, progressCallback);
                 Console.WriteLine($"Successfully added model: {model.Name}");
                 Console.WriteLine($"  GUID: {model.GUID}");
                 Console.WriteLine($"  Size: {model.ContentLength / 1024 / 1024} MB");
