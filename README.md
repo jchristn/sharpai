@@ -169,6 +169,8 @@ float[][] embeddings = await ai.Embeddings.Generate(
 
 ## 📝 Text Completions
 
+> *Note*: for best results, structure your prompt in a manner appropriate for the model you are using.  See the prompt formatting section below.
+
 Generate text continuations:
 
 ```csharp
@@ -192,6 +194,8 @@ await foreach (string token in ai.Completion.GenerateCompletionStreaming(
 ```
 
 ## 💬 Chat Completions
+
+> *Note*: for best results, structure your prompt in a manner appropriate for the model you are using.  See the prompt formatting section below.
 
 Generate conversational responses:
 
@@ -472,7 +476,7 @@ Before running the Docker container, ensure you have:
 
 ### Docker Image
 
-The official Docker image is available at: [`jchristn/sharpai`](https://hub.docker.com/r/jchristn/sharpai)
+The official Docker image is available at: [`jchristn/sharpai`](https://hub.docker.com/r/jchristn/sharpai).  Refer to the `docker` directory for assets useful for running in Docker and Docker Compose.
 
 ### Volume Mappings
 
