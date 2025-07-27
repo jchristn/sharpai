@@ -30,7 +30,6 @@
         private readonly string _Header = "[HuggingFace] ";
         private readonly string _ApiKey;
         private readonly LoggingModule _Logging;
-        private readonly JsonSerializerOptions _JsonOptions;
 
         #endregion
 
@@ -47,12 +46,6 @@
 
             _ApiKey = apiKey;
             _Logging = logging ?? new LoggingModule();
-
-            _JsonOptions = new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            };
 
             _Logging.Debug(_Header + "initialized");
         }
@@ -280,6 +273,7 @@
                 return false;
             }
         }
+
         /// <summary>
         /// Downloads a file from HuggingFace to the specified destination.
         /// </summary>

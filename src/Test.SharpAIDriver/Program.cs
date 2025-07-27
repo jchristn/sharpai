@@ -276,7 +276,7 @@
                     }
                 };
 
-                var model = await _AIDriver.Models.Add(modelName, progressCallback);
+                var model = await _AIDriver.Models.Add(modelName, new Dictionary<string, int>(), progressCallback);
                 Console.WriteLine($"Successfully added model: {model.Name}");
                 Console.WriteLine($"  GUID: {model.GUID}");
                 Console.WriteLine($"  Size: {model.ContentLength / 1024 / 1024} MB");

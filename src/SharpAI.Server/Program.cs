@@ -175,8 +175,7 @@
 
         private static void InitializeRestServer()
         {
-            _App = new SwiftStackApp(true); // quiet
-            _App.Name = "SharpAI Server";
+            _App = new SwiftStackApp("SharpAI Server", true); // quiet
 
             #region General-Routes
 

@@ -100,6 +100,43 @@
         }
 
         /// <summary>
+        /// Sorts a list of GGUF files based on user-supplied quantization priority.
+        /// </summary>
+        /// <param name="files">The list of GGUF files to sort.</param>
+        /// <param name="quantizationPriority">User-supplied quantization priority.</param>
+        /// <returns>A sorted list of GGUF files ordered by Ollama's preference.</returns>
+        public static List<GgufFileInfo> SortByPreference(IEnumerable<GgufFileInfo> files, Dictionary<string, int> quantizationPriority)
+        {
+            if (files == null) return new List<GgufFileInfo>();
+            if (quantizationPriority == null || quantizationPriority.Count < 1) return files.ToList();
+
+            return files
+                .OrderBy(f =>
+                {
+                    // First, prioritize main model files over shards
+                    if (!f.IsMainModel) return 1000;
+
+                    // Get the quantization priority
+                    if (string.IsNullOrEmpty(f.QuantizationType)) return 999; // Unknown quantization goes to the end
+
+                    // Try exact match first
+                    if (quantizationPriority.TryGetValue(f.QuantizationType, out int priority)) return priority;
+
+                    // Try to extract base quantization type (remove suffixes like _GGUF, etc.)
+                    var cleanedType = ExtractBaseQuantizationType(f.QuantizationType);
+                    if (!string.IsNullOrEmpty(cleanedType) &&
+                        quantizationPriority.TryGetValue(cleanedType, out int cleanedPriority))
+                        return cleanedPriority;
+
+                    // If not found in priority list, place at the end but before unknown
+                    return 998;
+                })
+                .ThenBy(f => f.QuantizationType) // Secondary sort by quantization name
+                .ThenBy(f => f.Path) // Tertiary sort by filename for consistency
+                .ToList();
+        }
+
+        /// <summary>
         /// Extracts the base quantization type from a potentially complex quantization string.
         /// </summary>
         private static string ExtractBaseQuantizationType(string quantizationType)
@@ -127,27 +164,6 @@
             }
 
             return null;
-        }
-
-        /// <summary>
-        /// Gets the best GGUF file according to Ollama's preferences.
-        /// </summary>
-        /// <param name="files">The list of GGUF files to choose from.</param>
-        /// <returns>The best GGUF file according to Ollama's preferences, or null if the list is empty.</returns>
-        public static GgufFileInfo GetBestForOllama(IEnumerable<GgufFileInfo> files)
-        {
-            var sorted = SortByOllamaPreference(files);
-            return sorted.FirstOrDefault();
-        }
-
-        /// <summary>
-        /// Filters and sorts GGUF files to get only main model files in Ollama preference order.
-        /// </summary>
-        /// <param name="files">The list of GGUF files to filter and sort.</param>
-        /// <returns>A sorted list of main model GGUF files.</returns>
-        public static List<GgufFileInfo> GetMainModelsInPreferenceOrder(IEnumerable<GgufFileInfo> files)
-        {
-            return SortByOllamaPreference(files.Where(f => f.IsMainModel));
         }
     }
 }

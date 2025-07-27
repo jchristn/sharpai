@@ -75,5 +75,6 @@
       "Requests": false,
       "Responses": false
     }
-  }
+  },
+  "QuantizationPriority": { }
 }

@@ -646,24 +646,18 @@
             <param name="files">The list of GGUF files to sort.</param>
             <returns>A sorted list of GGUF files ordered by Ollama's preference.</returns>
         </member>
+        <member name="M:SharpAI.Helpers.GgufSelector.SortByPreference(System.Collections.Generic.IEnumerable{SharpAI.Hosting.GgufFileInfo},System.Collections.Generic.Dictionary{System.String,System.Int32})">
+            <summary>
+            Sorts a list of GGUF files based on user-supplied quantization priority.
+            </summary>
+            <param name="files">The list of GGUF files to sort.</param>
+            <param name="quantizationPriority">User-supplied quantization priority.</param>
+            <returns>A sorted list of GGUF files ordered by Ollama's preference.</returns>
+        </member>
         <member name="M:SharpAI.Helpers.GgufSelector.ExtractBaseQuantizationType(System.String)">
             <summary>
             Extracts the base quantization type from a potentially complex quantization string.
             </summary>
-        </member>
-        <member name="M:SharpAI.Helpers.GgufSelector.GetBestForOllama(System.Collections.Generic.IEnumerable{SharpAI.Hosting.GgufFileInfo})">
-            <summary>
-            Gets the best GGUF file according to Ollama's preferences.
-            </summary>
-            <param name="files">The list of GGUF files to choose from.</param>
-            <returns>The best GGUF file according to Ollama's preferences, or null if the list is empty.</returns>
-        </member>
-        <member name="M:SharpAI.Helpers.GgufSelector.GetMainModelsInPreferenceOrder(System.Collections.Generic.IEnumerable{SharpAI.Hosting.GgufFileInfo})">
-            <summary>
-            Filters and sorts GGUF files to get only main model files in Ollama preference order.
-            </summary>
-            <param name="files">The list of GGUF files to filter and sort.</param>
-            <returns>A sorted list of main model GGUF files.</returns>
         </member>
         <member name="T:SharpAI.Helpers.HashHelper">
             <summary>
@@ -1144,11 +1138,12 @@
             <param name="expr">Expr.</param>
             <returns>Instance.</returns>
         </member>
-        <member name="M:SharpAI.ModelDriver.Add(System.String,System.Action{System.String,System.Int64,System.Decimal},System.Threading.CancellationToken)">
+        <member name="M:SharpAI.ModelDriver.Add(System.String,System.Collections.Generic.Dictionary{System.String,System.Int32},System.Action{System.String,System.Int64,System.Decimal},System.Threading.CancellationToken)">
             <summary>
             Add.
             </summary>
             <param name="name">Model name.</param>
+            <param name="quantizationPriority">Quantization priority.</param>
             <param name="progressCallback">Progress callback (URL, bytes downloaded, percentage 0-1).</param>
             <param name="token">Cancellation token.</param>
             <returns>Instance.</returns>

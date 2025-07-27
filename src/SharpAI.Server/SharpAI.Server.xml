@@ -99,6 +99,11 @@
             REST settings.
             </summary>
         </member>
+        <member name="P:SharpAI.Server.Classes.Settings.Settings.QuantizationPriority">
+            <summary>
+            Quantization priority.  If null or empty, Ollama quantization priority will be used.
+            </summary>
+        </member>
         <member name="M:SharpAI.Server.Classes.Settings.Settings.#ctor">
             <summary>
             Instantiate.

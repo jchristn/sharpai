@@ -13,7 +13,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="PersistentCollection" Version="2.0.12" />
-		<PackageReference Include="SwiftStack" Version="0.2.2" />
+		<PackageReference Include="SwiftStack" Version="0.2.3" />
 	</ItemGroup>
 
 	<ItemGroup>

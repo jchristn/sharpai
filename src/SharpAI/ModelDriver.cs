@@ -192,10 +192,15 @@
         /// Add.
         /// </summary>
         /// <param name="name">Model name.</param>
+        /// <param name="quantizationPriority">Quantization priority.</param>
         /// <param name="progressCallback">Progress callback (URL, bytes downloaded, percentage 0-1).</param>
         /// <param name="token">Cancellation token.</param>
         /// <returns>Instance.</returns>
-        public async Task<ModelFile> Add(string name, Action<string, long, decimal> progressCallback, CancellationToken token = default)
+        public async Task<ModelFile> Add(
+            string name, 
+            Dictionary<string, int> quantizationPriority,
+            Action<string, long, decimal> progressCallback, 
+            CancellationToken token = default)
         {
             if (String.IsNullOrEmpty(name)) throw new ArgumentNullException(nameof(name));
 
@@ -213,7 +218,13 @@
                 throw new Exception("No GGUF files found for model '" + name + "'.");
             }
 
-            GgufFileInfo preferred = GgufSelector.SortByOllamaPreference(ggufFiles).First();
+            GgufFileInfo preferred = null;
+
+            if (quantizationPriority == null || quantizationPriority.Count < 1)
+                preferred = GgufSelector.SortByOllamaPreference(ggufFiles).First();
+            else
+                preferred = GgufSelector.SortByPreference(ggufFiles, quantizationPriority).First();
+
             _Logging.Debug(_Header + "using GGUF file " + preferred.Path + " as the preferred file for model " + name);
 
             List<string> urls = _HuggingFace.GetDownloadUrls(name, preferred);

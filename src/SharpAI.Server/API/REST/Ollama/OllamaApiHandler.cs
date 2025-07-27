@@ -99,7 +99,13 @@
                 throw new SwiftStackException(ApiResultEnum.InternalError, "No GGUF files found for the specified model " + pmr.Model + ".");
             }
 
-            GgufFileInfo preferred = GgufSelector.SortByOllamaPreference(ggufFiles).First();
+            GgufFileInfo preferred = null;
+
+            if (_Settings.QuantizationPriority == null || _Settings.QuantizationPriority.Count < 1)
+                preferred = GgufSelector.SortByOllamaPreference(ggufFiles).First();
+            else
+                preferred = GgufSelector.SortByPreference(ggufFiles, _Settings.QuantizationPriority).First();
+
             _Logging.Debug(_Header + "using GGUF file " + preferred.Path + " as the preferred file for model " + pmr.Model);
 
             #endregion

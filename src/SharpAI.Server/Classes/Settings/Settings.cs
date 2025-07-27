@@ -113,6 +113,22 @@
             }
         }
 
+        /// <summary>
+        /// Quantization priority.  If null or empty, Ollama quantization priority will be used.
+        /// </summary>
+        public Dictionary<string, int> QuantizationPriority
+        {
+            get
+            {
+                return _QuantizationPriority;
+            }
+            set
+            {
+                if (value == null) value = new Dictionary<string, int>(StringComparer.InvariantCultureIgnoreCase);
+                _QuantizationPriority = value;
+            }
+        }
+
         #endregion
 
         #region Private-Members
@@ -123,6 +139,7 @@
         private DatabaseSettings _Database = new DatabaseSettings(Constants.DatabaseFile);
         private HuggingFaceSettings _HuggingFace = new HuggingFaceSettings();
         private WebserverSettings _Rest = new WebserverSettings();
+        private Dictionary<string, int> _QuantizationPriority = new Dictionary<string, int>(StringComparer.InvariantCultureIgnoreCase);
 
         #endregion
 
