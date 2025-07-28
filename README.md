@@ -607,7 +607,6 @@ Please see the [CHANGELOG.md](CHANGELOG.md) file for detailed version history an
 
 The following features are planned for future releases:
 
-- **Progress Events on Model Download** - Model downloads currently do not report progress; adding real-time download progress callbacks
 - **Enriching Model Metadata Locally** - Enhanced local tracking of model capabilities, performance metrics, and usage statistics
 - **Classifications for Models** - Automatic categorization of models by their primary use case (embeddings vs generation)
 - **Native SharpAI API** - Additional functionality beyond Ollama compatibility for advanced use cases
