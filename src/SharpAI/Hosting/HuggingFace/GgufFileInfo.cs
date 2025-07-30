@@ -1,4 +1,4 @@
-﻿namespace SharpAI.Hosting
+﻿namespace SharpAI.Hosting.HuggingFace
 {
     using System;
 

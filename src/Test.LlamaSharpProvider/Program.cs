@@ -24,6 +24,7 @@
                     Console.WriteLine("\nOptions:");
                     Console.WriteLine("1. List models");
                     Console.WriteLine("2. Initialize Provider");
+                    Console.WriteLine("3. Determine Dimensionality");
                     Console.WriteLine("3. Generate Embeddings");
                     Console.WriteLine("4. Generate Text");
                     Console.WriteLine("5. Chat Completion");
@@ -46,18 +47,22 @@
                             break;
 
                         case "3":
-                            await GenerateEmbeddings(provider);
+                            Console.WriteLine(provider.GetDimensionality().Result);
                             break;
 
                         case "4":
-                            await GenerateText(provider);
+                            await GenerateEmbeddings(provider);
                             break;
 
                         case "5":
-                            await ChatCompletion(provider);
+                            await GenerateText(provider);
                             break;
 
                         case "6":
+                            await ChatCompletion(provider);
+                            break;
+
+                        case "7":
                             await StreamingChat(provider);
                             break;
 

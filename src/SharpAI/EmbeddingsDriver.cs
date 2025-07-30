@@ -1,6 +1,8 @@
 ﻿namespace SharpAI
 {
     using SharpAI.Engines;
+    using SharpAI.Serialization;
+    using SQLitePCL;
     using SyslogLogging;
     using System;
     using System.Collections.Generic;
@@ -24,6 +26,7 @@
 
         private string _Header = "[EmbeddingsDriver] ";
         private LoggingModule _Logging = null;
+        private Serializer _Serializer = null;
         private ModelDriver _Models = null;
 
         #endregion
@@ -34,10 +37,12 @@
         /// Embeddings driver.
         /// </summary>
         /// <param name="logging">Logging module.</param>
+        /// <param name="serializer">Serializer.</param>
         /// <param name="models">Model driver.</param>
-        public EmbeddingsDriver(LoggingModule logging, ModelDriver models)
+        public EmbeddingsDriver(LoggingModule logging, Serializer serializer, ModelDriver models)
         {
             _Logging = logging ?? new LoggingModule();
+            _Serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
             _Models = models ?? throw new ArgumentNullException(nameof(models));
 
             _Logging.Debug(_Header + "initialized");

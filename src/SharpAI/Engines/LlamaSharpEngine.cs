@@ -12,6 +12,7 @@
     using LLama.Abstractions;
     using LLama.Sampling;
     using SyslogLogging;
+    using static System.Net.Mime.MediaTypeNames;
 
     /// <summary>
     /// LlamaSharp implementation of the AI provider base class.
@@ -235,6 +236,17 @@
         #endregion
 
         #region Embeddings
+
+        /// <inheritdoc />
+        public override async Task<int> GetDimensionality(CancellationToken token = default)
+        {
+            ThrowIfNotInitialized();
+
+            if (_Embedder == null) throw new InvalidOperationException("Embeddings are not supported. The embedder failed to initialize.");
+
+            IReadOnlyList<float[]> embeddings = await _Embedder.GetEmbeddings("test", token).ConfigureAwait(false);
+            return embeddings[0].Length;
+        }
 
         /// <inheritdoc />
         public override async Task<float[]> GenerateEmbeddingsAsync(

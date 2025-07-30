@@ -49,6 +49,13 @@
         #region Embeddings
 
         /// <summary>
+        /// Load the model and determine its dimensionality.
+        /// </summary>
+        /// <param name="token">Cancellation token.</param>
+        /// <returns>Dimensionality.</returns>
+        public abstract Task<int> GetDimensionality(CancellationToken token = default);
+
+        /// <summary>
         /// Generates embeddings for a single text input.
         /// </summary>
         /// <param name="text">Input text to embed.</param>

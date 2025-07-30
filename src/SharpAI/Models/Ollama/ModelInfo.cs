@@ -161,7 +161,7 @@
                     Format = mf.Format ?? "gguf",
                     Family = mf.Family ?? "llama",
                     Families = new List<string> { mf.Family ?? "llama" },
-                    ParameterSize = mf.ParameterSize ?? string.Empty,
+                    ParameterSize = mf.ParameterCount.ToString(),
                     QuantizationLevel = mf.Quantization ?? string.Empty
                 }
             };

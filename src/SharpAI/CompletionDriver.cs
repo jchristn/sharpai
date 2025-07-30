@@ -9,6 +9,7 @@
     using System.Threading;
     using System.Threading.Tasks;
     using SharpAI.Engines;
+    using SharpAI.Serialization;
     using SyslogLogging;
 
     /// <summary>
@@ -24,6 +25,7 @@
 
         private string _Header = "[CompletionDriver] ";
         private LoggingModule _Logging = null;
+        private Serializer _Serializer = null;
         private ModelDriver _Models = null;
 
         #endregion
@@ -34,10 +36,12 @@
         /// Completion driver.
         /// </summary>
         /// <param name="logging">Logging module.</param>
+        /// <param name="serializer">Serializer.</param>
         /// <param name="models">Model driver.</param>
-        public CompletionDriver(LoggingModule logging, ModelDriver models)
+        public CompletionDriver(LoggingModule logging, Serializer serializer, ModelDriver models)
         {
             _Logging = logging ?? new LoggingModule();
+            _Serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
             _Models = models ?? throw new ArgumentNullException(nameof(models));
 
             _Logging.Debug(_Header + "initialized");

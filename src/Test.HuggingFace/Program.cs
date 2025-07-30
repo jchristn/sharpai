@@ -2,6 +2,8 @@
 {
     using GetSomeInput;
     using SharpAI.Hosting;
+    using SharpAI.Hosting.HuggingFace;
+    using SharpAI.Serialization;
     using SyslogLogging;
     using System;
     using System.Collections.Generic;
@@ -19,6 +21,7 @@
         private static readonly string _Header = "[Test.HuggingFace] ";
         private static LoggingModule _Logging;
         private static HuggingFaceClient _HuggingFaceClient;
+        private static Serializer _Serializer = new Serializer();
 
         #endregion
 
@@ -97,6 +100,10 @@
 
         private static async Task ExploreModel(string modelName)
         {
+            Console.WriteLine();
+            Console.WriteLine("Retrieving model metadata");
+            Console.WriteLine(_Serializer.SerializeJson(_HuggingFaceClient.GetModelMetadata(modelName).Result, true));
+
             Console.WriteLine();
             Console.WriteLine($"Retrieving files for model: {modelName}");
             List<HuggingFaceModelFile> allFiles = await _HuggingFaceClient.GetModelFilesAsync(modelName);

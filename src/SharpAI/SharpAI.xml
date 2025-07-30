@@ -43,11 +43,12 @@
             Chat driver.
             </summary>
         </member>
-        <member name="M:SharpAI.ChatDriver.#ctor(SyslogLogging.LoggingModule,SharpAI.ModelDriver)">
+        <member name="M:SharpAI.ChatDriver.#ctor(SyslogLogging.LoggingModule,SharpAI.Serialization.Serializer,SharpAI.ModelDriver)">
             <summary>
             Chat driver.
             </summary>
             <param name="logging">Logging module.</param>
+            <param name="serializer">Serializer.</param>
             <param name="models">Model driver.</param>
         </member>
         <member name="M:SharpAI.ChatDriver.GenerateCompletionStreaming(System.String,System.String,System.Int32,System.Single,System.Threading.CancellationToken)">
@@ -77,11 +78,12 @@
             Completion driver.
             </summary>
         </member>
-        <member name="M:SharpAI.CompletionDriver.#ctor(SyslogLogging.LoggingModule,SharpAI.ModelDriver)">
+        <member name="M:SharpAI.CompletionDriver.#ctor(SyslogLogging.LoggingModule,SharpAI.Serialization.Serializer,SharpAI.ModelDriver)">
             <summary>
             Completion driver.
             </summary>
             <param name="logging">Logging module.</param>
+            <param name="serializer">Serializer.</param>
             <param name="models">Model driver.</param>
         </member>
         <member name="M:SharpAI.CompletionDriver.GenerateCompletionStreaming(System.String,System.String,System.Int32,System.Single,System.Threading.CancellationToken)">
@@ -202,11 +204,12 @@
             Embeddings driver.
             </summary>
         </member>
-        <member name="M:SharpAI.EmbeddingsDriver.#ctor(SyslogLogging.LoggingModule,SharpAI.ModelDriver)">
+        <member name="M:SharpAI.EmbeddingsDriver.#ctor(SyslogLogging.LoggingModule,SharpAI.Serialization.Serializer,SharpAI.ModelDriver)">
             <summary>
             Embeddings driver.
             </summary>
             <param name="logging">Logging module.</param>
+            <param name="serializer">Serializer.</param>
             <param name="models">Model driver.</param>
         </member>
         <member name="M:SharpAI.EmbeddingsDriver.Generate(System.String,System.String,System.Threading.CancellationToken)">
@@ -267,6 +270,13 @@
             <summary>
             Gets whether this provider supports chat/text generation.
             </summary>
+        </member>
+        <member name="M:SharpAI.Engines.EngineBase.GetDimensionality(System.Threading.CancellationToken)">
+            <summary>
+            Load the model and determine its dimensionality.
+            </summary>
+            <param name="token">Cancellation token.</param>
+            <returns>Dimensionality.</returns>
         </member>
         <member name="M:SharpAI.Engines.EngineBase.GenerateEmbeddingsAsync(System.String,System.Threading.CancellationToken)">
             <summary>
@@ -406,6 +416,9 @@
             Determines the optimal number of GPU layers to use based on available hardware.
             </summary>
             <returns>The number of GPU layers to use, or 0 if GPU acceleration is not available. Returns -1 to use all available GPU layers.</returns>
+        </member>
+        <member name="M:SharpAI.Engines.LlamaSharpEngine.GetDimensionality(System.Threading.CancellationToken)">
+            <inheritdoc />
         </member>
         <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateEmbeddingsAsync(System.String,System.Threading.CancellationToken)">
             <inheritdoc />
@@ -639,14 +652,14 @@
             GGUF selector.
             </summary>
         </member>
-        <member name="M:SharpAI.Helpers.GgufSelector.SortByOllamaPreference(System.Collections.Generic.IEnumerable{SharpAI.Hosting.GgufFileInfo})">
+        <member name="M:SharpAI.Helpers.GgufSelector.SortByOllamaPreference(System.Collections.Generic.IEnumerable{SharpAI.Hosting.HuggingFace.GgufFileInfo})">
             <summary>
             Sorts a list of GGUF files based on Ollama's quantization preference order.
             </summary>
             <param name="files">The list of GGUF files to sort.</param>
             <returns>A sorted list of GGUF files ordered by Ollama's preference.</returns>
         </member>
-        <member name="M:SharpAI.Helpers.GgufSelector.SortByPreference(System.Collections.Generic.IEnumerable{SharpAI.Hosting.GgufFileInfo},System.Collections.Generic.Dictionary{System.String,System.Int32})">
+        <member name="M:SharpAI.Helpers.GgufSelector.SortByPreference(System.Collections.Generic.IEnumerable{SharpAI.Hosting.HuggingFace.GgufFileInfo},System.Collections.Generic.Dictionary{System.String,System.Int32})">
             <summary>
             Sorts a list of GGUF files based on user-supplied quantization priority.
             </summary>
@@ -878,36 +891,166 @@
             <param name="decimalPlaces">Number of decimal places.</param>
             <returns>Milliseconds.</returns>
         </member>
-        <member name="T:SharpAI.Hosting.GgufFileInfo">
+        <member name="T:SharpAI.Hosting.CardData">
+            <summary>
+            Represents the model card metadata including license, language, and datasets.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.CardData.Language">
+            <summary>
+            Gets or sets the language of the model (e.g., "en" for English) or list of languages.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.CardData.License">
+            <summary>
+            Gets or sets the license under which the model is distributed (e.g., "apache-2.0").
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.CardData.LibraryName">
+            <summary>
+            Gets or sets the library name from the model card.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.CardData.Tags">
+            <summary>
+            Gets or sets the list of tags from the model card.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.CardData.Datasets">
+            <summary>
+            Gets or sets the list of datasets used to train the model.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.CardData.PipelineTag">
+            <summary>
+            Gets or sets the pipeline tag from the model card.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.CardData.BaseModel">
+            <summary>
+            Gets or sets the base model that this model was derived from.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.CardData.ModelCreator">
+            <summary>
+            Gets or sets the name of the person or organization that created the model.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.CardData.ModelName">
+            <summary>
+            Gets or sets the human-readable name of the model.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.CardData.QuantizedBy">
+            <summary>
+            Gets or sets the name of the person or organization that quantized the model.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.CardData.Inference">
+            <summary>
+            Gets or sets whether inference is enabled for this model.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.CardData.ModelType">
+            <summary>
+            Gets or sets the model type from the card data.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.CardData.TaskCategories">
+            <summary>
+            Gets or sets the task categories for the model.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.CardData.TaskIds">
+            <summary>
+            Gets or sets the task IDs for the model.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Hosting.GatedRequest">
+            <summary>
+            Represents gated access request configuration for models with access control.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.GatedRequest.Gate">
+            <summary>
+            Gets or sets the gate type (e.g., "manual", "automatic").
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.GatedRequest.GatedPrompt">
+            <summary>
+            Gets or sets the custom prompt shown to users requesting access.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.GatedRequest.ExtraFields">
+            <summary>
+            Gets or sets additional fields required for access requests.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Hosting.HuggingFace.GgufFileInfo">
             <summary>
             Represents a GGUF file with enhanced metadata including quantization information.
             </summary>
         </member>
-        <member name="P:SharpAI.Hosting.GgufFileInfo.SizeFormatted">
+        <member name="P:SharpAI.Hosting.HuggingFace.GgufFileInfo.SizeFormatted">
             <summary>
             Gets or sets the human-readable formatted file size.
             </summary>
         </member>
-        <member name="P:SharpAI.Hosting.GgufFileInfo.QuantizationType">
+        <member name="P:SharpAI.Hosting.HuggingFace.GgufFileInfo.QuantizationType">
             <summary>
             Gets or sets the detected quantization type (e.g., "Q4_K_M", "Q5_K_S").
             </summary>
         </member>
-        <member name="P:SharpAI.Hosting.GgufFileInfo.IsMainModel">
+        <member name="P:SharpAI.Hosting.HuggingFace.GgufFileInfo.IsMainModel">
             <summary>
             Gets or sets a value indicating whether this is the main model file (not a shard).
             </summary>
         </member>
-        <member name="M:SharpAI.Hosting.GgufFileInfo.#ctor">
+        <member name="M:SharpAI.Hosting.HuggingFace.GgufFileInfo.#ctor">
             <summary>
             Initializes a new instance of the GgufFileInfo class.
             </summary>
         </member>
-        <member name="M:SharpAI.Hosting.GgufFileInfo.ToString">
+        <member name="M:SharpAI.Hosting.HuggingFace.GgufFileInfo.ToString">
             <summary>
             Returns a string representation of the GGUF file information.
             </summary>
             <returns>A formatted string containing GGUF-specific information.</returns>
+        </member>
+        <member name="T:SharpAI.Hosting.GgufInfo">
+            <summary>
+            GGUF info.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.GgufInfo.Total">
+            <summary>
+            Gets or sets the total size of the model in bytes.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.GgufInfo.Architecture">
+            <summary>
+            Gets or sets the model architecture (e.g., "bert", "llama", "gpt2").
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.GgufInfo.ContextLength">
+            <summary>
+            Gets or sets the maximum context length in tokens that the model can process.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.GgufInfo.Causal">
+            <summary>
+            Gets or sets a value indicating whether the model is causal (autoregressive) or not.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.GgufInfo.BosToken">
+            <summary>
+            Gets or sets the beginning-of-sequence token (e.g., "[CLS]" for BERT).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.GgufInfo.EosToken">
+            <summary>
+            Gets or sets the end-of-sequence token (e.g., "[SEP]" for BERT).
+            </summary>
         </member>
         <member name="T:SharpAI.Hosting.HuggingFaceClient">
             <summary>
@@ -920,6 +1063,14 @@
             </summary>
             <param name="logging">LoggingModule instance for logging operations.</param>
             <param name="apiKey">HuggingFace API key for authentication.</param>
+        </member>
+        <member name="M:SharpAI.Hosting.HuggingFaceClient.GetModelMetadata(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Retrieve model metadata.
+            </summary>
+            <param name="modelName">Model name.</param>
+            <param name="token">Cancellation token.</param>
+            <returns>HuggingFaceModelMetadata.</returns>
         </member>
         <member name="M:SharpAI.Hosting.HuggingFaceClient.GetModelFilesAsync(System.String,System.Threading.CancellationToken)">
             <summary>
@@ -1004,6 +1155,34 @@
             <param name="token">Cancellation token.</param>
             <returns>Number of successfully downloaded files.</returns>
         </member>
+        <member name="M:SharpAI.Hosting.HuggingFaceClient.ExtractQuantizationFromFilename(System.String)">
+            <summary>
+            Extract quantization from filename.
+            </summary>
+            <param name="filePath">File path.</param>
+            <returns>Quantization.</returns>
+        </member>
+        <member name="M:SharpAI.Hosting.HuggingFaceClient.ExtractQuantizationFromUrl(System.String)">
+            <summary>
+            Extract quantization from URL.
+            </summary>
+            <param name="url">URL.</param>
+            <returns>Quantization.</returns>
+        </member>
+        <member name="M:SharpAI.Hosting.HuggingFaceClient.IsEmbeddingModel(SharpAI.Hosting.HuggingFaceModelMetadata)">
+            <summary>
+            Test if a model can be used for embeddings.
+            </summary>
+            <param name="md">Model metadata.</param>
+            <returns>True if the model can be used for embeddings.</returns>
+        </member>
+        <member name="M:SharpAI.Hosting.HuggingFaceClient.IsCompletionModel(SharpAI.Hosting.HuggingFaceModelMetadata)">
+            <summary>
+            Test if a model can be used for completions.
+            </summary>
+            <param name="md">Model metadata.</param>
+            <returns>True if the model can be used for completions.</returns>
+        </member>
         <member name="T:SharpAI.Hosting.HuggingFaceModelFile">
             <summary>
             Represents a file from a HuggingFace model repository with metadata.
@@ -1055,6 +1234,436 @@
             </summary>
             <returns>A formatted string containing path, type, and size information.</returns>
         </member>
+        <member name="T:SharpAI.Hosting.HuggingFaceModelMetadata">
+            <summary>
+            HuggingFace model metadata.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelMetadata.Id">
+            <summary>
+            Gets or sets the internal database ID of the model.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelMetadata.ModelId">
+            <summary>
+            Gets or sets the full model ID in the format "organization/model-name".
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelMetadata.ModelIdentifier">
+            <summary>
+            Gets or sets the model identifier (same as id field).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelMetadata.Author">
+            <summary>
+            Gets or sets the author or organization that created the model.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelMetadata.Sha">
+            <summary>
+            Gets or sets the Git SHA hash of the current model version.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelMetadata.CreatedAt">
+            <summary>
+            Gets or sets the timestamp of when the model was created.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelMetadata.LastModified">
+            <summary>
+            Gets or sets the timestamp of when the model was last modified.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelMetadata.Private">
+            <summary>
+            Gets or sets a value indicating whether the model is private.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelMetadata.Gated">
+            <summary>
+            Gets or sets a value indicating whether the model requires authentication to access.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelMetadata.Disabled">
+            <summary>
+            Gets or sets a value indicating whether the model is disabled.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelMetadata.PipelineTag">
+            <summary>
+            Gets or sets the pipeline tag indicating the model's primary task (e.g., "sentence-similarity", "text-generation").
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelMetadata.Tags">
+            <summary>
+            Gets or sets the list of tags associated with the model, including frameworks, tasks, languages, and datasets.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelMetadata.Downloads">
+            <summary>
+            Gets or sets the total number of downloads for the model.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelMetadata.DownloadsAllTime">
+            <summary>
+            Gets or sets the total downloads across all time.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelMetadata.Likes">
+            <summary>
+            Gets or sets the number of likes/stars the model has received.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelMetadata.TrendingScore">
+            <summary>
+            Gets or sets the trending score of the model.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelMetadata.LibraryName">
+            <summary>
+            Gets or sets the primary library used for the model (e.g., "sentence-transformers", "transformers").
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelMetadata.MaskToken">
+            <summary>
+            Gets or sets the mask token used by the model's tokenizer (e.g., "[MASK]" for BERT models).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelMetadata.WidgetData">
+            <summary>
+            Gets or sets the widget data used for the model's interactive demo examples.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelMetadata.ModelIndex">
+            <summary>
+            Gets or sets the model index information (typically null).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelMetadata.Config">
+            <summary>
+            Gets or sets the model configuration including architecture and tokenizer settings.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelMetadata.CardData">
+            <summary>
+            Gets or sets the model card data containing metadata like license, language, and datasets.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelMetadata.TransformersInfo">
+            <summary>
+            Gets or sets the transformers library specific information for loading the model.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelMetadata.SafeTensors">
+            <summary>
+            Gets or sets the SafeTensors format information including parameter counts by data type.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelMetadata.Gguf">
+            <summary>
+            Gets or sets the GGUF format information for quantized models.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelMetadata.Siblings">
+            <summary>
+            Gets or sets the list of files (siblings) in the model repository.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelMetadata.Spaces">
+            <summary>
+            Gets or sets the list of Hugging Face Spaces that use this model.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelMetadata.Inference">
+            <summary>
+            Gets or sets the inference status (e.g., "warm" indicating the model is loaded).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelMetadata.UsedStorage">
+            <summary>
+            Gets or sets the total storage used by the model in bytes.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelMetadata.GatedRequest">
+            <summary>
+            Gets or sets the gated request configuration for models with access control.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelMetadata.PapersWithCodeId">
+            <summary>
+            Gets or sets the papers with code ID if the model is linked to a paper.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelMetadata.Description">
+            <summary>
+            Gets or sets the description of the model.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelMetadata.Citation">
+            <summary>
+            Gets or sets the citation information for the model.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelMetadata.ResourceGroup">
+            <summary>
+            Gets or sets the resource group associated with the model.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceModelMetadata.XetEnabled">
+            <summary>
+            Gets or sets whether XET is enabled for the model.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Hosting.HuggingFaceModelMetadata.#ctor">
+            <summary>
+            Initializes a new instance of the HuggingFaceModelMetadata class.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Hosting.LfsInfo">
+            <summary>
+            Represents Large File Storage information for a file.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.LfsInfo.Sha256">
+            <summary>
+            Gets or sets the SHA256 hash of the file.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.LfsInfo.Size">
+            <summary>
+            Gets or sets the size of the file in LFS.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.LfsInfo.PointerSize">
+            <summary>
+            Gets or sets the pointer size.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Hosting.ModelConfig">
+            <summary>
+            Represents the model's configuration including architecture and tokenizer settings.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.ModelConfig.Architectures">
+            <summary>
+            Gets or sets the list of model architectures (e.g., ["BertModel"]).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.ModelConfig.ModelType">
+            <summary>
+            Gets or sets the type of model architecture (e.g., "bert", "llama", "gpt2").
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.ModelConfig.TokenizerConfig">
+            <summary>
+            Gets or sets the tokenizer configuration with special tokens.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.ModelConfig.AdditionalChatTemplates">
+            <summary>
+            Gets or sets additional chat templates for conversational models.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.ModelConfig.MaxPositionEmbeddings">
+            <summary>
+            Gets or sets the maximum position embeddings (context length).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.ModelConfig.HiddenSize">
+            <summary>
+            Gets or sets the hidden size of the model.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.ModelConfig.NumAttentionHeads">
+            <summary>
+            Gets or sets the number of attention heads.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.ModelConfig.NumHiddenLayers">
+            <summary>
+            Gets or sets the number of hidden layers.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.ModelConfig.VocabSize">
+            <summary>
+            Gets or sets the vocabulary size.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Hosting.SafeTensorParameters">
+            <summary>
+            Represents the breakdown of model parameters by data type.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.SafeTensorParameters.I64">
+            <summary>
+            Gets or sets the number of 64-bit integer parameters (typically for embeddings or indices).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.SafeTensorParameters.F32">
+            <summary>
+            Gets or sets the number of 32-bit floating-point parameters (the main model weights).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.SafeTensorParameters.F16">
+            <summary>
+            Gets or sets the number of 16-bit floating-point parameters.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.SafeTensorParameters.BF16">
+            <summary>
+            Gets or sets the number of brain float 16-bit parameters.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.SafeTensorParameters.I8">
+            <summary>
+            Gets or sets the number of 8-bit integer parameters.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.SafeTensorParameters.U8">
+            <summary>
+            Gets or sets the number of unsigned 8-bit integer parameters.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Hosting.SafeTensors">
+            <summary>
+            Represents SafeTensors format information including parameter counts.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.SafeTensors.Parameters">
+            <summary>
+            Gets or sets the parameter counts broken down by data type.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.SafeTensors.Total">
+            <summary>
+            Gets or sets the total number of parameters across all data types.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Hosting.Sibling">
+            <summary>
+            Represents a file in the model repository.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.Sibling.RFilename">
+            <summary>
+            Gets or sets the relative filename within the repository (e.g., "config.json", "model.safetensors").
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.Sibling.Size">
+            <summary>
+            Gets or sets the file size in bytes.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.Sibling.BlobId">
+            <summary>
+            Gets or sets the blob ID for the file.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.Sibling.Lfs">
+            <summary>
+            Gets or sets the LFS (Large File Storage) information.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Hosting.TokenizerConfig">
+            <summary>
+            Represents the tokenizer configuration with special tokens.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.TokenizerConfig.UnkToken">
+            <summary>
+            Gets or sets the unknown token (typically "[UNK]").
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.TokenizerConfig.SepToken">
+            <summary>
+            Gets or sets the separator token (typically "[SEP]").
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.TokenizerConfig.PadToken">
+            <summary>
+            Gets or sets the padding token (typically "[PAD]").
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.TokenizerConfig.ClsToken">
+            <summary>
+            Gets or sets the classification token (typically "[CLS]").
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.TokenizerConfig.MaskToken">
+            <summary>
+            Gets or sets the mask token (typically "[MASK]").
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.TokenizerConfig.BosToken">
+            <summary>
+            Gets or sets the beginning of sequence token.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.TokenizerConfig.EosToken">
+            <summary>
+            Gets or sets the end of sequence token.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.TokenizerConfig.ChatTemplate">
+            <summary>
+            Gets or sets the chat template for conversational models.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Hosting.TransformersInfo">
+            <summary>
+            Represents transformers library specific information.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.TransformersInfo.AutoModel">
+            <summary>
+            Gets or sets the auto model class to use for loading (e.g., "AutoModel", "AutoModelForCausalLM").
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.TransformersInfo.PipelineTag">
+            <summary>
+            Gets or sets the pipeline tag for transformers inference (e.g., "feature-extraction", "text-generation").
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.TransformersInfo.Processor">
+            <summary>
+            Gets or sets the processor/tokenizer class to use (e.g., "AutoTokenizer").
+            </summary>
+        </member>
+        <member name="T:SharpAI.Hosting.WidgetData">
+            <summary>
+            Represents example data for the model's interactive widget.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.WidgetData.SourceSentence">
+            <summary>
+            Gets or sets the source sentence for comparison in similarity tasks.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.WidgetData.Sentences">
+            <summary>
+            Gets or sets the list of sentences to compare against the source for similarity scoring.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.WidgetData.Text">
+            <summary>
+            Gets or sets the text input for generation tasks.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.WidgetData.Context">
+            <summary>
+            Gets or sets the context for question-answering tasks.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.WidgetData.Question">
+            <summary>
+            Gets or sets the question for question-answering tasks.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Hosting.WidgetData.ExampleInputs">
+            <summary>
+            Gets or sets example inputs for the widget.
+            </summary>
+        </member>
         <member name="T:SharpAI.ModelDriver">
             <summary>
             Model driver.
@@ -1070,12 +1679,13 @@
             Model directory.
             </summary>
         </member>
-        <member name="M:SharpAI.ModelDriver.#ctor(SyslogLogging.LoggingModule,Watson.ORM.Sqlite.WatsonORM,System.String,System.String)">
+        <member name="M:SharpAI.ModelDriver.#ctor(SyslogLogging.LoggingModule,Watson.ORM.Sqlite.WatsonORM,SharpAI.Serialization.Serializer,System.String,System.String)">
             <summary>
             Model driver.
             </summary>
             <param name="logging">Logging module.</param>
             <param name="orm">ORM.</param>
+            <param name="serializer">Serializer.</param>
             <param name="huggingFaceApiKey">HuggingFace API key.</param>
             <param name="modelDirectory">Model storage directory.</param>
         </member>
@@ -1296,6 +1906,11 @@
             Content length of the file.
             </summary>
         </member>
+        <member name="P:SharpAI.Models.ModelFile.ParameterCount">
+            <summary>
+            Parameter count.
+            </summary>
+        </member>
         <member name="P:SharpAI.Models.ModelFile.MD5Hash">
             <summary>
             MD5.
@@ -1324,6 +1939,16 @@
         <member name="P:SharpAI.Models.ModelFile.Quantization">
             <summary>
             Quantization.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.ModelFile.Embeddings">
+            <summary>
+            Boolean indicating if the model can be used for embeddings.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.ModelFile.Completions">
+            <summary>
+            Boolean indicating if the model can be used for completions.
             </summary>
         </member>
         <member name="P:SharpAI.Models.ModelFile.ModelCreationUtc">

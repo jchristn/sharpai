@@ -385,7 +385,7 @@
                 Console.WriteLine($"  Format: {model.Format}");
                 Console.WriteLine($"  Family: {model.Family}");
                 Console.WriteLine($"  Parent Model: {model.ParentModel ?? "N/A"}");
-                Console.WriteLine($"  Parameter Size: {model.ParameterSize ?? "Unknown"}");
+                Console.WriteLine($"  Parameter Size: {model.ParameterCount.ToString()}");
                 Console.WriteLine($"  Quantization: {model.Quantization}");
                 Console.WriteLine($"  Size: {model.ContentLength / 1024 / 1024} MB ({model.ContentLength} bytes)");
                 Console.WriteLine($"  MD5: {model.MD5Hash}");

@@ -17,6 +17,7 @@
     using SharpAI.Server.Classes.Settings;
     using SharpAI.Services;
     using SwiftStack;
+    using SwiftStack.Rest;
     using SyslogLogging;
     using Watson.ORM.Sqlite;
     
@@ -178,6 +179,28 @@
             _App = new SwiftStackApp("SharpAI Server", true); // quiet
 
             #region General-Routes
+
+            _App.Rest.ExceptionRoute = async (req, e) =>
+            {
+                Type exType = e.GetType();
+
+                _Logging.Warn(_Header + "exception of type " + exType.Name + ": " + Environment.NewLine + e.ToString());
+
+                switch (e)
+                {
+                    case KeyNotFoundException:
+                        req.Response.StatusCode = 404;
+                        throw new SwiftStackException(ApiResultEnum.NotFound, e.Message);
+                    case ArgumentNullException:
+                    case ArgumentException:
+                    case InvalidOperationException:
+                        req.Response.StatusCode = 400;
+                        throw new SwiftStackException(ApiResultEnum.BadRequest, e.Message);
+                    default:
+                        req.Response.StatusCode = 500;
+                        throw new SwiftStackException(ApiResultEnum.InternalError, e.Message);
+                }
+            };
 
             _App.Rest.Get("/", async (req) =>
             {

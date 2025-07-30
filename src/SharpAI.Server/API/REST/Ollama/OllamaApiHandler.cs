@@ -3,6 +3,7 @@
     using SharpAI.Engines;
     using SharpAI.Helpers;
     using SharpAI.Hosting;
+    using SharpAI.Hosting.HuggingFace;
     using SharpAI.Models;
     using SharpAI.Models.Ollama;
     using SharpAI.Serialization;
@@ -162,9 +163,10 @@
 
             long fileLength = 0;
 
+            filename = Path.Combine(_Settings.Storage.ModelsDirectory, modelFile.GUID.ToString());
+
             foreach (string url in urls)
             {
-                filename = Path.Combine(_Settings.Storage.ModelsDirectory, modelFile.GUID.ToString());
                 _Logging.Debug(_Header + "attempting download of model " + pmr.Model + " using URL " + url + " to file " + modelFile.GUID.ToString());
 
                 success = await _HuggingFaceClient.TryDownloadFileAsync(url, filename, progressCallback, token).ConfigureAwait(false);
@@ -193,6 +195,16 @@
 
             _Logging.Info(_Header + "downloaded GGUF file for " + pmr.Model);
 
+            #endregion
+
+            #region Persist
+
+            using (LlamaSharpEngine engine = _ModelEngineService.GetByModelFile(Path.Combine(_Settings.Storage.ModelsDirectory, modelFile.GUID.ToString())))
+            {
+                modelFile.Embeddings = engine.SupportsEmbeddings;
+                modelFile.Completions = engine.SupportsGeneration;
+            }
+
             using (FileStream fs = new FileStream(filename, FileMode.Open, FileAccess.Read))
             {
                 (byte[] md5, byte[] sha1, byte[] sha256) = HashHelper.ComputeAllHashes(fs);
@@ -206,19 +218,35 @@
 
                 await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(writingManifest), false, token).ConfigureAwait(false);
 
-                _ModelFileService.Add(new ModelFile
+                HuggingFaceModelMetadata md = null;
+
+                try
                 {
-                    GUID = modelFile.GUID,
-                    Name = pmr.Model,
-                    ContentLength = preferred.Size != null ? preferred.Size.Value : 0,
-                    MD5Hash = Convert.ToHexString(md5),
-                    SHA1Hash = Convert.ToHexString(sha1),
-                    SHA256Hash = Convert.ToHexString(sha256),
-                    Quantization = preferred.QuantizationType,
-                    SourceUrl = successUrl,
-                    ModelCreationUtc = preferred.LastModified,
-                    CreatedUtc = DateTime.UtcNow
-                });
+                    md = await _HuggingFaceClient.GetModelMetadata(pmr.Model, token).ConfigureAwait(false);
+                    if (md == null)
+                    {
+                        _Logging.Warn(_Header + "unable to retrieve metadata for " + pmr.Model);
+                        throw new SwiftStackException(ApiResultEnum.InternalError, "Unable to retrieve metadata for model '" + pmr.Model + "'.");
+                    }
+                }
+                catch (Exception e)
+                {
+                    _Logging.Warn(_Header + "exception retrieving model metadata:" + Environment.NewLine + e.ToString());
+                }
+
+                long parameterCount = 0;
+                if (md.SafeTensors != null) parameterCount = md.SafeTensors.Total;
+
+                modelFile.ContentLength = preferred.Size != null ? preferred.Size.Value : 0;
+                modelFile.MD5Hash = Convert.ToHexString(md5);
+                modelFile.SHA1Hash = Convert.ToHexString(sha1);
+                modelFile.SHA256Hash = Convert.ToHexString(sha256);
+                modelFile.Quantization = preferred.QuantizationType;
+                modelFile.ParameterCount = parameterCount;
+                modelFile.ModelCreationUtc = preferred.LastModified;
+                modelFile.SourceUrl = successUrl;
+
+                _ModelFileService.Add(modelFile);
 
                 req.Http.Response.ContentType = Constants.JsonContentType;
 
@@ -488,7 +516,7 @@
                 foreach (Message msg in gcr.Messages)
                 {
                     if (added > 0) promptBuilder.Append("\n");
-                    promptBuilder.Append($"{msg.Role}: {msg.Content}"); 
+                    promptBuilder.Append($"{msg.Role}: {msg.Content}");
                 }
             }
 

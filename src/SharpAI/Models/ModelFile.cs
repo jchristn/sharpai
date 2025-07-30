@@ -85,6 +85,23 @@
         }
 
         /// <summary>
+        /// Parameter count.
+        /// </summary>
+        [Column("parametercount", false, DataTypes.Long, false)]
+        public long ParameterCount
+        {
+            get
+            {
+                return _ParameterCount;
+            }
+            set
+            {
+                if (value < 0) throw new ArgumentOutOfRangeException(nameof(ParameterCount));
+                _ParameterCount = value;
+            }
+        }
+
+        /// <summary>
         /// MD5.
         /// </summary>
         [Column("md5", false, DataTypes.Nvarchar, 32, false)]
@@ -121,6 +138,18 @@
         public string Quantization { get; set; } = null;
 
         /// <summary>
+        /// Boolean indicating if the model can be used for embeddings.
+        /// </summary>
+        [Column("embeddings", false, DataTypes.Boolean, false)]
+        public bool Embeddings { get; set; } = false;
+
+        /// <summary>
+        /// Boolean indicating if the model can be used for completions.
+        /// </summary>
+        [Column("completions", false, DataTypes.Boolean, false)]
+        public bool Completions { get; set; } = false;
+
+        /// <summary>
         /// Timestamp from the hosting provider, generally a last modified timestamp, in UTC time.
         /// </summary>
         [Column("modelcreationutc", false, DataTypes.DateTime, 6, true)]
@@ -138,7 +167,8 @@
 
         private int _Id = 0;
         private long _ContentLength = 0;
-        private static string _TimestampFormat = "yyyy-MM-ddTHH:mm:sszzz";
+        private long _ParameterCount = 0;
+        private static string _TimestampFormat = "yyyy-MM-ddTHH:mm:ss.ffffffzzz";
 
         #endregion
 
@@ -175,7 +205,7 @@
                     format = Format,
                     family = Family,
                     families = new[] { Family },
-                    parameter_size = ParameterSize,
+                    parameter_size = ParameterCount.ToString(),
                     quantization_level = Quantization
                 }
             };

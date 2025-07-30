@@ -10,6 +10,8 @@
     using System.Threading;
     using System.Threading.Tasks;
     using RestWrapper;
+    using SharpAI.Hosting.HuggingFace;
+    using SharpAI.Models;
     using SyslogLogging;
 
     /// <summary>
@@ -53,6 +55,70 @@
         #endregion
 
         #region Public-Methods
+
+        /// <summary>
+        /// Retrieve model metadata.
+        /// </summary>
+        /// <param name="modelName">Model name.</param>
+        /// <param name="token">Cancellation token.</param>
+        /// <returns>HuggingFaceModelMetadata.</returns>
+        public async Task<HuggingFaceModelMetadata> GetModelMetadata(string modelName, CancellationToken token = default)
+        {
+            if (string.IsNullOrEmpty(modelName))
+                throw new ArgumentNullException(nameof(modelName));
+
+            using (HttpClient client = new HttpClient())
+            {
+                string apiUrl = $"https://huggingface.co/api/models/{modelName}";
+                HttpResponseMessage response = await client.GetAsync(apiUrl, token).ConfigureAwait(false);
+                response.EnsureSuccessStatusCode();
+
+                string jsonContent = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+                var options = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true,
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                    WriteIndented = true
+                };
+
+                HuggingFaceModelMetadata metadata = JsonSerializer.Deserialize<HuggingFaceModelMetadata>(jsonContent, options);
+
+                if (metadata == null)
+                {
+                    _Logging.Warn($"{_Header}failed to retrieve metadata for model {modelName}");
+                    throw new InvalidOperationException($"failed to retrieve metadata for model: {modelName}");
+                }
+
+                if (metadata.SafeTensors == null &&
+                    !string.IsNullOrEmpty(metadata.CardData?.BaseModel) &&
+                    !metadata.CardData.BaseModel.Equals(modelName, StringComparison.OrdinalIgnoreCase))
+                {
+                    try
+                    {
+                        _Logging.Debug($"{_Header}retrieving base model {metadata.CardData.BaseModel} for model {modelName}");
+                        HuggingFaceModelMetadata baseModelMetadata = await GetModelMetadata(metadata.CardData.BaseModel, token).ConfigureAwait(false);
+
+                        if (baseModelMetadata != null)
+                        {
+                            if (baseModelMetadata.SafeTensors != null)
+                            {
+                                // copy data from base model
+                                metadata.SafeTensors = baseModelMetadata.SafeTensors;
+                                _Logging.Debug($"{_Header}copied assets from base model {metadata.CardData.BaseModel}");
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _Logging.Warn($"{_Header}failed to retrieve base model metadata: {ex.Message}");
+                    }
+                }
+
+                _Logging.Debug($"{_Header}retrieved metadata for model {modelName}");
+                return metadata;
+            }
+        }
 
         /// <summary>
         /// Retrieves all files from a HuggingFace model repository.
@@ -138,7 +204,7 @@
                 Lfs = file.Lfs,
                 SecurityStatus = file.SecurityStatus,
                 SizeFormatted = FormatFileSize(file.Size),
-                QuantizationType = ExtractQuantizationType(file.Path),
+                QuantizationType = ExtractQuantizationFromFilename(file.Path),
                 IsMainModel = IsMainModelFile(file.Path)
             }).OrderByDescending(f => f.Size ?? 0).ToList();
 
@@ -260,12 +326,24 @@
         /// <param name="progressCallback">Progress callback.</param>
         /// <param name="token">Cancellation token.</param>
         /// <returns>True if successful.</returns>
-        public async Task<bool> TryDownloadFileAsync(string sourceUrl, string destinationFilename, Action<string, long, decimal> progressCallback, CancellationToken token = default)
+        public async Task<bool> TryDownloadFileAsync(
+            string sourceUrl,
+            string destinationFilename,
+            Action<string, long, decimal> progressCallback,
+            CancellationToken token = default)
         {
             try
             {
                 await DownloadFileAsync(sourceUrl, destinationFilename, progressCallback, token).ConfigureAwait(false);
                 return true;
+            }
+            catch (TaskCanceledException)
+            {
+                throw;
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
             }
             catch (Exception e)
             {
@@ -284,7 +362,11 @@
         /// <returns>Task representing the asynchronous download operation.</returns>
         /// <exception cref="ArgumentNullException">Thrown when destinationFilename or sourceUrl is null or empty.</exception>
         /// <exception cref="Exception">Thrown when download fails or file operations fail.</exception>
-        public async Task DownloadFileAsync(string sourceUrl, string destinationFilename, Action<string, long, decimal> progressCallback, CancellationToken token = default)
+        public async Task DownloadFileAsync(
+            string sourceUrl,
+            string destinationFilename,
+            Action<string, long, decimal> progressCallback,
+            CancellationToken token = default)
         {
             if (string.IsNullOrWhiteSpace(destinationFilename))
                 throw new ArgumentNullException(nameof(destinationFilename));
@@ -367,6 +449,14 @@
                     }
                 }
             }
+            catch (TaskCanceledException)
+            {
+                throw;
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
                 _Logging.Warn(_Header + "exception in download:" + Environment.NewLine + ex.ToString());
@@ -403,10 +493,10 @@
         /// <param name="token">Cancellation token.</param>
         /// <returns>Number of successfully downloaded files.</returns>
         public async Task<int> DownloadFilesAsync(
-            string modelName, 
-            List<HuggingFaceModelFile> files, 
-            string downloadDirectory, 
-            Action<string, long, decimal> progressCallback = null, 
+            string modelName,
+            List<HuggingFaceModelFile> files,
+            string downloadDirectory,
+            Action<string, long, decimal> progressCallback = null,
             CancellationToken token = default)
         {
             if (string.IsNullOrWhiteSpace(downloadDirectory))
@@ -475,6 +565,179 @@
             return successCount;
         }
 
+        /// <summary>
+        /// Extract quantization from filename.
+        /// </summary>
+        /// <param name="filePath">File path.</param>
+        /// <returns>Quantization.</returns>
+        public string ExtractQuantizationFromFilename(string filePath)
+        {
+            if (string.IsNullOrEmpty(filePath)) return null;
+
+            string fileName = Path.GetFileNameWithoutExtension(filePath);
+
+            string[] quantizationPatterns = new[]
+            {
+                "Q2_K", "Q3_K_S", "Q3_K_M", "Q3_K_L", "Q4_0", "Q4_1", "Q4_K_S", "Q4_K_M",
+                "Q5_0", "Q5_1", "Q5_K_S", "Q5_K_M", "Q6_K", "Q8_0", "F16", "F32"
+            };
+
+            foreach (string pattern in quantizationPatterns)
+            {
+                if (fileName.Contains(pattern, StringComparison.OrdinalIgnoreCase))
+                {
+                    _Logging.Debug(_Header + $"detected quantization type {pattern} in file: {filePath}");
+                    return pattern;
+                }
+            }
+
+            _Logging.Debug(_Header + $"unknown quantization type for file: {filePath}");
+            return "Unknown";
+        }
+
+        /// <summary>
+        /// Extract quantization from URL.
+        /// </summary>
+        /// <param name="url">URL.</param>
+        /// <returns>Quantization.</returns>
+        public string ExtractQuantizationFromUrl(string url)
+        {
+            if (string.IsNullOrEmpty(url)) return null;
+
+            // Common GGUF quantization patterns
+            string[] quantizationPatterns = new[]
+            {
+                "Q2_K", "Q3_K_S", "Q3_K_M", "Q3_K_L", "Q4_0", "Q4_1", "Q4_K_S", "Q4_K_M",
+                "Q5_0", "Q5_1", "Q5_K_S", "Q5_K_M", "Q6_K", "Q8_0", "F16", "F32"
+            };
+
+            foreach (string pattern in quantizationPatterns)
+            {
+                if (url.Contains(pattern, StringComparison.OrdinalIgnoreCase))
+                {
+                    _Logging.Debug(_Header + $"detected quantization type {pattern} in URL: {url}");
+                    return pattern;
+                }
+            }
+
+            _Logging.Debug(_Header + $"unknown quantization type for URL: {url}");
+            return "Unknown";
+        }
+
+        /// <summary>
+        /// Test if a model can be used for embeddings.
+        /// </summary>
+        /// <param name="md">Model metadata.</param>
+        /// <returns>True if the model can be used for embeddings.</returns>
+        public bool IsEmbeddingModel(HuggingFaceModelMetadata md)
+        {
+            if (md == null) return false;
+
+            // Check pipeline tag
+            if (!string.IsNullOrEmpty(md.PipelineTag))
+            {
+                var tag = md.PipelineTag.ToLowerInvariant();
+                if (tag == "sentence-similarity" ||
+                    tag == "feature-extraction" ||
+                    tag == "text-embedding" ||
+                    tag == "embeddings")
+                    return true;
+            }
+
+            // Check library name
+            if (md.LibraryName?.Equals("sentence-transformers", StringComparison.OrdinalIgnoreCase) == true)
+                return true;
+
+            // Check transformers info pipeline tag
+            if (md.TransformersInfo?.PipelineTag?.Equals("feature-extraction", StringComparison.OrdinalIgnoreCase) == true)
+                return true;
+
+            // Check tags array
+            if (md.Tags != null)
+            {
+                foreach (var tag in md.Tags)
+                {
+                    if (tag == null) continue;
+                    var lowerTag = tag.ToLowerInvariant();
+                    if (lowerTag == "sentence-transformers" ||
+                        lowerTag == "feature-extraction" ||
+                        lowerTag == "sentence-similarity" ||
+                        lowerTag == "embeddings" ||
+                        lowerTag == "text-embeddings-inference")
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Test if a model can be used for completions.
+        /// </summary>
+        /// <param name="md">Model metadata.</param>
+        /// <returns>True if the model can be used for completions.</returns>
+        public bool IsCompletionModel(HuggingFaceModelMetadata md)
+        {
+            if (md == null) return false;
+
+            // Check pipeline tag
+            if (!string.IsNullOrEmpty(md.PipelineTag))
+            {
+                var tag = md.PipelineTag.ToLowerInvariant();
+                if (tag == "text-generation" ||
+                    tag == "text2text-generation" ||
+                    tag == "conversational")
+                    return true;
+            }
+
+            // Check architectures
+            if (md.Config?.Architectures != null)
+            {
+                foreach (var arch in md.Config.Architectures)
+                {
+                    if (arch == null) continue;
+                    if (arch.EndsWith("ForCausalLM", StringComparison.OrdinalIgnoreCase) ||
+                        arch.EndsWith("ForConditionalGeneration", StringComparison.OrdinalIgnoreCase))
+                        return true;
+                }
+            }
+
+            // Check transformers info auto model
+            if (md.TransformersInfo?.AutoModel != null)
+            {
+                var autoModel = md.TransformersInfo.AutoModel;
+                if (autoModel.Equals("AutoModelForCausalLM", StringComparison.OrdinalIgnoreCase) ||
+                    autoModel.Equals("AutoModelForSeq2SeqLM", StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            // Check tags array
+            if (md.Tags != null)
+            {
+                foreach (var tag in md.Tags)
+                {
+                    if (tag == null) continue;
+                    var lowerTag = tag.ToLowerInvariant();
+                    if (lowerTag == "text-generation" ||
+                        lowerTag == "text-generation-inference" ||
+                        lowerTag == "conversational" ||
+                        lowerTag == "causal-lm" ||
+                        lowerTag.Contains("llama") ||
+                        lowerTag.Contains("gpt") ||
+                        lowerTag.Contains("mistral") ||
+                        lowerTag.Contains("gemma") ||
+                        lowerTag.Contains("qwen"))
+                        return true;
+                }
+            }
+
+            // Check GGUF causal flag for quantized models
+            if (md.Gguf?.Causal == true)
+                return true;
+
+            return false;
+        }
+
         #endregion
 
         #region Private-Methods
@@ -509,32 +772,6 @@
                 _Logging.Debug(_Header + $"failed to get metadata for {sourceUrl}:{Environment.NewLine}{ex.ToString()}");
                 return sourceUrl;
             }
-        }
-
-        private string ExtractQuantizationType(string filePath)
-        {
-            if (string.IsNullOrEmpty(filePath)) return null;
-
-            string fileName = Path.GetFileNameWithoutExtension(filePath);
-
-            // Common GGUF quantization patterns
-            string[] quantizationPatterns = new[]
-            {
-                "Q2_K", "Q3_K_S", "Q3_K_M", "Q3_K_L", "Q4_0", "Q4_1", "Q4_K_S", "Q4_K_M",
-                "Q5_0", "Q5_1", "Q5_K_S", "Q5_K_M", "Q6_K", "Q8_0", "F16", "F32"
-            };
-
-            foreach (string pattern in quantizationPatterns)
-            {
-                if (fileName.Contains(pattern, StringComparison.OrdinalIgnoreCase))
-                {
-                    // _Logging.Debug(_Header + $"detected quantization type {pattern} in file: {filePath}");
-                    return pattern;
-                }
-            }
-
-            _Logging.Debug(_Header + $"unknown quantization type for file: {filePath}");
-            return "Unknown";
         }
 
         private bool IsMainModelFile(string filePath)

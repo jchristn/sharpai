@@ -2,6 +2,7 @@
 {
     using SharpAI.Helpers;
     using SharpAI.Models;
+    using SharpAI.Serialization;
     using SyslogLogging;
     using System;
     using System.Collections.Generic;
@@ -67,6 +68,7 @@
 
         private string _Header = "[AIDriver] ";
         private LoggingModule _Logging = null;
+        private Serializer _Serializer = new Serializer();
         private string _DatabaseFilename = null;
         private string _HuggingFaceApiKey = null;
         private string _ModelDirectory = "./models/";
@@ -112,10 +114,10 @@
                 typeof(ModelFile)
             });
 
-            _Models = new ModelDriver(_Logging, _ORM, _HuggingFaceApiKey, _ModelDirectory);
-            _Embeddings = new EmbeddingsDriver(_Logging, _Models);
-            _Completion = new CompletionDriver(_Logging, _Models);
-            _Chat = new ChatDriver(_Logging, _Models);
+            _Models = new ModelDriver(_Logging, _ORM, _Serializer, _HuggingFaceApiKey, _ModelDirectory);
+            _Embeddings = new EmbeddingsDriver(_Logging, _Serializer, _Models);
+            _Completion = new CompletionDriver(_Logging, _Serializer, _Models);
+            _Chat = new ChatDriver(_Logging, _Serializer, _Models);
 
             _Logging.Debug(_Header + "initialized");
         }

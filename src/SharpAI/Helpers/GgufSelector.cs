@@ -1,6 +1,6 @@
 ﻿namespace SharpAI.Helpers
 {
-    using SharpAI.Hosting;
+    using SharpAI.Hosting.HuggingFace;
     using System;
     using System.Collections.Generic;
     using System.Linq;
