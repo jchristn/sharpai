@@ -334,7 +334,17 @@
         {
             try
             {
-                await DownloadFileAsync(sourceUrl, destinationFilename, progressCallback, token).ConfigureAwait(false);
+                // Create a wrapper callback that suppresses -1 (failure) notifications
+                // Individual URL failures should not trigger -1, only when ALL URLs fail
+                Action<string, long, decimal> suppressFailureCallback = (url, bytes, percent) =>
+                {
+                    if (percent != -1)
+                    {
+                        progressCallback?.Invoke(url, bytes, percent);
+                    }
+                };
+
+                await DownloadFileAsync(sourceUrl, destinationFilename, suppressFailureCallback, token).ConfigureAwait(false);
                 return true;
             }
             catch (TaskCanceledException)
