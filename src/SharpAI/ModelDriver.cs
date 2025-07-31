@@ -79,17 +79,17 @@
         /// <param name="huggingFaceApiKey">HuggingFace API key.</param>
         /// <param name="modelDirectory">Model storage directory.</param>
         public ModelDriver(
-            LoggingModule logging, 
+            LoggingModule logging,
             WatsonORM orm,
             Serializer serializer,
-            string huggingFaceApiKey, 
+            string huggingFaceApiKey,
             string modelDirectory = "./models/")
         {
             if (String.IsNullOrEmpty(huggingFaceApiKey)) throw new ArgumentNullException(nameof(huggingFaceApiKey));
             if (String.IsNullOrEmpty(modelDirectory)) throw new ArgumentNullException(nameof(modelDirectory));
 
             modelDirectory = DirectoryHelper.NormalizeDirectory(modelDirectory);
-                        
+
             _Logging = logging ?? new LoggingModule();
             _ORM = orm ?? throw new ArgumentNullException(nameof(orm));
             _Serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
@@ -209,65 +209,64 @@
             CancellationToken token = default)
         {
             if (String.IsNullOrEmpty(name)) throw new ArgumentNullException(nameof(name));
-
-            ModelFile existing = _ModelFiles.GetByName(name);
-            if (existing != null)
-            {
-                _Logging.Debug(_Header + "model " + name + " already exists");
-                return existing;
-            }
-
-            HuggingFaceModelMetadata md = await _HuggingFace.GetModelMetadata(name, token).ConfigureAwait(false);
-            if (md == null)
-            {
-                _Logging.Warn(_Header + "unable to retrieve metadata for " + name);
-                throw new Exception("Unable to retrieve metadata for model '" + name + "'.");
-            }
-            else
-            {
-                _Logging.Debug(_Header + "model metadata for " + name + Environment.NewLine + _Serializer.SerializeJson(md, true));
-            }
-
-            List<GgufFileInfo> ggufFiles = await _HuggingFace.GetGgufFilesAsync(name, token).ConfigureAwait(false);
-            if (ggufFiles == null)
-            {
-                _Logging.Warn(_Header + "no GGUF files found for model " + name);
-                throw new Exception("No GGUF files found for model '" + name + "'.");
-            }
-
-            GgufFileInfo preferred = null;
-
-            if (quantizationPriority == null || quantizationPriority.Count < 1)
-                preferred = GgufSelector.SortByOllamaPreference(ggufFiles).First();
-            else
-                preferred = GgufSelector.SortByPreference(ggufFiles, quantizationPriority).First();
-
-            _Logging.Debug(_Header + "using GGUF file " + preferred.Path + " as the preferred file for model " + name);
-
-            List<string> urls = _HuggingFace.GetDownloadUrls(name, preferred);
-            if (urls == null || urls.Count < 1)
-            {
-                _Logging.Warn("no download URLs found for model " + name);
-                throw new Exception("No download URLs found for model " + name + ".");
-            }
-
-            string msg = _Header + "attempting download of model " + name + " from the following URLs:";
-            foreach (string url in urls)
-            {
-                msg += Environment.NewLine + "| " + url;
-            }
-
-            ModelFile modelFile = new ModelFile
-            {
-                Name = name
-            };
-
             bool success = false;
             string filename = null;
             string successUrl = null;
-
             try
             {
+                ModelFile existing = _ModelFiles.GetByName(name);
+                if (existing != null)
+                {
+                    _Logging.Debug(_Header + "model " + name + " already exists");
+                    return existing;
+                }
+
+                HuggingFaceModelMetadata md = await _HuggingFace.GetModelMetadata(name, token).ConfigureAwait(false);
+                if (md == null)
+                {
+                    _Logging.Warn(_Header + "unable to retrieve metadata for " + name);
+                    throw new Exception("Unable to retrieve metadata for model '" + name + "'.");
+                }
+                else
+                {
+                    _Logging.Debug(_Header + "model metadata for " + name + Environment.NewLine + _Serializer.SerializeJson(md, true));
+                }
+
+                List<GgufFileInfo> ggufFiles = await _HuggingFace.GetGgufFilesAsync(name, token).ConfigureAwait(false);
+                if (ggufFiles == null)
+                {
+                    _Logging.Warn(_Header + "no GGUF files found for model " + name);
+                    throw new Exception("No GGUF files found for model '" + name + "'.");
+                }
+
+                GgufFileInfo preferred = null;
+
+                if (quantizationPriority == null || quantizationPriority.Count < 1)
+                    preferred = GgufSelector.SortByOllamaPreference(ggufFiles).First();
+                else
+                    preferred = GgufSelector.SortByPreference(ggufFiles, quantizationPriority).First();
+
+                _Logging.Debug(_Header + "using GGUF file " + preferred.Path + " as the preferred file for model " + name);
+
+                List<string> urls = _HuggingFace.GetDownloadUrls(name, preferred);
+                if (urls == null || urls.Count < 1)
+                {
+                    _Logging.Warn("no download URLs found for model " + name);
+                    throw new Exception("No download URLs found for model " + name + ".");
+                }
+
+                string msg = _Header + "attempting download of model " + name + " from the following URLs:";
+                foreach (string url in urls)
+                {
+                    msg += Environment.NewLine + "| " + url;
+                }
+
+                ModelFile modelFile = new ModelFile
+                {
+                    Name = name
+                };
+
+
                 foreach (string url in urls)
                 {
                     filename = Path.Combine(_ModelDirectory, modelFile.GUID.ToString());
@@ -294,7 +293,7 @@
                         }
                     };
 
-                    success = await _HuggingFace.TryDownloadFileAsync(url, filename, progressCallback, token).ConfigureAwait(false);
+                    success = await _HuggingFace.TryDownloadFileAsync(url, filename, progressCallbackInternal, token).ConfigureAwait(false);
                     if (success && File.Exists(filename) && new FileInfo(filename).Length == preferred.Size)
                     {
                         progressCallback?.Invoke(filename, preferred.Size.Value, 1.0m);
@@ -305,14 +304,17 @@
                     }
                     else
                     {
-                        progressCallback?.Invoke(filename, 0, -1);
+                        // Don't send -1 for individual URL failures - only when ALL URLs fail
                         success = false;
+                        _Logging.Debug(_Header + "download failed for URL " + url);
                     }
                 }
 
                 if (!success || String.IsNullOrEmpty(filename))
                 {
                     _Logging.Warn(_Header + "unable to download model " + name + " using " + urls.Count + " URL(s)");
+                    // Now send -1 because ALL URLs have failed
+                    progressCallback?.Invoke(filename, 0, -1);
                     throw new Exception("Unable to download model " + name + " using " + urls.Count + " URL(s).");
                 }
 
@@ -396,7 +398,7 @@
 
             // Get the model file by name first
             ModelFile modelFile = _ModelFiles.GetByName(name);
-            if (modelFile == null) throw new KeyNotFoundException($"Model '{name}' was not found."); 
+            if (modelFile == null) throw new KeyNotFoundException($"Model '{name}' was not found.");
 
             string modelFilePath = Path.Combine(_ModelDirectory, modelFile.GUID.ToString());
             return _ModelEngines.GetByModelFile(modelFilePath);
