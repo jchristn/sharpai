@@ -11,6 +11,7 @@
     using Watson.ORM.Sqlite;
     using Watson.ORM.Core;
     using System.IO;
+    using System.Collections.Concurrent;
 
     /// <summary>
     /// Model file service.
@@ -234,6 +235,9 @@
         public ModelFile Add(ModelFile obj)
         {
             if (obj == null) throw new ArgumentNullException(nameof(obj));
+
+            ModelFile existing = GetByName(obj.Name);
+            if (existing != null) return existing;
 
             return _ORM.Insert<ModelFile>(obj);
         }

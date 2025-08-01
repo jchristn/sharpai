@@ -13,6 +13,7 @@
     using SQLitePCL;
     using SyslogLogging;
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
@@ -65,6 +66,8 @@
         private ModelEngineService _ModelEngines = null;
         private ModelFileService _ModelFiles = null;
         private HuggingFaceClient _HuggingFace = null;
+
+        private ConcurrentDictionary<string, bool> _Pulls = new ConcurrentDictionary<string, bool>(StringComparer.InvariantCultureIgnoreCase);
 
         #endregion
 
@@ -215,12 +218,35 @@
 
             try
             {
+                #region Hold-Concurrent-Pulls
+
+                int heldCount = 0;
+
+                while (_Pulls.ContainsKey(name))
+                {
+                    if (heldCount % 10 == 0)
+                        _Logging.Debug(_Header + "holding pull request for " + name + " due to an existing pull");
+
+                    heldCount++;
+                    await Task.Delay(1000, token).ConfigureAwait(false);
+                }
+
+                _Pulls.TryAdd(name, true);
+
+                #endregion
+
+                #region Check-for-Existing
+
                 ModelFile existing = _ModelFiles.GetByName(name);
                 if (existing != null)
                 {
                     _Logging.Debug(_Header + "model " + name + " already exists");
                     return existing;
                 }
+
+                #endregion
+
+                #region Retrieve-Metadata-and-GGUF-Files
 
                 HuggingFaceModelMetadata md = await _HuggingFace.GetModelMetadata(name, token).ConfigureAwait(false);
                 if (md == null)
@@ -249,6 +275,10 @@
 
                 _Logging.Debug(_Header + "using GGUF file " + preferred.Path + " as the preferred file for model " + name);
 
+                #endregion
+
+                #region Generate-Download-URLs
+
                 List<string> urls = _HuggingFace.GetDownloadUrls(name, preferred);
                 if (urls == null || urls.Count < 1)
                 {
@@ -262,11 +292,14 @@
                     msg += Environment.NewLine + "| " + url;
                 }
 
+                #endregion
+
+                #region Process
+
                 ModelFile modelFile = new ModelFile
                 {
                     Name = name
                 };
-
 
                 foreach (string url in urls)
                 {
@@ -345,6 +378,8 @@
                     _Logging.Info(_Header + "successfully added model " + name + " using GUID " + created.GUID);
                     return created;
                 }
+
+                #endregion
             }
             catch (TaskCanceledException)
             {
@@ -363,6 +398,10 @@
                 _Logging.Warn(_Header + "exception during download of model " + name + ": " + Environment.NewLine + ex.ToString());
                 progressCallback?.Invoke(filename, 0, -1);
                 throw;
+            }
+            finally
+            {
+                _Pulls.TryRemove(name, out _);
             }
         }
 

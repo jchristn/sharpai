@@ -13,6 +13,7 @@
     using SwiftStack.Rest;
     using SyslogLogging;
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
@@ -44,6 +45,8 @@
 
         private static string _TimestampFormat = "yyyy-MM-ddTHH:mm:ss.ffffffZ";
 
+        private ConcurrentDictionary<string, bool> _Pulls = new ConcurrentDictionary<string, bool>(StringComparer.InvariantCultureIgnoreCase);
+
         #endregion
 
         #region Constructors-and-Factories
@@ -74,195 +77,218 @@
         {
             if (String.IsNullOrEmpty(pmr.Model)) throw new ArgumentNullException(nameof(pmr.Model));
 
-            #region Check-for-Existing
+            #region Hold-Concurrent-Pulls
 
-            ModelFile existing = _ModelFileService.GetByName(pmr.Model);
-            if (existing != null)
+            int heldCount = 0;
+            while (_Pulls.ContainsKey(pmr.Model))
             {
-                _Logging.Debug(_Header + "model " + pmr.Model + " already exists");
+                if (heldCount % 10 == 0)
+                    _Logging.Debug(_Header + "holding pull request for " + pmr.Model + " due to an existing pull");
 
-                req.Http.Response.ContentType = Constants.JsonContentType;
+                heldCount++;
+                await Task.Delay(1000, token).ConfigureAwait(false);
+            }
 
-                return new PullModelStatus
+            _Pulls.TryAdd(pmr.Model, true);
+
+            #endregion
+
+            try
+            {
+                #region Check-for-Existing
+
+                ModelFile existing = _ModelFileService.GetByName(pmr.Model);
+                if (existing != null)
                 {
-                    Status = "success"
-                };
-            }
+                    _Logging.Debug(_Header + "model " + pmr.Model + " already exists");
 
-            #endregion
+                    req.Http.Response.ContentType = Constants.JsonContentType;
 
-            #region Identify-GGUF-Files
-
-            List<GgufFileInfo> ggufFiles = await _HuggingFaceClient.GetGgufFilesAsync(pmr.Model, token).ConfigureAwait(false);
-            if (ggufFiles == null || ggufFiles.Count < 1)
-            {
-                _Logging.Warn(_Header + "no GGUF files found for model " + pmr.Model);
-                throw new SwiftStackException(ApiResultEnum.InternalError, "No GGUF files found for the specified model " + pmr.Model + ".");
-            }
-
-            GgufFileInfo preferred = null;
-
-            if (_Settings.QuantizationPriority == null || _Settings.QuantizationPriority.Count < 1)
-                preferred = GgufSelector.SortByOllamaPreference(ggufFiles).First();
-            else
-                preferred = GgufSelector.SortByPreference(ggufFiles, _Settings.QuantizationPriority).First();
-
-            _Logging.Debug(_Header + "using GGUF file " + preferred.Path + " as the preferred file for model " + pmr.Model);
-
-            #endregion
-
-            #region Get-Download-URLs
-
-            List<string> urls = _HuggingFaceClient.GetDownloadUrls(pmr.Model, preferred);
-            if (urls == null || urls.Count < 1)
-            {
-                _Logging.Warn("no download URLs found for model " + pmr.Model);
-                throw new SwiftStackException(ApiResultEnum.InternalError, "No download URLs found for the specified model " + pmr.Model + ".");
-            }
-
-            string msg = _Header + "attempting download of model " + pmr.Model + " from the following URLs:";
-            foreach (string url in urls)
-            {
-                msg += Environment.NewLine + "| " + url;
-            }
-
-            _Logging.Debug(_Header + msg);
-
-            #endregion
-
-            #region Download
-
-            ModelFile modelFile = new ModelFile
-            {
-                Name = pmr.Model
-            };
-
-            bool success = false;
-            string filename = null;
-            string successUrl = null;
-
-            req.Http.Response.ContentType = Constants.NdJsonContentType;
-            req.Http.Response.ChunkedTransfer = true;
-
-            Action<string, long, decimal> progressCallback = async (filename, bytesDownloaded, percentComplete) =>
-            {
-                if (percentComplete > 0 && percentComplete < 1)
-                {
-                    string complete = percentComplete.ToString("F3");
-
-                    string progress = _Serializer.SerializeJson(new
+                    return new PullModelStatus
                     {
-                        status = "pulling " + pmr.Model,
-                        downloaded = bytesDownloaded,
-                        percent = Convert.ToDecimal(complete)
+                        Status = "success"
+                    };
+                }
+
+                #endregion
+
+                #region Identify-GGUF-Files
+
+                List<GgufFileInfo> ggufFiles = await _HuggingFaceClient.GetGgufFilesAsync(pmr.Model, token).ConfigureAwait(false);
+                if (ggufFiles == null || ggufFiles.Count < 1)
+                {
+                    _Logging.Warn(_Header + "no GGUF files found for model " + pmr.Model);
+                    throw new SwiftStackException(ApiResultEnum.InternalError, "No GGUF files found for the specified model " + pmr.Model + ".");
+                }
+
+                GgufFileInfo preferred = null;
+
+                if (_Settings.QuantizationPriority == null || _Settings.QuantizationPriority.Count < 1)
+                    preferred = GgufSelector.SortByOllamaPreference(ggufFiles).First();
+                else
+                    preferred = GgufSelector.SortByPreference(ggufFiles, _Settings.QuantizationPriority).First();
+
+                _Logging.Debug(_Header + "using GGUF file " + preferred.Path + " as the preferred file for model " + pmr.Model);
+
+                #endregion
+
+                #region Get-Download-URLs
+
+                List<string> urls = _HuggingFaceClient.GetDownloadUrls(pmr.Model, preferred);
+                if (urls == null || urls.Count < 1)
+                {
+                    _Logging.Warn("no download URLs found for model " + pmr.Model);
+                    throw new SwiftStackException(ApiResultEnum.InternalError, "No download URLs found for the specified model " + pmr.Model + ".");
+                }
+
+                string msg = _Header + "attempting download of model " + pmr.Model + " from the following URLs:";
+                foreach (string url in urls)
+                {
+                    msg += Environment.NewLine + "| " + url;
+                }
+
+                _Logging.Debug(_Header + msg);
+
+                #endregion
+
+                #region Download
+
+                ModelFile modelFile = new ModelFile
+                {
+                    Name = pmr.Model
+                };
+
+                bool success = false;
+                string filename = null;
+                string successUrl = null;
+
+                req.Http.Response.ContentType = Constants.NdJsonContentType;
+                req.Http.Response.ChunkedTransfer = true;
+
+                Action<string, long, decimal> progressCallback = async (filename, bytesDownloaded, percentComplete) =>
+                {
+                    if (percentComplete > 0 && percentComplete < 1)
+                    {
+                        string complete = percentComplete.ToString("F3");
+
+                        string progress = _Serializer.SerializeJson(new
+                        {
+                            status = "pulling " + pmr.Model,
+                            downloaded = bytesDownloaded,
+                            percent = Convert.ToDecimal(complete)
+                        }, false) + Environment.NewLine;
+
+                        await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(progress), false, token).ConfigureAwait(false);
+                    }
+                };
+
+                long fileLength = 0;
+
+                filename = Path.Combine(_Settings.Storage.ModelsDirectory, modelFile.GUID.ToString());
+
+                foreach (string url in urls)
+                {
+                    _Logging.Debug(_Header + "attempting download of model " + pmr.Model + " using URL " + url + " to file " + modelFile.GUID.ToString());
+
+                    success = await _HuggingFaceClient.TryDownloadFileAsync(url, filename, progressCallback, token).ConfigureAwait(false);
+                    if (success)
+                    {
+                        fileLength = new FileInfo(filename).Length;
+                        if (File.Exists(filename) && new FileInfo(filename).Length == preferred.Size)
+                        {
+                            _Logging.Info(_Header + "successfully downloaded model " + pmr.Model + " using URL " + url + " to file " + filename);
+                            successUrl = url;
+                            success = true;
+                            break;
+                        }
+                        else
+                        {
+                            success = false;
+                        }
+                    }
+                }
+
+                if (!success || String.IsNullOrEmpty(filename))
+                {
+                    _Logging.Warn(_Header + "unable to download model " + pmr.Model + " using " + urls.Count + " URL(s)");
+                    throw new SwiftStackException(ApiResultEnum.InternalError, "Unable to download model " + pmr.Model + " using " + urls.Count + " URL(s).");
+                }
+
+                _Logging.Info(_Header + "downloaded GGUF file for " + pmr.Model);
+
+                #endregion
+
+                #region Persist
+
+                using (LlamaSharpEngine engine = _ModelEngineService.GetByModelFile(Path.Combine(_Settings.Storage.ModelsDirectory, modelFile.GUID.ToString())))
+                {
+                    modelFile.Embeddings = engine.SupportsEmbeddings;
+                    modelFile.Completions = engine.SupportsGeneration;
+                }
+
+                using (FileStream fs = new FileStream(filename, FileMode.Open, FileAccess.Read))
+                {
+                    (byte[] md5, byte[] sha1, byte[] sha256) = HashHelper.ComputeAllHashes(fs);
+
+                    string writingManifest = _Serializer.SerializeJson(new
+                    {
+                        status = "writing manifest",
+                        downloaded = fileLength,
+                        percent = 1
                     }, false) + Environment.NewLine;
 
-                    await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(progress), false, token).ConfigureAwait(false);
-                }
-            };
+                    await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(writingManifest), false, token).ConfigureAwait(false);
 
-            long fileLength = 0;
+                    HuggingFaceModelMetadata md = null;
 
-            filename = Path.Combine(_Settings.Storage.ModelsDirectory, modelFile.GUID.ToString());
-
-            foreach (string url in urls)
-            {
-                _Logging.Debug(_Header + "attempting download of model " + pmr.Model + " using URL " + url + " to file " + modelFile.GUID.ToString());
-
-                success = await _HuggingFaceClient.TryDownloadFileAsync(url, filename, progressCallback, token).ConfigureAwait(false);
-                if (success)
-                {
-                    fileLength = new FileInfo(filename).Length;
-                    if (File.Exists(filename) && new FileInfo(filename).Length == preferred.Size)
+                    try
                     {
-                        _Logging.Info(_Header + "successfully downloaded model " + pmr.Model + " using URL " + url + " to file " + filename);
-                        successUrl = url;
-                        success = true;
-                        break;
+                        md = await _HuggingFaceClient.GetModelMetadata(pmr.Model, token).ConfigureAwait(false);
+                        if (md == null)
+                        {
+                            _Logging.Warn(_Header + "unable to retrieve metadata for " + pmr.Model);
+                            throw new SwiftStackException(ApiResultEnum.InternalError, "Unable to retrieve metadata for model '" + pmr.Model + "'.");
+                        }
                     }
-                    else
+                    catch (Exception e)
                     {
-                        success = false;
+                        _Logging.Warn(_Header + "exception retrieving model metadata:" + Environment.NewLine + e.ToString());
                     }
-                }
-            }
 
-            if (!success || String.IsNullOrEmpty(filename))
-            {
-                _Logging.Warn(_Header + "unable to download model " + pmr.Model + " using " + urls.Count + " URL(s)");
-                throw new SwiftStackException(ApiResultEnum.InternalError, "Unable to download model " + pmr.Model + " using " + urls.Count + " URL(s).");
-            }
+                    long parameterCount = 0;
+                    if (md.SafeTensors != null) parameterCount = md.SafeTensors.Total;
 
-            _Logging.Info(_Header + "downloaded GGUF file for " + pmr.Model);
+                    modelFile.ContentLength = preferred.Size != null ? preferred.Size.Value : 0;
+                    modelFile.MD5Hash = Convert.ToHexString(md5);
+                    modelFile.SHA1Hash = Convert.ToHexString(sha1);
+                    modelFile.SHA256Hash = Convert.ToHexString(sha256);
+                    modelFile.Quantization = preferred.QuantizationType;
+                    modelFile.ParameterCount = parameterCount;
+                    modelFile.ModelCreationUtc = preferred.LastModified;
+                    modelFile.SourceUrl = successUrl;
 
-            #endregion
+                    _ModelFileService.Add(modelFile);
 
-            #region Persist
+                    req.Http.Response.ContentType = Constants.JsonContentType;
 
-            using (LlamaSharpEngine engine = _ModelEngineService.GetByModelFile(Path.Combine(_Settings.Storage.ModelsDirectory, modelFile.GUID.ToString())))
-            {
-                modelFile.Embeddings = engine.SupportsEmbeddings;
-                modelFile.Completions = engine.SupportsGeneration;
-            }
-
-            using (FileStream fs = new FileStream(filename, FileMode.Open, FileAccess.Read))
-            {
-                (byte[] md5, byte[] sha1, byte[] sha256) = HashHelper.ComputeAllHashes(fs);
-
-                string writingManifest = _Serializer.SerializeJson(new
-                {
-                    status = "writing manifest",
-                    downloaded = fileLength,
-                    percent = 1
-                }, false) + Environment.NewLine;
-
-                await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(writingManifest), false, token).ConfigureAwait(false);
-
-                HuggingFaceModelMetadata md = null;
-
-                try
-                {
-                    md = await _HuggingFaceClient.GetModelMetadata(pmr.Model, token).ConfigureAwait(false);
-                    if (md == null)
+                    string complete = _Serializer.SerializeJson(new
                     {
-                        _Logging.Warn(_Header + "unable to retrieve metadata for " + pmr.Model);
-                        throw new SwiftStackException(ApiResultEnum.InternalError, "Unable to retrieve metadata for model '" + pmr.Model + "'.");
-                    }
+                        status = "success",
+                        downloaded = fileLength,
+                        percent = 1
+                    }, false) + Environment.NewLine;
+
+                    await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(complete), true, token).ConfigureAwait(false);
+
+                    return null;
                 }
-                catch (Exception e)
-                {
-                    _Logging.Warn(_Header + "exception retrieving model metadata:" + Environment.NewLine + e.ToString());
-                }
 
-                long parameterCount = 0;
-                if (md.SafeTensors != null) parameterCount = md.SafeTensors.Total;
-
-                modelFile.ContentLength = preferred.Size != null ? preferred.Size.Value : 0;
-                modelFile.MD5Hash = Convert.ToHexString(md5);
-                modelFile.SHA1Hash = Convert.ToHexString(sha1);
-                modelFile.SHA256Hash = Convert.ToHexString(sha256);
-                modelFile.Quantization = preferred.QuantizationType;
-                modelFile.ParameterCount = parameterCount;
-                modelFile.ModelCreationUtc = preferred.LastModified;
-                modelFile.SourceUrl = successUrl;
-
-                _ModelFileService.Add(modelFile);
-
-                req.Http.Response.ContentType = Constants.JsonContentType;
-
-                string complete = _Serializer.SerializeJson(new
-                {
-                    status = "success",
-                    downloaded = fileLength,
-                    percent = 1
-                }, false) + Environment.NewLine;
-
-                await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(complete), true, token).ConfigureAwait(false);
-
-                return null;
+                #endregion
             }
-
-            #endregion
+            finally
+            {
+                _Pulls.TryRemove(pmr.Model, out _);
+            }
         }
 
         internal async Task<object> DeleteModel(AppRequest req, DeleteModelRequest dmr, CancellationToken token = default)
