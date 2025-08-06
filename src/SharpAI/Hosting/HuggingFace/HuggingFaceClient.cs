@@ -145,7 +145,7 @@
                         if (response.StatusCode < 200 || response.StatusCode >= 300)
                         {
                             _Logging.Error(_Header + $"request failed with status {response.StatusCode}" + (!String.IsNullOrEmpty(response.DataAsString) ? ":" + Environment.NewLine + response.DataAsString : ""));
-                            throw new Exception("Request failed with status " + response.StatusCode + (!String.IsNullOrEmpty(response.DataAsString) ? ":" + Environment.NewLine + response.DataAsString : ""));
+                            throw new KeyNotFoundException("Request failed with status " + response.StatusCode + (!String.IsNullOrEmpty(response.DataAsString) ? ":" + Environment.NewLine + response.DataAsString : ""));
                         }
 
                         JsonDocument jsonDocument = JsonDocument.Parse(response.DataAsString);

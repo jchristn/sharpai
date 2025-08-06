@@ -114,6 +114,13 @@
 
                 #region Identify-GGUF-Files
 
+                string pullingManifest = _Serializer.SerializeJson(new
+                {
+                    status = "pulling manifest"
+                }, false) + Environment.NewLine;
+
+                await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(pullingManifest), false, token).ConfigureAwait(false);
+
                 List<GgufFileInfo> ggufFiles = await _HuggingFaceClient.GetGgufFilesAsync(pmr.Model, token).ConfigureAwait(false);
                 if (ggufFiles == null || ggufFiles.Count < 1)
                 {
@@ -284,6 +291,18 @@
                 }
 
                 #endregion
+            }
+            catch (KeyNotFoundException)
+            {
+                _Logging.Warn(_Header + "unable to find repository or GGUF files for " + pmr.Model);
+
+                string notFound = _Serializer.SerializeJson(new
+                {
+                    error = "pull model manifest: file does not exist"
+                }, false) + Environment.NewLine;
+
+                await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(notFound), true, token).ConfigureAwait(false);
+                return null;
             }
             finally
             {

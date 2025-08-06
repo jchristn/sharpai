@@ -1,0 +1,94 @@
+# Prevent GGUF model files from being transferred
+*.gguf
+**/*.gguf
+
+# Common model file extensions (if you have other formats)
+*.bin
+*.safetensors
+*.pt
+*.pth
+*.onnx
+*.pb
+*.h5
+*.ckpt
+*.model
+
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+README*
+LICENSE*
+CHANGELOG*
+docs/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Build artifacts and dependencies
+node_modules/
+dist/
+build/
+target/
+*.pyc
+__pycache__/
+.pytest_cache/
+.coverage
+*.egg-info/
+
+# Log files
+*.log
+logs/
+
+# Test files
+tests/
+test/
+*.test.*
+*.spec.*
+
+# Docker files (if not needed in build)
+docker-compose*.yml
+Dockerfile.*
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Data directories (common for ML projects)
+data/
+datasets/
+models/
+checkpoints/
+weights/
+
+# Virtual environments
+venv/
+env/
+.env
+.venv
+
+# OS specific files
+Thumbs.db
+.DS_Store
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Archive files
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
