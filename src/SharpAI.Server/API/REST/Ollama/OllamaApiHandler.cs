@@ -114,6 +114,9 @@
 
                 #region Identify-GGUF-Files
 
+                req.Http.Response.ContentType = Constants.NdJsonContentType;
+                req.Http.Response.ChunkedTransfer = true;
+
                 string pullingManifest = _Serializer.SerializeJson(new
                 {
                     status = "pulling manifest"
@@ -125,7 +128,14 @@
                 if (ggufFiles == null || ggufFiles.Count < 1)
                 {
                     _Logging.Warn(_Header + "no GGUF files found for model " + pmr.Model);
-                    throw new SwiftStackException(ApiResultEnum.InternalError, "No GGUF files found for the specified model " + pmr.Model + ".");
+
+                    string notFound = _Serializer.SerializeJson(new
+                    {
+                        error = "pull model manifest: file does not exist"
+                    }, false) + Environment.NewLine;
+
+                    await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(notFound), true, token).ConfigureAwait(false);
+                    return null;
                 }
 
                 GgufFileInfo preferred = null;
@@ -168,9 +178,6 @@
                 bool success = false;
                 string filename = null;
                 string successUrl = null;
-
-                req.Http.Response.ContentType = Constants.NdJsonContentType;
-                req.Http.Response.ChunkedTransfer = true;
 
                 Action<string, long, decimal> progressCallback = async (filename, bytesDownloaded, percentComplete) =>
                 {
