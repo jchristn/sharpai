@@ -3,12 +3,15 @@
     using LLama;
     using LLama.Common;
     using LLama.Sampling;
+    using Microsoft.Extensions.AI;
     using SyslogLogging;
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Runtime.CompilerServices;
     using System.Text;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -419,18 +422,19 @@
 
         private async Task<float[]> ProcessTextWithChunking(string text, CancellationToken token)
         {
-            if (string.IsNullOrEmpty(text))
-            {
-                throw new ArgumentException("Text cannot be null or empty", "text");
-            }
-            int tokenLimit = (int)((_Context?.ContextSize ?? 512) * 0.8);
+            if (string.IsNullOrWhiteSpace(text))
+                throw new ArgumentException("Text cannot be null or empty", nameof(text));
+
+            int contextSize = (int)(_Embedder?.Context.ContextSize ?? 512);
+            int tokenLimit = (int)(contextSize * 0.8);
             int charLimit = tokenLimit * 3;
-            if (text.Length <= charLimit)
+
+            async Task<float[]> TryEmbed(string input)
             {
-                await _EmbedderSemaphore.WaitAsync(token).ConfigureAwait(continueOnCapturedContext: false);
+                await _EmbedderSemaphore.WaitAsync(token).ConfigureAwait(false);
                 try
                 {
-                    return (await _Embedder.GetEmbeddings(text, token).ConfigureAwait(continueOnCapturedContext: false)).Single();
+                    return (await _Embedder.GetEmbeddings(input, token).ConfigureAwait(false)).Single();
                 }
                 finally
                 {
@@ -438,34 +442,49 @@
                 }
             }
 
-            _Logging?.Debug(_Header + $"Processing long text ({text.Length} characters) in chunks");
-            List<string> chunks = SplitTextIntoChunks(text, charLimit);
-            List<float[]> chunkEmbeddings = new List<float[]>();
-            await _EmbedderSemaphore.WaitAsync(token).ConfigureAwait(continueOnCapturedContext: false);
             try
             {
-                for (int i = 0; i < chunks.Count; i++)
+                if (text.Length <= charLimit)
                 {
-                    string text2 = chunks[i];
-                    _Logging?.Debug(_Header + $"Processing chunk {i + 1}/{chunks.Count} (length: {text2.Length})");
+                    return await TryEmbed(text).ConfigureAwait(false);
+                }
+
+                _Logging?.Debug(_Header + $"Processing long text ({text.Length} chars) in chunks (limit: {charLimit})");
+                List<string> chunks = SplitTextIntoChunks(text, charLimit);
+                List<float[]> embeddings = new List<float[]>();
+
+                foreach (var (chunk, index) in chunks.Select((c, i) => (c, i)))
+                {
                     try
                     {
-                        chunkEmbeddings.Add((await _Embedder.GetEmbeddings(text2, token).ConfigureAwait(continueOnCapturedContext: false)).Single());
+                        embeddings.Add(await TryEmbed(chunk).ConfigureAwait(false));
+                    }
+                    catch (ArgumentException ex) when (ex.Message.Contains("Embedding prompt is longer"))
+                    {
+                        _Logging?.Warn(_Header + $"Chunk {index + 1} too long even after initial split. Retrying with smaller chunks...");
+                        int retryLimit = charLimit / 2;
+                        var subChunks = SplitTextIntoChunks(chunk, retryLimit);
+                        foreach (var subChunk in subChunks)
+                        {
+                            embeddings.Add(await TryEmbed(subChunk).ConfigureAwait(false));
+                        }
                     }
                     catch (Exception ex)
                     {
-                        _Logging?.Error(_Header + $"Failed to process chunk {i + 1}: {ex.Message}");
-                        throw new InvalidOperationException($"Failed to process text chunk {i + 1}/{chunks.Count}: {ex.Message}", ex);
+                        _Logging?.Error(_Header + $"Failed to process chunk {index + 1}: {ex.Message}");
+                        throw new InvalidOperationException($"Failed to process text chunk {index + 1}/{chunks.Count}: {ex.Message}", ex);
                     }
                 }
-            }
-            finally
-            {
-                _EmbedderSemaphore.Release();
-            }
 
-            return AverageEmbeddings(chunkEmbeddings);
+                return AverageEmbeddings(embeddings);
+            }
+            catch (Exception ex)
+            {
+                _Logging?.Error(_Header + "Exception during fallback chunked embedding: " + ex.Message);
+                throw;
+            }
         }
+
 
         private List<string> SplitTextIntoChunks(string text, int maxCharacters)
         {
