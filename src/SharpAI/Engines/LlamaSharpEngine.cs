@@ -87,6 +87,7 @@
         private bool _IsInitialized = false;
         private bool _Disposed = false;
         private int _EmbeddingDimensions = -1;
+        private readonly SemaphoreSlim _EmbedderSemaphore = new SemaphoreSlim(1, 1);
 
         #endregion
 
@@ -244,8 +245,8 @@
 
             if (_Embedder == null) throw new InvalidOperationException("Embeddings are not supported. The embedder failed to initialize.");
 
-            IReadOnlyList<float[]> embeddings = await _Embedder.GetEmbeddings("test", token).ConfigureAwait(false);
-            return embeddings[0].Length;
+                IReadOnlyList<float[]> embeddings = await _Embedder.GetEmbeddings("test", token).ConfigureAwait(false);
+                return embeddings[0].Length;
         }
 
         /// <inheritdoc />
@@ -257,22 +258,25 @@
 
             if (_Embedder == null) throw new InvalidOperationException("Embeddings are not supported. The embedder failed to initialize.");
 
-            IReadOnlyList<float[]> embeddings = await _Embedder.GetEmbeddings(text, token).ConfigureAwait(false);
-            return embeddings.Single();
+            // Handle long texts by chunking and averaging
+            return await ProcessTextWithChunking(text, token).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
-        public override async Task<float[][]> GenerateEmbeddingsAsync(
-            string[] texts,
-            CancellationToken token = default)
+        public override async Task<float[][]> GenerateEmbeddingsAsync(string[] texts, CancellationToken token = default(CancellationToken))
         {
             ThrowIfNotInitialized();
+            if (_Embedder == null)
+            {
+                throw new InvalidOperationException("Embeddings are not supported. The embedder failed to initialize.");
+            }
 
             float[][] embeddings = new float[texts.Length][];
-
             for (int i = 0; i < texts.Length; i++)
             {
-                embeddings[i] = await GenerateEmbeddingsAsync(texts[i], token).ConfigureAwait(false);
+                float[][] array = embeddings;
+                int num = i;
+                array[num] = await ProcessTextWithChunking(texts[i], token).ConfigureAwait(continueOnCapturedContext: false);
             }
 
             return embeddings;
@@ -420,6 +424,123 @@
 
         #region Private-Methods
 
+        private async Task<float[]> ProcessTextWithChunking(string text, CancellationToken token)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                throw new ArgumentException("Text cannot be null or empty", "text");
+            }
+
+            if (text.Length <= 800)
+            {
+                await _EmbedderSemaphore.WaitAsync(token).ConfigureAwait(continueOnCapturedContext: false);
+                try
+                {
+                    return (await _Embedder.GetEmbeddings(text, token).ConfigureAwait(continueOnCapturedContext: false)).Single();
+                }
+                finally
+                {
+                    _EmbedderSemaphore.Release();
+                }
+            }
+
+            _Logging?.Debug(_Header + $"Processing long text ({text.Length} characters) in chunks");
+            List<string> chunks = SplitTextIntoChunks(text, 800);
+            List<float[]> chunkEmbeddings = new List<float[]>();
+            await _EmbedderSemaphore.WaitAsync(token).ConfigureAwait(continueOnCapturedContext: false);
+            try
+            {
+                for (int i = 0; i < chunks.Count; i++)
+                {
+                    string text2 = chunks[i];
+                    _Logging?.Debug(_Header + $"Processing chunk {i + 1}/{chunks.Count} (length: {text2.Length})");
+                    try
+                    {
+                        chunkEmbeddings.Add((await _Embedder.GetEmbeddings(text2, token).ConfigureAwait(continueOnCapturedContext: false)).Single());
+                    }
+                    catch (Exception ex)
+                    {
+                        _Logging?.Error(_Header + $"Failed to process chunk {i + 1}: {ex.Message}");
+                        throw new InvalidOperationException($"Failed to process text chunk {i + 1}/{chunks.Count}: {ex.Message}", ex);
+                    }
+                }
+            }
+            finally
+            {
+                _EmbedderSemaphore.Release();
+            }
+
+            return AverageEmbeddings(chunkEmbeddings);
+        }
+
+        private List<string> SplitTextIntoChunks(string text, int maxCharacters)
+        {
+            var chunks = new List<string>();
+            int currentIndex = 0;
+
+            while (currentIndex < text.Length)
+            {
+                int chunkSize = Math.Min(maxCharacters, text.Length - currentIndex);
+                string chunk = text.Substring(currentIndex, chunkSize);
+
+                if (currentIndex + chunkSize < text.Length && !char.IsWhiteSpace(text[currentIndex + chunkSize]))
+                {
+                    int lastSpaceIndex = chunk.LastIndexOf(' ');
+                    if (lastSpaceIndex > chunkSize / 2)
+                    {
+                        chunk = chunk.Substring(0, lastSpaceIndex);
+                        chunkSize = lastSpaceIndex;
+                    }
+                }
+
+                chunks.Add(chunk.Trim());
+                currentIndex += chunkSize;
+
+                while (currentIndex < text.Length && char.IsWhiteSpace(text[currentIndex]))
+                {
+                    currentIndex++;
+                }
+            }
+
+            _Logging?.Debug(_Header + $"Split text into {chunks.Count} chunks");
+            return chunks;
+        }
+
+        private float[] AverageEmbeddings(List<float[]> embeddings)
+        {
+            if (embeddings == null || embeddings.Count == 0)
+            {
+                throw new ArgumentException("Embeddings list cannot be null or empty", nameof(embeddings));
+            }
+
+            if (embeddings.Count == 1)
+            {
+                return embeddings[0];
+            }
+
+            int dimensions = embeddings[0].Length;
+            var averaged = new float[dimensions];
+
+            foreach (var embedding in embeddings)
+            {
+                if (embedding.Length != dimensions)
+                {
+                    throw new InvalidOperationException("All embeddings must have the same dimensions");
+                }
+
+                for (int i = 0; i < dimensions; i++)
+                {
+                    averaged[i] += embedding[i];
+                }
+            }
+
+            for (int i = 0; i < dimensions; i++)
+            {
+                averaged[i] /= embeddings.Count;
+            }
+
+            return averaged;
+        }
         private void ThrowIfNotInitialized()
         {
             if (!_IsInitialized) throw new InvalidOperationException("Provider must be initialized before use. Call InitializeAsync() first.");
