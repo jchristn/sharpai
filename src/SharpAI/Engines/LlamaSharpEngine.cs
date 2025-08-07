@@ -1,5 +1,9 @@
 ﻿namespace SharpAI.Engines
 {
+    using LLama;
+    using LLama.Common;
+    using LLama.Sampling;
+    using SyslogLogging;
     using System;
     using System.Collections.Generic;
     using System.Linq;
@@ -7,12 +11,6 @@
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using LLama.Common;
-    using LLama;
-    using LLama.Abstractions;
-    using LLama.Sampling;
-    using SyslogLogging;
-    using static System.Net.Mime.MediaTypeNames;
 
     /// <summary>
     /// LlamaSharp implementation of the AI provider base class.
@@ -160,12 +158,9 @@
                     var gpuLayers = GetOptimalGpuLayers();
                     _Logging.Debug(_Header + $"initializing LlamaSharp with {(gpuLayers > 0 ? "GPU" : "CPU")} acceleration{(gpuLayers > 0 ? $" ({gpuLayers} layers)" : "")}");
 
-                    // FIX: hard-coded params
                     ModelParams parameters = new ModelParams(modelPath)
                     {
-                        ContextSize = 2048,
                         GpuLayerCount = gpuLayers,
-                        Embeddings = false  // Disable embeddings to avoid conflicts
                     };
 
                     _Model = LLamaWeights.LoadFromFile(parameters);
@@ -180,8 +175,6 @@
                     {
                         ModelParams embeddingParams = new ModelParams(modelPath)
                         {
-                            // FIX: hard-coded params
-                            ContextSize = 2048,
                             GpuLayerCount = gpuLayers,
                             Embeddings = true
                         };
@@ -245,13 +238,13 @@
 
             if (_Embedder == null) throw new InvalidOperationException("Embeddings are not supported. The embedder failed to initialize.");
 
-                IReadOnlyList<float[]> embeddings = await _Embedder.GetEmbeddings("test", token).ConfigureAwait(false);
-                return embeddings[0].Length;
+            IReadOnlyList<float[]> embeddings = await _Embedder.GetEmbeddings("test", token).ConfigureAwait(false);
+            return embeddings[0].Length;
         }
 
         /// <inheritdoc />
         public override async Task<float[]> GenerateEmbeddingsAsync(
-            string text, 
+            string text,
             CancellationToken token = default)
         {
             ThrowIfNotInitialized();
@@ -356,9 +349,9 @@
 
         /// <inheritdoc />
         public override async Task<string> GenerateChatCompletionAsync(
-            string prompt, 
-            int maxTokens = 512, 
-            float temperature = 0.7f, 
+            string prompt,
+            int maxTokens = 512,
+            float temperature = 0.7f,
             string[] stopSequences = null,
             CancellationToken token = default)
         {
@@ -395,8 +388,8 @@
         /// <inheritdoc />
         public override async IAsyncEnumerable<string> GenerateChatCompletionStreamAsync(
             string prompt,
-            int maxTokens = 512, 
-            float temperature = 0.7f, 
+            int maxTokens = 512,
+            float temperature = 0.7f,
             string[] stopSequences = null,
             [EnumeratorCancellation] CancellationToken token = default)
         {
@@ -430,8 +423,9 @@
             {
                 throw new ArgumentException("Text cannot be null or empty", "text");
             }
-
-            if (text.Length <= 800)
+            int tokenLimit = (int)((_Context?.ContextSize ?? 512) * 0.8);
+            int charLimit = tokenLimit * 3;
+            if (text.Length <= charLimit)
             {
                 await _EmbedderSemaphore.WaitAsync(token).ConfigureAwait(continueOnCapturedContext: false);
                 try
@@ -445,7 +439,7 @@
             }
 
             _Logging?.Debug(_Header + $"Processing long text ({text.Length} characters) in chunks");
-            List<string> chunks = SplitTextIntoChunks(text, 800);
+            List<string> chunks = SplitTextIntoChunks(text, charLimit);
             List<float[]> chunkEmbeddings = new List<float[]>();
             await _EmbedderSemaphore.WaitAsync(token).ConfigureAwait(continueOnCapturedContext: false);
             try
@@ -541,12 +535,12 @@
 
             return averaged;
         }
+
         private void ThrowIfNotInitialized()
         {
             if (!_IsInitialized) throw new InvalidOperationException("Provider must be initialized before use. Call InitializeAsync() first.");
             if (_Disposed) throw new ObjectDisposedException(nameof(LlamaSharpEngine));
         }
-
         #endregion
     }
 }
