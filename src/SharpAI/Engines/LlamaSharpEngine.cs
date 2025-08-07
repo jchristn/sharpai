@@ -89,6 +89,7 @@
         private bool _Disposed = false;
         private int _EmbeddingDimensions = -1;
         private readonly SemaphoreSlim _EmbedderSemaphore = new SemaphoreSlim(1, 1);
+        private readonly SemaphoreSlim _GenerationSemaphore = new SemaphoreSlim(1, 1);
 
         #endregion
 
@@ -127,6 +128,9 @@
                 _Embedder?.Dispose();
                 _Context?.Dispose();
                 _Model?.Dispose();
+
+                _EmbedderSemaphore?.Dispose();
+                _GenerationSemaphore?.Dispose();
             }
             catch (Exception ex)
             {
@@ -292,6 +296,7 @@
         {
             ThrowIfNotInitialized();
 
+            await _GenerationSemaphore.WaitAsync(token).ConfigureAwait(false);
             try
             {
                 InferenceParams inferenceParams = new InferenceParams
@@ -318,6 +323,10 @@
                 _Logging.Warn(_Header + "exception generating text:" + Environment.NewLine + ex.ToString());
                 throw new Exception($"Failed to generate text:{Environment.NewLine}{ex.ToString()}", ex);
             }
+            finally
+            {
+                _GenerationSemaphore.Release();
+            }
         }
 
         /// <inheritdoc />
@@ -330,19 +339,27 @@
         {
             ThrowIfNotInitialized();
 
-            InferenceParams inferenceParams = new InferenceParams
+            await _GenerationSemaphore.WaitAsync(token).ConfigureAwait(false);
+            try
             {
-                MaxTokens = Math.Max(maxTokens, 100),
-                AntiPrompts = stopSequences?.ToList() ?? new List<string>(),
-                SamplingPipeline = new DefaultSamplingPipeline
+                InferenceParams inferenceParams = new InferenceParams
                 {
-                    Temperature = temperature
-                }
-            };
+                    MaxTokens = Math.Max(maxTokens, 100),
+                    AntiPrompts = stopSequences?.ToList() ?? new List<string>(),
+                    SamplingPipeline = new DefaultSamplingPipeline
+                    {
+                        Temperature = temperature
+                    }
+                };
 
-            await foreach (var curr in _StatelessExecutor.InferAsync(prompt, inferenceParams, token).ConfigureAwait(false))
+                await foreach (var curr in _StatelessExecutor.InferAsync(prompt, inferenceParams, token).ConfigureAwait(false))
+                {
+                    yield return curr;
+                }
+            }
+            finally
             {
-                yield return curr;
+                _GenerationSemaphore.Release();
             }
         }
 
@@ -360,6 +377,7 @@
         {
             ThrowIfNotInitialized();
 
+            await _GenerationSemaphore.WaitAsync(token).ConfigureAwait(false);
             try
             {
                 InferenceParams inferenceParams = new InferenceParams
@@ -386,6 +404,10 @@
                 _Logging.Warn(_Header + "exception generating chat completion:" + Environment.NewLine + ex.ToString());
                 throw new Exception($"Failed to generate chat completion:{Environment.NewLine}{ex.ToString()}", ex);
             }
+            finally
+            {
+                _GenerationSemaphore.Release();
+            }
         }
 
         /// <inheritdoc />
@@ -398,19 +420,27 @@
         {
             ThrowIfNotInitialized();
 
-            InferenceParams inferenceParams = new InferenceParams
+            await _GenerationSemaphore.WaitAsync(token).ConfigureAwait(false);
+            try
             {
-                MaxTokens = Math.Max(maxTokens, 100),
-                AntiPrompts = stopSequences?.ToList() ?? new List<string> { "user:", "User:", "human:", "Human:" }, // Default anti-prompt for chat
-                SamplingPipeline = new DefaultSamplingPipeline
+                InferenceParams inferenceParams = new InferenceParams
                 {
-                    Temperature = temperature
-                }
-            };
+                    MaxTokens = Math.Max(maxTokens, 100),
+                    AntiPrompts = stopSequences?.ToList() ?? new List<string> { "user:", "User:", "human:", "Human:" }, // Default anti-prompt for chat
+                    SamplingPipeline = new DefaultSamplingPipeline
+                    {
+                        Temperature = temperature
+                    }
+                };
 
-            await foreach (var curr in _StatelessExecutor!.InferAsync(prompt, inferenceParams, token).ConfigureAwait(false))
+                await foreach (var curr in _StatelessExecutor!.InferAsync(prompt, inferenceParams, token).ConfigureAwait(false))
+                {
+                    yield return curr;
+                }
+            }
+            finally
             {
-                yield return curr;
+                _GenerationSemaphore.Release();
             }
         }
 
