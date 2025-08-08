@@ -1,19 +1,16 @@
 ﻿namespace SharpAI.Engines
 {
-    using LLama;
-    using LLama.Common;
-    using LLama.Sampling;
-    using Microsoft.Extensions.AI;
-    using SyslogLogging;
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Runtime.CompilerServices;
     using System.Text;
-    using System.Text.Json;
-    using System.Text.Json.Serialization;
     using System.Threading;
     using System.Threading.Tasks;
+    using SyslogLogging;
+    using LLama;
+    using LLama.Common;
+    using LLama.Sampling;
 
     /// <summary>
     /// LlamaSharp implementation of the AI provider base class.
@@ -479,7 +476,7 @@
                     return await TryEmbed(text).ConfigureAwait(false);
                 }
 
-                _Logging?.Debug(_Header + $"Processing long text ({text.Length} chars) in chunks (limit: {charLimit})");
+                _Logging?.Debug(_Header + $"processing long text ({text.Length} chars) in chunks (limit: {charLimit})");
                 List<string> chunks = SplitTextIntoChunks(text, charLimit);
                 List<float[]> embeddings = new List<float[]>();
 
@@ -491,7 +488,7 @@
                     }
                     catch (ArgumentException ex) when (ex.Message.Contains("Embedding prompt is longer"))
                     {
-                        _Logging?.Warn(_Header + $"Chunk {index + 1} too long even after initial split. Retrying with smaller chunks...");
+                        _Logging?.Warn(_Header + $"chunk {index + 1} too long after split, retrying with smaller chunks");
                         int retryLimit = charLimit / 2;
                         var subChunks = SplitTextIntoChunks(chunk, retryLimit);
                         foreach (var subChunk in subChunks)
@@ -501,7 +498,7 @@
                     }
                     catch (Exception ex)
                     {
-                        _Logging?.Error(_Header + $"Failed to process chunk {index + 1}: {ex.Message}");
+                        _Logging?.Error(_Header + $"failed to process chunk {index + 1}: {ex.Message}");
                         throw new InvalidOperationException($"Failed to process text chunk {index + 1}/{chunks.Count}: {ex.Message}", ex);
                     }
                 }
@@ -510,7 +507,7 @@
             }
             catch (Exception ex)
             {
-                _Logging?.Error(_Header + "Exception during fallback chunked embedding: " + ex.Message);
+                _Logging?.Error(_Header + "exception during fallback chunked embedding: " + ex.Message);
                 throw;
             }
         }
@@ -545,7 +542,7 @@
                 }
             }
 
-            _Logging?.Debug(_Header + $"Split text into {chunks.Count} chunks");
+            _Logging?.Debug(_Header + $"split text into {chunks.Count} chunks");
             return chunks;
         }
 
@@ -568,7 +565,7 @@
             {
                 if (embedding.Length != dimensions)
                 {
-                    throw new InvalidOperationException("All embeddings must have the same dimensions");
+                    throw new InvalidOperationException("all embeddings must have the same dimensions");
                 }
 
                 for (int i = 0; i < dimensions; i++)
