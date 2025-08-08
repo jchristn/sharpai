@@ -7,12 +7,10 @@
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using LLama.Common;
-    using LLama;
-    using LLama.Abstractions;
-    using LLama.Sampling;
     using SyslogLogging;
-    using static System.Net.Mime.MediaTypeNames;
+    using LLama;
+    using LLama.Common;
+    using LLama.Sampling;
 
     /// <summary>
     /// LlamaSharp implementation of the AI provider base class.
@@ -87,6 +85,8 @@
         private bool _IsInitialized = false;
         private bool _Disposed = false;
         private int _EmbeddingDimensions = -1;
+        private readonly SemaphoreSlim _EmbedderSemaphore = new SemaphoreSlim(1, 1);
+        private readonly SemaphoreSlim _GenerationSemaphore = new SemaphoreSlim(1, 1);
 
         #endregion
 
@@ -125,6 +125,9 @@
                 _Embedder?.Dispose();
                 _Context?.Dispose();
                 _Model?.Dispose();
+
+                _EmbedderSemaphore?.Dispose();
+                _GenerationSemaphore?.Dispose();
             }
             catch (Exception ex)
             {
@@ -159,12 +162,9 @@
                     var gpuLayers = GetOptimalGpuLayers();
                     _Logging.Debug(_Header + $"initializing LlamaSharp with {(gpuLayers > 0 ? "GPU" : "CPU")} acceleration{(gpuLayers > 0 ? $" ({gpuLayers} layers)" : "")}");
 
-                    // FIX: hard-coded params
                     ModelParams parameters = new ModelParams(modelPath)
                     {
-                        ContextSize = 2048,
                         GpuLayerCount = gpuLayers,
-                        Embeddings = false  // Disable embeddings to avoid conflicts
                     };
 
                     _Model = LLamaWeights.LoadFromFile(parameters);
@@ -179,8 +179,6 @@
                     {
                         ModelParams embeddingParams = new ModelParams(modelPath)
                         {
-                            // FIX: hard-coded params
-                            ContextSize = 2048,
                             GpuLayerCount = gpuLayers,
                             Embeddings = true
                         };
@@ -250,29 +248,32 @@
 
         /// <inheritdoc />
         public override async Task<float[]> GenerateEmbeddingsAsync(
-            string text, 
+            string text,
             CancellationToken token = default)
         {
             ThrowIfNotInitialized();
 
             if (_Embedder == null) throw new InvalidOperationException("Embeddings are not supported. The embedder failed to initialize.");
 
-            IReadOnlyList<float[]> embeddings = await _Embedder.GetEmbeddings(text, token).ConfigureAwait(false);
-            return embeddings.Single();
+            // Handle long texts by chunking and averaging
+            return await ProcessTextWithChunking(text, token).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
-        public override async Task<float[][]> GenerateEmbeddingsAsync(
-            string[] texts,
-            CancellationToken token = default)
+        public override async Task<float[][]> GenerateEmbeddingsAsync(string[] texts, CancellationToken token = default(CancellationToken))
         {
             ThrowIfNotInitialized();
+            if (_Embedder == null)
+            {
+                throw new InvalidOperationException("Embeddings are not supported. The embedder failed to initialize.");
+            }
 
             float[][] embeddings = new float[texts.Length][];
-
             for (int i = 0; i < texts.Length; i++)
             {
-                embeddings[i] = await GenerateEmbeddingsAsync(texts[i], token).ConfigureAwait(false);
+                float[][] array = embeddings;
+                int num = i;
+                array[num] = await ProcessTextWithChunking(texts[i], token).ConfigureAwait(continueOnCapturedContext: false);
             }
 
             return embeddings;
@@ -292,6 +293,7 @@
         {
             ThrowIfNotInitialized();
 
+            await _GenerationSemaphore.WaitAsync(token).ConfigureAwait(false);
             try
             {
                 InferenceParams inferenceParams = new InferenceParams
@@ -318,6 +320,10 @@
                 _Logging.Warn(_Header + "exception generating text:" + Environment.NewLine + ex.ToString());
                 throw new Exception($"Failed to generate text:{Environment.NewLine}{ex.ToString()}", ex);
             }
+            finally
+            {
+                _GenerationSemaphore.Release();
+            }
         }
 
         /// <inheritdoc />
@@ -330,19 +336,27 @@
         {
             ThrowIfNotInitialized();
 
-            InferenceParams inferenceParams = new InferenceParams
+            await _GenerationSemaphore.WaitAsync(token).ConfigureAwait(false);
+            try
             {
-                MaxTokens = Math.Max(maxTokens, 100),
-                AntiPrompts = stopSequences?.ToList() ?? new List<string>(),
-                SamplingPipeline = new DefaultSamplingPipeline
+                InferenceParams inferenceParams = new InferenceParams
                 {
-                    Temperature = temperature
-                }
-            };
+                    MaxTokens = Math.Max(maxTokens, 100),
+                    AntiPrompts = stopSequences?.ToList() ?? new List<string>(),
+                    SamplingPipeline = new DefaultSamplingPipeline
+                    {
+                        Temperature = temperature
+                    }
+                };
 
-            await foreach (var curr in _StatelessExecutor.InferAsync(prompt, inferenceParams, token).ConfigureAwait(false))
+                await foreach (var curr in _StatelessExecutor.InferAsync(prompt, inferenceParams, token).ConfigureAwait(false))
+                {
+                    yield return curr;
+                }
+            }
+            finally
             {
-                yield return curr;
+                _GenerationSemaphore.Release();
             }
         }
 
@@ -352,14 +366,15 @@
 
         /// <inheritdoc />
         public override async Task<string> GenerateChatCompletionAsync(
-            string prompt, 
-            int maxTokens = 512, 
-            float temperature = 0.7f, 
+            string prompt,
+            int maxTokens = 512,
+            float temperature = 0.7f,
             string[] stopSequences = null,
             CancellationToken token = default)
         {
             ThrowIfNotInitialized();
 
+            await _GenerationSemaphore.WaitAsync(token).ConfigureAwait(false);
             try
             {
                 InferenceParams inferenceParams = new InferenceParams
@@ -386,31 +401,43 @@
                 _Logging.Warn(_Header + "exception generating chat completion:" + Environment.NewLine + ex.ToString());
                 throw new Exception($"Failed to generate chat completion:{Environment.NewLine}{ex.ToString()}", ex);
             }
+            finally
+            {
+                _GenerationSemaphore.Release();
+            }
         }
 
         /// <inheritdoc />
         public override async IAsyncEnumerable<string> GenerateChatCompletionStreamAsync(
             string prompt,
-            int maxTokens = 512, 
-            float temperature = 0.7f, 
+            int maxTokens = 512,
+            float temperature = 0.7f,
             string[] stopSequences = null,
             [EnumeratorCancellation] CancellationToken token = default)
         {
             ThrowIfNotInitialized();
 
-            InferenceParams inferenceParams = new InferenceParams
+            await _GenerationSemaphore.WaitAsync(token).ConfigureAwait(false);
+            try
             {
-                MaxTokens = Math.Max(maxTokens, 100),
-                AntiPrompts = stopSequences?.ToList() ?? new List<string> { "user:", "User:", "human:", "Human:" }, // Default anti-prompt for chat
-                SamplingPipeline = new DefaultSamplingPipeline
+                InferenceParams inferenceParams = new InferenceParams
                 {
-                    Temperature = temperature
-                }
-            };
+                    MaxTokens = Math.Max(maxTokens, 100),
+                    AntiPrompts = stopSequences?.ToList() ?? new List<string> { "user:", "User:", "human:", "Human:" }, // Default anti-prompt for chat
+                    SamplingPipeline = new DefaultSamplingPipeline
+                    {
+                        Temperature = temperature
+                    }
+                };
 
-            await foreach (var curr in _StatelessExecutor!.InferAsync(prompt, inferenceParams, token).ConfigureAwait(false))
+                await foreach (var curr in _StatelessExecutor!.InferAsync(prompt, inferenceParams, token).ConfigureAwait(false))
+                {
+                    yield return curr;
+                }
+            }
+            finally
             {
-                yield return curr;
+                _GenerationSemaphore.Release();
             }
         }
 
@@ -420,12 +447,146 @@
 
         #region Private-Methods
 
+        private async Task<float[]> ProcessTextWithChunking(string text, CancellationToken token)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+                throw new ArgumentException("Text cannot be null or empty", nameof(text));
+
+            int contextSize = (int)(_Embedder?.Context.ContextSize ?? 512);
+            int tokenLimit = (int)(contextSize * 0.8);
+            int charLimit = tokenLimit * 3;
+
+            async Task<float[]> TryEmbed(string input)
+            {
+                await _EmbedderSemaphore.WaitAsync(token).ConfigureAwait(false);
+                try
+                {
+                    return (await _Embedder.GetEmbeddings(input, token).ConfigureAwait(false)).Single();
+                }
+                finally
+                {
+                    _EmbedderSemaphore.Release();
+                }
+            }
+
+            try
+            {
+                if (text.Length <= charLimit)
+                {
+                    return await TryEmbed(text).ConfigureAwait(false);
+                }
+
+                _Logging?.Debug(_Header + $"processing long text ({text.Length} chars) in chunks (limit: {charLimit})");
+                List<string> chunks = SplitTextIntoChunks(text, charLimit);
+                List<float[]> embeddings = new List<float[]>();
+
+                foreach (var (chunk, index) in chunks.Select((c, i) => (c, i)))
+                {
+                    try
+                    {
+                        embeddings.Add(await TryEmbed(chunk).ConfigureAwait(false));
+                    }
+                    catch (ArgumentException ex) when (ex.Message.Contains("Embedding prompt is longer"))
+                    {
+                        _Logging?.Warn(_Header + $"chunk {index + 1} too long after split, retrying with smaller chunks");
+                        int retryLimit = charLimit / 2;
+                        var subChunks = SplitTextIntoChunks(chunk, retryLimit);
+                        foreach (var subChunk in subChunks)
+                        {
+                            embeddings.Add(await TryEmbed(subChunk).ConfigureAwait(false));
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _Logging?.Error(_Header + $"failed to process chunk {index + 1}: {ex.Message}");
+                        throw new InvalidOperationException($"Failed to process text chunk {index + 1}/{chunks.Count}: {ex.Message}", ex);
+                    }
+                }
+
+                return AverageEmbeddings(embeddings);
+            }
+            catch (Exception ex)
+            {
+                _Logging?.Error(_Header + "exception during fallback chunked embedding: " + ex.Message);
+                throw;
+            }
+        }
+
+
+        private List<string> SplitTextIntoChunks(string text, int maxCharacters)
+        {
+            var chunks = new List<string>();
+            int currentIndex = 0;
+
+            while (currentIndex < text.Length)
+            {
+                int chunkSize = Math.Min(maxCharacters, text.Length - currentIndex);
+                string chunk = text.Substring(currentIndex, chunkSize);
+
+                if (currentIndex + chunkSize < text.Length && !char.IsWhiteSpace(text[currentIndex + chunkSize]))
+                {
+                    int lastSpaceIndex = chunk.LastIndexOf(' ');
+                    if (lastSpaceIndex > chunkSize / 2)
+                    {
+                        chunk = chunk.Substring(0, lastSpaceIndex);
+                        chunkSize = lastSpaceIndex;
+                    }
+                }
+
+                chunks.Add(chunk.Trim());
+                currentIndex += chunkSize;
+
+                while (currentIndex < text.Length && char.IsWhiteSpace(text[currentIndex]))
+                {
+                    currentIndex++;
+                }
+            }
+
+            _Logging?.Debug(_Header + $"split text into {chunks.Count} chunks");
+            return chunks;
+        }
+
+        private float[] AverageEmbeddings(List<float[]> embeddings)
+        {
+            if (embeddings == null || embeddings.Count == 0)
+            {
+                throw new ArgumentException("Embeddings list cannot be null or empty", nameof(embeddings));
+            }
+
+            if (embeddings.Count == 1)
+            {
+                return embeddings[0];
+            }
+
+            int dimensions = embeddings[0].Length;
+            var averaged = new float[dimensions];
+
+            foreach (var embedding in embeddings)
+            {
+                if (embedding.Length != dimensions)
+                {
+                    throw new InvalidOperationException("all embeddings must have the same dimensions");
+                }
+
+                for (int i = 0; i < dimensions; i++)
+                {
+                    averaged[i] += embedding[i];
+                }
+            }
+
+            for (int i = 0; i < dimensions; i++)
+            {
+                averaged[i] /= embeddings.Count;
+            }
+
+            return averaged;
+        }
+
         private void ThrowIfNotInitialized()
         {
             if (!_IsInitialized) throw new InvalidOperationException("Provider must be initialized before use. Call InitializeAsync() first.");
             if (_Disposed) throw new ObjectDisposedException(nameof(LlamaSharpEngine));
         }
-
         #endregion
     }
 }
