@@ -280,6 +280,15 @@
             </summary>
             <returns>The context window size in tokens, or -1 if not available.</returns>
         </member>
+        <member name="M:SharpAI.Engines.EngineBase.CountTokens(System.String,System.Boolean,System.Boolean)">
+            <summary>
+            Count tokens in <paramref name="text"/> using the provider's tokenizer.
+            </summary>
+            <param name="text">Input text to tokenize.</param>
+            <param name="addBos">Whether to include a beginning-of-sentence token.</param>
+            <param name="parseSpecial">Whether to parse special tokens (e.g., &lt;|im_start|&gt;).</param>
+            <returns>Total token count; 0 if the engine is not initialized.</returns>
+        </member>
         <member name="M:SharpAI.Engines.EngineBase.GetDimensionality(System.Threading.CancellationToken)">
             <summary>
             Load the model and determine its dimensionality.
@@ -404,6 +413,15 @@
             Gets the context window size (maximum number of tokens) for this model.
             </summary>
             <returns>The context window size in tokens, or -1 if not available.</returns>
+        </member>
+        <member name="M:SharpAI.Engines.LlamaSharpEngine.CountTokens(System.String,System.Boolean,System.Boolean)">
+            <summary>
+            Count tokens in <paramref name="text"/> using the provider's tokenizer.
+            </summary>
+            <param name="text">Input text to tokenize.</param>
+            <param name="addBos">Whether to include a beginning-of-sentence token.</param>
+            <param name="parseSpecial">Whether to parse special tokens (e.g., &lt;|im_start|&gt;).</param>
+            <returns>Total token count; 0 if the engine is not initialized.</returns>
         </member>
         <member name="M:SharpAI.Engines.LlamaSharpEngine.#ctor(SyslogLogging.LoggingModule)">
             <summary>

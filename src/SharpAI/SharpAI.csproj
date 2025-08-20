@@ -43,13 +43,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Inputty" Version="1.0.12" />
-    <PackageReference Include="LLamaSharp" Version="0.24.0" />
-    <PackageReference Include="LLamaSharp.Backend.Cpu" Version="0.24.0" />
-    <PackageReference Include="LLamaSharp.Backend.Cuda12" Version="0.24.0" />
+    <PackageReference Include="Inputty" Version="1.0.13" />
+    <PackageReference Include="LLamaSharp" Version="0.25.0" />
+    <PackageReference Include="LLamaSharp.Backend.Cpu" Version="0.25.0" />
+    <PackageReference Include="LLamaSharp.Backend.Cuda12" Version="0.25.0" />
     <PackageReference Include="RestWrapper" Version="3.1.5" />
     <PackageReference Include="SyslogLogging" Version="2.0.8" />
-    <PackageReference Include="System.Text.Json" Version="9.0.7" />
+    <PackageReference Include="System.Text.Json" Version="9.0.8" />
     <PackageReference Include="WatsonORM.Sqlite" Version="3.0.14" />
   </ItemGroup>
 

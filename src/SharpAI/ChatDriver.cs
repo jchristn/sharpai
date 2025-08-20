@@ -1,10 +1,10 @@
 ﻿namespace SharpAI
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
     using System.Runtime.CompilerServices;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using SharpAI.Engines;
@@ -27,11 +27,10 @@
         private Serializer _Serializer = null;
         private ModelDriver _Models = null;
         private const int DEFAULT_CONTEXT_TOKENS = 4000;
-        private const int MAX_MESSAGES_IN_CONTEXT = 10;
-        private const double CONTEXT_UTILIZATION_RATIO = 0.75;
-        private const int CHUNK_SIZE = 800;
-        private const int CHUNK_OVERLAP = 200;
-
+        private const double CONTEXT_UTILIZATION_RATIO = 0.30;
+        private const int CHUNK_SIZE = 512;
+        private const int CHUNK_OVERLAP = 100;
+        private readonly ConcurrentDictionary<int, List<string>> _contextCache = new();
         #endregion
 
         #region Constructors-and-Factories
@@ -78,7 +77,7 @@
 
             LlamaSharpEngine engine = GetModelEngine(model);
             var processedPrompt = ProcessPromptWithContext(prompt, model);
-            var optimizedPrompt = OptimizePromptForTokenLimit(model, processedPrompt, engine);
+            var optimizedPrompt = OptimizePromptForTokenLimitExact(model, processedPrompt, maxTokens, engine);
             await foreach (string curr in engine.GenerateChatCompletionStreamAsync(optimizedPrompt, maxTokens, temperature, null, token).ConfigureAwait(false))
             {
                 yield return curr;
@@ -108,7 +107,7 @@
 
             LlamaSharpEngine engine = GetModelEngine(model);
             var processedPrompt = ProcessPromptWithContext(prompt, model);
-            var optimizedPrompt = OptimizePromptForTokenLimit(model, processedPrompt, engine);
+            var optimizedPrompt = OptimizePromptForTokenLimitExact(model, processedPrompt, maxTokens, engine);
 
             return await engine.GenerateChatCompletionAsync(optimizedPrompt, maxTokens, temperature, null, token).ConfigureAwait(false);
         }
@@ -124,18 +123,103 @@
             if (string.IsNullOrWhiteSpace(prompt))
                 return prompt;
 
-            var contextContent = ExtractContextFromPrompt(prompt);
-            if (string.IsNullOrWhiteSpace(contextContent))
+            var contextContentRaw = ExtractContextFromPrompt(prompt);
+            if (string.IsNullOrWhiteSpace(contextContentRaw))
                 return prompt;
 
             var userQuery = ExtractUserQueryFromPrompt(prompt);
-            var relevantChunks = FindRelevantChunks(contextContent, userQuery, model, CancellationToken.None);
+            var relevantChunks = GetCachedRelevantChunks(contextContentRaw, userQuery, model);
             var optimizedContextContent = string.Join("\n\n", relevantChunks);
             var processedPrompt = ReplaceContextInPrompt(prompt, optimizedContextContent);
 
             _Logging.Debug($"{_Header}processed prompt with optimized context: {relevantChunks.Count} relevant chunks selected");
-
             return processedPrompt;
+        }
+
+        private string TruncatePromptByTokens(string prompt, int allowedTokens, LlamaSharpEngine engine)
+        {
+            if (string.IsNullOrEmpty(prompt)) return prompt;
+            if (CountTokensFast(engine, prompt) <= allowedTokens) return prompt;
+
+            var lines = prompt.Split('\n');
+            if (lines.Length <= 2)
+            {
+                int approxChars = Math.Max(allowedTokens * 4 - 3, 0);
+                return prompt.Length <= approxChars ? prompt : prompt.Substring(0, approxChars) + "...";
+            }
+
+            var head = new List<string>(lines.Length / 2);
+            var tail = new List<string>(lines.Length / 2);
+            int used = 0;
+            int headBudget = (int)(allowedTokens * 0.67);
+
+            foreach (var line in lines)
+            {
+                int t = CountTokensFast(engine, line) + 1;
+                if (used + t > headBudget) break;
+                head.Add(line);
+                used += t;
+            }
+
+            int remaining = allowedTokens - used;
+            for (int i = lines.Length - 1; i >= 0 && remaining > 0; i--)
+            {
+                int t = CountTokensFast(engine, lines[i]) + 1;
+                if (t > remaining) break;
+                tail.Insert(0, lines[i]);
+                remaining -= t;
+            }
+
+            var joined = string.Join('\n', head) + "\n...\n" + string.Join('\n', tail);
+
+            if (CountTokensFast(engine, joined) > allowedTokens)
+            {
+                int approxChars = Math.Max(allowedTokens * 4 - 3, 0);
+                if (joined.Length > approxChars) joined = joined.Substring(0, approxChars) + "...";
+            }
+            return joined;
+        }
+
+        private string OptimizePromptForTokenLimitExact(string model, string prompt, int maxGenTokens, LlamaSharpEngine engine)
+        {
+            if (string.IsNullOrWhiteSpace(prompt))
+                return prompt;
+
+            int nCtxUsable = GetMaxContextTokens(model, engine);
+            const int safety = 64;
+
+            int promptTokens = CountTokensFast(engine, prompt);
+            if (promptTokens + maxGenTokens + safety <= nCtxUsable)
+            {
+                if (promptTokens > nCtxUsable * 0.8)
+                    _Logging.Debug($"{_Header}prompt near token limit: ~{promptTokens} tokens (limit: {nCtxUsable})");
+                return prompt;
+            }
+
+            int allowedPromptTokens = Math.Max(256, nCtxUsable - maxGenTokens - safety);
+            var shrunk = TruncatePromptByTokens(prompt, allowedPromptTokens, engine);
+
+            int shrunkTokens = CountTokensFast(engine, shrunk);
+            _Logging.Warn($"{_Header}prompt truncated token-aware: ~{shrunkTokens} tokens (from ~{promptTokens}, limit: {nCtxUsable})");
+            return shrunk;
+        }
+
+        private List<string> GetCachedRelevantChunks(string context, string userQuery, string model)
+        {
+            int key = HashCode.Combine(
+                context.GetHashCode(StringComparison.Ordinal),
+                userQuery.GetHashCode(StringComparison.Ordinal));
+
+            if (_contextCache.TryGetValue(key, out var cached))
+                return cached;
+
+            var chunks = FindRelevantChunks(context, userQuery, model, CancellationToken.None);
+
+            if (_contextCache.Count > 100)
+                _contextCache.Clear();
+
+            _contextCache[key] = chunks;
+            return chunks;
         }
 
         private string ExtractContextFromPrompt(string prompt)
@@ -207,8 +291,8 @@
 
             var beforeContext = originalPrompt.Substring(0, startIndex + startTag.Length);
             var afterContext = originalPrompt.Substring(endIndex);
-
-            return beforeContext + "\n" + optimizedContextContent + "\n" + afterContext;
+            var compressed = LightCompress(optimizedContextContent);
+            return beforeContext + "\n" + compressed + "\n" + afterContext;
         }
 
         private int GetMaxContextTokens(string model, LlamaSharpEngine engine)
@@ -236,101 +320,20 @@
             }
         }
 
-        private string OptimizePromptForTokenLimit(string model, string prompt, LlamaSharpEngine engine)
-        {
-            if (string.IsNullOrWhiteSpace(prompt))
-                return prompt;
-
-            const int charsPerToken = 4;
-            var maxContextTokens = GetMaxContextTokens(model, engine);
-            var maxChars = maxContextTokens * charsPerToken;
-
-            if (prompt.Length <= maxChars)
-            {
-                if (prompt.Length > maxChars * 0.8)
-                    _Logging.Debug($"{_Header}prompt near token limit: {prompt.Length} chars, ~{prompt.Length / charsPerToken} tokens (limit: {maxContextTokens})");
-                return prompt;
-            }
-
-            var originalLength = prompt.Length;
-            var optimizedPrompt = TruncatePromptIntelligently(prompt, maxChars);
-            _Logging.Warn($"{_Header}prompt truncated: {optimizedPrompt.Length} chars, ~{optimizedPrompt.Length / charsPerToken} tokens (truncated from {originalLength} chars, limit: {maxContextTokens})");
-
-            return optimizedPrompt;
-        }
-
-        private string TruncatePromptIntelligently(string prompt, int maxChars)
-        {
-            if (prompt.Length <= maxChars)
-                return prompt;
-
-            var lines = prompt.Split('\n').ToList();
-
-            if (lines.Count <= 2)
-                return prompt.Substring(0, maxChars - 3) + "...";
-
-            var preservedLines = new List<string>();
-            var currentLength = 0;
-            var reservedForEnd = maxChars / 3;
-
-            for (int i = 0; i < lines.Count; i++)
-            {
-                var line = lines[i];
-                if (currentLength + line.Length + 1 <= maxChars - reservedForEnd)
-                {
-                    preservedLines.Add(line);
-                    currentLength += line.Length + 1;
-                }
-                else
-                    break;
-            }
-
-            var endLines = new List<string>();
-            for (int i = lines.Count - 1; i >= 0; i--)
-            {
-                var line = lines[i];
-                if (currentLength + line.Length + 1 <= maxChars && endLines.Count < MAX_MESSAGES_IN_CONTEXT)
-                {
-                    endLines.Insert(0, line);
-                    currentLength += line.Length + 1;
-                }
-                else
-                    break;
-            }
-
-            var result = string.Join("\n", preservedLines.Concat(endLines));
-
-            if (result.Length > maxChars)
-                result = result.Substring(0, maxChars - 3) + "...";
-
-            return result;
-        }
-
         private List<string> ChunkText(string text)
         {
             if (string.IsNullOrWhiteSpace(text))
                 return new List<string>();
 
-            var chunks = new List<string>();
-            var sentences = text.Split(new[] { ". ", ".\n", "!\n", "?\n" }, StringSplitOptions.RemoveEmptyEntries);
+            int step = Math.Max(1, CHUNK_SIZE - CHUNK_OVERLAP);
+            int estimated = Math.Max(1, text.Length / step);
+            var chunks = new List<string>(estimated);
 
-            var currentChunk = new StringBuilder();
-
-            foreach (var sentence in sentences)
+            for (int i = 0; i < text.Length; i += step)
             {
-                if (currentChunk.Length + sentence.Length > CHUNK_SIZE && currentChunk.Length > 0)
-                {
-                    chunks.Add(currentChunk.ToString().Trim());
-                    var words = currentChunk.ToString().Split(' ');
-                    var overlapWords = words.Skip(Math.Max(0, words.Length - (CHUNK_OVERLAP / 10))).ToArray();
-                    currentChunk = new StringBuilder(string.Join(" ", overlapWords) + " ");
-                }
-
-                currentChunk.Append(sentence + ". ");
+                int len = Math.Min(CHUNK_SIZE, text.Length - i);
+                chunks.Add(text.Substring(i, len));
             }
-
-            if (currentChunk.Length > 0)
-                chunks.Add(currentChunk.ToString().Trim());
 
             return chunks;
         }
@@ -340,35 +343,64 @@
             var chunks = ChunkText(pdfContent);
             if (chunks.Count == 0) return new List<string>();
 
-            var queryWords = userQuery.ToLower()
-                .Split(new[] { ' ', '\t', '\n', '.', ',', '!', '?' }, StringSplitOptions.RemoveEmptyEntries)
+            var queryWords = userQuery
+                .Split(new[] { ' ', '\t', '\r', '\n', '.', ',', '!', '?', ':', ';', '(', ')', '[', ']', '{', '}', '/', '\\', '"', '\'' },
+                       StringSplitOptions.RemoveEmptyEntries)
+                .Select(w => w.Trim())
                 .Where(w => w.Length > 2)
-                .ToHashSet();
+                .Select(w => w.ToLowerInvariant())
+                .Distinct()
+                .ToArray();
 
-            var scoredChunks = chunks.Select(chunk => new
-            {
-                Chunk = chunk,
-                Score = CalculateRelevanceScore(chunk.ToLower(), queryWords)
-            })
-            .Where(x => x.Score > 0)
-            .OrderByDescending(x => x.Score)
-            .Take(10)
-            .Select(x => x.Chunk)
-            .ToList();
+            if (queryWords.Length == 0)
+                return chunks.Take(5).ToList();
 
-            if (scoredChunks.Count == 0 && chunks.Count > 0)
+            var scored = new List<(int score, string chunk)>(chunks.Count);
+            foreach (var chunk in chunks)
             {
-                scoredChunks = chunks.Take(5).ToList();
+                int s = 0;
+                foreach (var qw in queryWords)
+                {
+                    if (chunk.AsSpan().IndexOf(qw, StringComparison.OrdinalIgnoreCase) >= 0)
+                        s++;
+                }
+                if (s > 0) scored.Add((s, chunk));
             }
 
-            _Logging.Debug($"{_Header}selected {scoredChunks.Count} relevant chunks from {chunks.Count} total chunks");
-            return scoredChunks;
+            List<string> result;
+            if (scored.Count > 0)
+            {
+                result = scored
+                    .OrderByDescending(t => t.score)
+                    .Take(5)
+                    .Select(t => t.chunk)
+                    .ToList();
+            }
+            else
+            {
+                result = chunks.Take(5).ToList();
+            }
+
+            _Logging.Debug($"{_Header}selected {result.Count} relevant chunks from {chunks.Count} total chunks");
+            return result;
         }
 
-        private int CalculateRelevanceScore(string text, HashSet<string> queryWords)
+        private int CountTokensFast(LlamaSharpEngine engine, string text)
         {
-            var textWords = text.Split(new[] { ' ', '\t', '\n', '.', ',', '!', '?' }, StringSplitOptions.RemoveEmptyEntries);
-            return textWords.Count(word => queryWords.Contains(word.ToLower()));
+            return engine.CountTokens(text);
+        }
+
+        private static string LightCompress(string s)
+        {
+            if (string.IsNullOrWhiteSpace(s)) return s;
+            s = System.Text.RegularExpressions.Regex.Replace(s, @"[ \t]+", " ");
+            var lines = s.Split('\n').Select(l => l.Trim()).Where(l => l.Length > 0).Distinct();
+            var trimmed = lines.Select(line =>
+            {
+                var parts = line.Split(new[] { ". ", "!\n", "?\n", ".\n" }, StringSplitOptions.None);
+                return string.Join(". ", parts.Take(3)) + (parts.Length > 3 ? "..." : "");
+            });
+            return string.Join("\n", trimmed);
         }
 
         #endregion
