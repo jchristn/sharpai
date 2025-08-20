@@ -46,6 +46,22 @@
         /// </summary>
         public abstract bool SupportsGeneration { get; }
 
+        /// <summary>
+        /// Gets the context window size (maximum number of tokens) for this model.
+        /// This is used to determine optimal token limits for prompts.
+        /// </summary>
+        /// <returns>The context window size in tokens, or -1 if not available.</returns>
+        public abstract int GetContextSize();
+
+        /// <summary>
+        /// Count tokens in <paramref name="text"/> using the provider's tokenizer.
+        /// </summary>
+        /// <param name="text">Input text to tokenize.</param>
+        /// <param name="addBos">Whether to include a beginning-of-sentence token.</param>
+        /// <param name="parseSpecial">Whether to parse special tokens (e.g., &lt;|im_start|&gt;).</param>
+        /// <returns>Total token count; 0 if the engine is not initialized.</returns>
+        public abstract int CountTokens(string text, bool addBos = true, bool parseSpecial = true);
+
         #region Embeddings
 
         /// <summary>

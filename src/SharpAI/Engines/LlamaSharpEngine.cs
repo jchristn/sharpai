@@ -65,10 +65,43 @@
         public override bool SupportsGeneration => true;
 
         /// <summary>
-        /// Gets a value indicating whether this engine has been successfully initialized.
+        /// Gets whether this engine has been successfully initialized.
         /// </summary>
         public override bool IsInitialized => _IsInitialized;
 
+        /// <summary>
+        /// Gets the context window size (maximum number of tokens) for this model.
+        /// </summary>
+        /// <returns>The context window size in tokens, or -1 if not available.</returns>
+        public override int GetContextSize()
+        {
+            if (!_IsInitialized || _Context == null)
+                return -1;
+
+            return (int)_Context.ContextSize;
+        }
+
+        /// <summary>
+        /// Count tokens in <paramref name="text"/> using the provider's tokenizer.
+        /// </summary>
+        /// <param name="text">Input text to tokenize.</param>
+        /// <param name="addBos">Whether to include a beginning-of-sentence token.</param>
+        /// <param name="parseSpecial">Whether to parse special tokens (e.g., &lt;|im_start|&gt;).</param>
+        /// <returns>Total token count; 0 if the engine is not initialized.</returns>
+        public override int CountTokens(string text, bool addBos = true, bool parseSpecial = true)
+        {
+            if (!_IsInitialized || _Context == null || string.IsNullOrEmpty(text))
+                return 0;
+            try
+            {
+                var toks = _Context.Tokenize(text, addBos, parseSpecial);
+                return toks.Length;
+            }
+            catch
+            {
+                return Math.Max(1, text.Length / 4);
+            }
+        }
         #endregion
 
         #region Private-Members
@@ -160,11 +193,12 @@
                 try
                 {
                     var gpuLayers = GetOptimalGpuLayers();
-                    _Logging.Debug(_Header + $"initializing LlamaSharp with {(gpuLayers > 0 ? "GPU" : "CPU")} acceleration{(gpuLayers > 0 ? $" ({gpuLayers} layers)" : "")}");
+                    _Logging.Debug(_Header + $"initializing LlamaSharp with {(gpuLayers != 0 ? "GPU" : "CPU")} acceleration{(gpuLayers != 0 ? $" ({gpuLayers} layers requested)" : "")}");
 
                     ModelParams parameters = new ModelParams(modelPath)
                     {
                         GpuLayerCount = gpuLayers,
+                        Threads = Math.Max(1, Environment.ProcessorCount - 1),
                     };
 
                     _Model = LLamaWeights.LoadFromFile(parameters);
@@ -180,7 +214,8 @@
                         ModelParams embeddingParams = new ModelParams(modelPath)
                         {
                             GpuLayerCount = gpuLayers,
-                            Embeddings = true
+                            Embeddings = true,
+                            Threads = Math.Max(1, Environment.ProcessorCount - 1),
                         };
 
                         LLamaWeights embeddingModel = LLamaWeights.LoadFromFile(embeddingParams);
@@ -216,7 +251,7 @@
                 if (gpuDeviceCount > 0)
                 {
                     _Logging.Debug(_Header + $"CUDA detected, {gpuDeviceCount} GPU device(s) available");
-                    return -1; // Use all available GPU layers
+                    return 999; // big positive -> clamp to all layers
                 }
                 else
                 {
