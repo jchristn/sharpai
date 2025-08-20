@@ -28,8 +28,8 @@
         private ModelDriver _Models = null;
         private const int DEFAULT_CONTEXT_TOKENS = 4000;
         private const int MAX_MESSAGES_IN_CONTEXT = 10;
-        private const double CONTEXT_UTILIZATION_RATIO = 0.8;
-        private const int CHUNK_SIZE = 1000;
+        private const double CONTEXT_UTILIZATION_RATIO = 0.75;
+        private const int CHUNK_SIZE = 800;
         private const int CHUNK_OVERLAP = 200;
 
         #endregion
