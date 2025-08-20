@@ -18,6 +18,42 @@
     {
         #region Public-Members
 
+        /// <summary>
+        /// Default context tokens.  Default is 4000.  Minimum value is 256.
+        /// </summary>
+        public int DefaultContextTokens
+        {
+            get => _DefaultContextTokens;
+            set => _DefaultContextTokens = (value >= 256 ? value : throw new ArgumentOutOfRangeException(nameof(DefaultContextTokens)));
+        }
+
+        /// <summary>
+        /// Context utilization ratio.  Default is 0.3.  Value must be greater than 0 and less than or equal to 1.
+        /// </summary>
+        public double ContextUtilizationRatio
+        {
+            get => _ContextUtilizationRatio;
+            set => _ContextUtilizationRatio = (value > 0d && value <= 1d ? value : throw new ArgumentOutOfRangeException(nameof(ContextUtilizationRatio)));
+        }
+
+        /// <summary>
+        /// Chunk size when working with context.  Default is 512.  Minimum value is 256.
+        /// </summary>
+        public int ChunkSize
+        {
+            get => _ChunkSize;
+            set => _ChunkSize = (value >= 256 ? value : throw new ArgumentOutOfRangeException(nameof(ChunkSize)));
+        }
+
+        /// <summary>
+        /// The amount of overlap that should exist between tokens.  Default is 100.  Minimum value is 0.
+        /// </summary>
+        public int ChunkOverlap
+        {
+            get => _ChunkOverlap;
+            set => _ChunkOverlap = (value >= 0 ? value : throw new ArgumentOutOfRangeException(nameof(ChunkOverlap)));
+        }
+
         #endregion
 
         #region Private-Members
@@ -26,11 +62,12 @@
         private LoggingModule _Logging = null;
         private Serializer _Serializer = null;
         private ModelDriver _Models = null;
-        private const int DEFAULT_CONTEXT_TOKENS = 4000;
-        private const double CONTEXT_UTILIZATION_RATIO = 0.30;
-        private const int CHUNK_SIZE = 512;
-        private const int CHUNK_OVERLAP = 100;
-        private readonly ConcurrentDictionary<int, List<string>> _contextCache = new();
+        private int _DefaultContextTokens = 4000;
+        private double _ContextUtilizationRatio = 0.30;
+        private int _ChunkSize = 512;
+        private int _ChunkOverlap = 100;
+        private readonly ConcurrentDictionary<int, List<string>> _ContextCache = new ConcurrentDictionary<int, List<string>>();
+
         #endregion
 
         #region Constructors-and-Factories
@@ -210,15 +247,15 @@
                 context.GetHashCode(StringComparison.Ordinal),
                 userQuery.GetHashCode(StringComparison.Ordinal));
 
-            if (_contextCache.TryGetValue(key, out var cached))
+            if (_ContextCache.TryGetValue(key, out var cached))
                 return cached;
 
             var chunks = FindRelevantChunks(context, userQuery, model, CancellationToken.None);
 
-            if (_contextCache.Count > 100)
-                _contextCache.Clear();
+            if (_ContextCache.Count > 100)
+                _ContextCache.Clear();
 
-            _contextCache[key] = chunks;
+            _ContextCache[key] = chunks;
             return chunks;
         }
 
@@ -303,20 +340,20 @@
 
                 if (contextSize > 0)
                 {
-                    var maxTokens = (int)(contextSize * CONTEXT_UTILIZATION_RATIO);
-                    _Logging.Debug($"{_Header}model '{model}' context size: {contextSize}, using {maxTokens} tokens ({CONTEXT_UTILIZATION_RATIO:P0} utilization)");
+                    var maxTokens = (int)(contextSize * _ContextUtilizationRatio);
+                    _Logging.Debug($"{_Header}model '{model}' context size: {contextSize}, using {maxTokens} tokens ({_ContextUtilizationRatio:P0} utilization)");
                     return maxTokens;
                 }
                 else
                 {
-                    _Logging.Debug($"{_Header}model '{model}' context size not available, using default: {DEFAULT_CONTEXT_TOKENS} tokens");
-                    return DEFAULT_CONTEXT_TOKENS;
+                    _Logging.Debug($"{_Header}model '{model}' context size not available, using default: {_DefaultContextTokens} tokens");
+                    return _DefaultContextTokens;
                 }
             }
             catch (Exception ex)
             {
                 _Logging.Warn($"{_Header}Error getting context size for model '{model}', using default: {ex.Message}");
-                return DEFAULT_CONTEXT_TOKENS;
+                return _DefaultContextTokens;
             }
         }
 
@@ -325,13 +362,13 @@
             if (string.IsNullOrWhiteSpace(text))
                 return new List<string>();
 
-            int step = Math.Max(1, CHUNK_SIZE - CHUNK_OVERLAP);
+            int step = Math.Max(1, _ChunkSize - _ChunkOverlap);
             int estimated = Math.Max(1, text.Length / step);
             var chunks = new List<string>(estimated);
 
             for (int i = 0; i < text.Length; i += step)
             {
-                int len = Math.Min(CHUNK_SIZE, text.Length - i);
+                int len = Math.Min(_ChunkSize, text.Length - i);
                 chunks.Add(text.Substring(i, len));
             }
 

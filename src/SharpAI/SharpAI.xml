@@ -43,6 +43,26 @@
             Chat driver for handling chat completions with context optimization.
             </summary>
         </member>
+        <member name="P:SharpAI.ChatDriver.DefaultContextTokens">
+            <summary>
+            Default context tokens.  Default is 4000.  Minimum value is 256.
+            </summary>
+        </member>
+        <member name="P:SharpAI.ChatDriver.ContextUtilizationRatio">
+            <summary>
+            Context utilization ratio.  Default is 0.3.  Value must be greater than 0 and less than or equal to 1.
+            </summary>
+        </member>
+        <member name="P:SharpAI.ChatDriver.ChunkSize">
+            <summary>
+            Chunk size when working with context.  Default is 512.  Minimum value is 256.
+            </summary>
+        </member>
+        <member name="P:SharpAI.ChatDriver.ChunkOverlap">
+            <summary>
+            The amount of overlap that should exist between tokens.  Default is 100.  Minimum value is 0.
+            </summary>
+        </member>
         <member name="M:SharpAI.ChatDriver.#ctor(SyslogLogging.LoggingModule,SharpAI.Serialization.Serializer,SharpAI.ModelDriver)">
             <summary>
             Chat driver.
