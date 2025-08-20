@@ -65,9 +65,21 @@
         public override bool SupportsGeneration => true;
 
         /// <summary>
-        /// Gets a value indicating whether this engine has been successfully initialized.
+        /// Gets whether this engine has been successfully initialized.
         /// </summary>
         public override bool IsInitialized => _IsInitialized;
+
+        /// <summary>
+        /// Gets the context window size (maximum number of tokens) for this model.
+        /// </summary>
+        /// <returns>The context window size in tokens, or -1 if not available.</returns>
+        public override int GetContextSize()
+        {
+            if (!_IsInitialized || _Context == null)
+                return -1;
+
+            return (int)_Context.ContextSize;
+        }
 
         #endregion
 

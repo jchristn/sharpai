@@ -40,7 +40,7 @@
         </member>
         <member name="T:SharpAI.ChatDriver">
             <summary>
-            Chat driver.
+            Chat driver for handling chat completions with context optimization.
             </summary>
         </member>
         <member name="M:SharpAI.ChatDriver.#ctor(SyslogLogging.LoggingModule,SharpAI.Serialization.Serializer,SharpAI.ModelDriver)">
@@ -54,9 +54,10 @@
         <member name="M:SharpAI.ChatDriver.GenerateCompletionStreaming(System.String,System.String,System.Int32,System.Single,System.Threading.CancellationToken)">
             <summary>
             Generate a chat completion using streaming.
+            Supports context extraction and optimization from formatted prompt strings.
             </summary>
             <param name="model">Model.</param>
-            <param name="prompt">Prompt containing conversation history.  Be sure to format this in accordance with the expectations of the model you are using.</param>
+            <param name="prompt">Formatted prompt string. Context can be provided in system messages with <context></context> tags.</param>
             <param name="maxTokens">Maximum number of tokens to generate.  Minimum is 100.</param>
             <param name="temperature">Temperature.  Minimum is 0.0, maximum is 1.0</param>
             <param name="token">Cancellation token.</param>
@@ -65,9 +66,10 @@
         <member name="M:SharpAI.ChatDriver.GenerateCompletion(System.String,System.String,System.Int32,System.Single,System.Threading.CancellationToken)">
             <summary>
             Generate a chat completion without streaming.
+            Supports context extraction and optimization from formatted prompt strings.
             </summary>
             <param name="model">Model.</param>
-            <param name="prompt">Prompt containing conversation history.  Be sure to format this in accordance with the expectations of the model you are using.</param>
+            <param name="prompt">Formatted prompt string. Context can be provided in system messages with <context></context> tags.</param>
             <param name="maxTokens">Maximum number of tokens to generate.  Minimum is 100.</param>
             <param name="temperature">Temperature.  Minimum is 0.0, maximum is 1.0</param>
             <param name="token">Cancellation token.</param>
@@ -271,6 +273,13 @@
             Gets whether this provider supports chat/text generation.
             </summary>
         </member>
+        <member name="M:SharpAI.Engines.EngineBase.GetContextSize">
+            <summary>
+            Gets the context window size (maximum number of tokens) for this model.
+            This is used to determine optimal token limits for prompts.
+            </summary>
+            <returns>The context window size in tokens, or -1 if not available.</returns>
+        </member>
         <member name="M:SharpAI.Engines.EngineBase.GetDimensionality(System.Threading.CancellationToken)">
             <summary>
             Load the model and determine its dimensionality.
@@ -387,8 +396,14 @@
         </member>
         <member name="P:SharpAI.Engines.LlamaSharpEngine.IsInitialized">
             <summary>
-            Gets a value indicating whether this engine has been successfully initialized.
+            Gets whether this engine has been successfully initialized.
             </summary>
+        </member>
+        <member name="M:SharpAI.Engines.LlamaSharpEngine.GetContextSize">
+            <summary>
+            Gets the context window size (maximum number of tokens) for this model.
+            </summary>
+            <returns>The context window size in tokens, or -1 if not available.</returns>
         </member>
         <member name="M:SharpAI.Engines.LlamaSharpEngine.#ctor(SyslogLogging.LoggingModule)">
             <summary>

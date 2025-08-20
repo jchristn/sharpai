@@ -46,6 +46,13 @@
         /// </summary>
         public abstract bool SupportsGeneration { get; }
 
+        /// <summary>
+        /// Gets the context window size (maximum number of tokens) for this model.
+        /// This is used to determine optimal token limits for prompts.
+        /// </summary>
+        /// <returns>The context window size in tokens, or -1 if not available.</returns>
+        public abstract int GetContextSize();
+
         #region Embeddings
 
         /// <summary>
