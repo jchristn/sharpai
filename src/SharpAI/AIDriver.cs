@@ -62,6 +62,28 @@
             }
         }
 
+        /// <summary>
+        /// Vision APIs.
+        /// </summary>
+        public VisionDriver Vision
+        {
+            get
+            {
+                return _Vision;
+            }
+        }
+
+        /// <summary>
+        /// Gets the configured projector path (mmproj GGUF) or empty string if not configured.
+        /// </summary>
+        public string VisionProjectorPath
+        {
+            get
+            {
+                return _mmprojPath ?? string.Empty;
+            }
+        }
+
         #endregion
 
         #region Private-Members
@@ -72,6 +94,7 @@
         private string _DatabaseFilename = null;
         private string _HuggingFaceApiKey = null;
         private string _ModelDirectory = "./models/";
+        private string _mmprojPath = null;
 
         private WatsonORM _ORM = null;
 
@@ -79,6 +102,7 @@
         private CompletionDriver _Completion = null;
         private ChatDriver _Chat = null;
         private ModelDriver _Models = null;
+        private VisionDriver _Vision = null;
 
         #endregion
 
@@ -91,11 +115,13 @@
         /// <param name="databaseFilename">Database filename.</param>
         /// <param name="huggingFaceApiKey">HuggingFace API key.</param>
         /// <param name="modelDirectory">Model storage directory.</param>
+        /// <param name="mmprojPath">Path to a LLaVA projector GGUF.</param>
         public AIDriver(
             LoggingModule logging, 
             string databaseFilename = "./sharpai.db",
             string huggingFaceApiKey = null,
-            string modelDirectory = "./models/")
+            string modelDirectory = "./models/",
+            string mmprojPath = null)
         {
             if (String.IsNullOrEmpty(databaseFilename)) throw new ArgumentNullException(nameof(databaseFilename));
             if (String.IsNullOrEmpty(modelDirectory)) throw new ArgumentNullException(nameof(modelDirectory));
@@ -106,6 +132,7 @@
             _DatabaseFilename = databaseFilename;
             _HuggingFaceApiKey = huggingFaceApiKey;
             _ModelDirectory = modelDirectory;
+            _mmprojPath = mmprojPath;
 
             _ORM = new WatsonORM(new DatabaseWrapper.Core.DatabaseSettings(_DatabaseFilename));
             _ORM.InitializeDatabase();
@@ -118,6 +145,7 @@
             _Embeddings = new EmbeddingsDriver(_Logging, _Serializer, _Models);
             _Completion = new CompletionDriver(_Logging, _Serializer, _Models);
             _Chat = new ChatDriver(_Logging, _Serializer, _Models);
+            _Vision = new VisionDriver(_Logging, _Serializer, _Models, _mmprojPath);
 
             _Logging.Debug(_Header + "initialized");
         }
