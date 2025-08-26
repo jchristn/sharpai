@@ -53,15 +53,7 @@
 		<PackageReference Include="WatsonORM.Sqlite" Version="3.0.14" />
 	</ItemGroup>
 	<ItemGroup>
-		<None Include="Dlls\win-x64\llava_shared.dll"
-			  CopyToOutputDirectory="PreserveNewest"
-			  Pack="true">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<TargetPath>llava_shared.dll</TargetPath>
-		</None>
-		<None Include="Dlls\win-arm64\llava_shared.dll"
-		  CopyToOutputDirectory="PreserveNewest"
-		  Pack="true">
+		<None Include="Dlls\win-x64\llava_shared.dll" CopyToOutputDirectory="PreserveNewest" Pack="true">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<TargetPath>llava_shared.dll</TargetPath>
 		</None>
