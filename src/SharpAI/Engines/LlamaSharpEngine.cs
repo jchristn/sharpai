@@ -571,7 +571,7 @@
                 {
                     Temperature = Math.Clamp(temperature, 0f, 1f)
                 },
-                AntiPrompts = new List<string> { "\nUSER:" }
+                AntiPrompts = new List<string>()
             };
 
             await _GenerationSemaphore.WaitAsync(token).ConfigureAwait(false);
@@ -689,7 +689,7 @@
                 {
                     Temperature = Math.Clamp(temperature, 0f, 1f)
                 },
-                AntiPrompts = new List<string> { "\nUSER:" }
+                AntiPrompts = new List<string>()
             };
 
             await _GenerationSemaphore.WaitAsync(token).ConfigureAwait(false);
