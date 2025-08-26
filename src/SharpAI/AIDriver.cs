@@ -1,14 +1,11 @@
 ﻿namespace SharpAI
 {
+    using System;
+    using System.Collections.Generic;
     using SharpAI.Helpers;
     using SharpAI.Models;
     using SharpAI.Serialization;
     using SyslogLogging;
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
     using Watson.ORM.Sqlite;
 
     /// <summary>
