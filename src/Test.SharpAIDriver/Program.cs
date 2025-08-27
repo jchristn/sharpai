@@ -4,14 +4,10 @@
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
-    using System.Runtime.CompilerServices;
-    using System.Threading;
     using System.Threading.Tasks;
+    using SyslogLogging;
     using GetSomeInput;
     using SharpAI;
-    using SharpAI.Engines;
-    using SharpAI.Models;
-    using SyslogLogging;
 
     public static class Program
     {
@@ -25,6 +21,7 @@
         static string _HuggingFaceApiKey = null;
         static string _ModelDirectory = "./models/";
         static string _CurrentModel = null;
+        static string _MultiModalProjectorPath = null;
 
         public static async Task Main(string[] args)
         {
@@ -95,6 +92,17 @@
                                 Console.WriteLine("Please specify a chat command: generate, stream, interactive");
                             }
                         }
+                        else if (parts[0].Equals("vision"))
+                        {
+                            if (parts.Length == 2)
+                            {
+                                if (parts[1].Equals("generate")) await GenerateVisionStream();
+                            }
+                            else
+                            {
+                                Console.WriteLine("Please specify a vision command: generate");
+                            }
+                        }
                         else if (parts[0].Equals("test"))
                         {
                             if (parts.Length == 2)
@@ -125,6 +133,7 @@
             _DatabaseFilename = Inputty.GetString("Database filename:", _DatabaseFilename, false);
             _HuggingFaceApiKey = Inputty.GetString("HuggingFace API key:", _HuggingFaceApiKey, false);
             _ModelDirectory = Inputty.GetString("Model directory:", _ModelDirectory, false);
+            _MultiModalProjectorPath = Inputty.GetString("Vision projector (mmproj) GGUF full path:", null, true);
             _Debug = Inputty.GetBoolean("Enable debug logging:", _Debug);
 
             _Logging = new LoggingModule();
@@ -139,7 +148,8 @@
                     _Logging,
                     _DatabaseFilename,
                     _HuggingFaceApiKey,
-                    _ModelDirectory);
+                    _ModelDirectory,
+                    _MultiModalProjectorPath);
 
                 Console.WriteLine("AI Driver initialized successfully!");
                 Console.WriteLine("");
@@ -210,6 +220,9 @@
             Console.WriteLine("Chat:");
             Console.WriteLine("  chat generate    generate a chat completion (non-streaming)");
             Console.WriteLine("  chat stream      generate a chat completion (streaming)");
+            Console.WriteLine("");
+            Console.WriteLine("Vision:");
+            Console.WriteLine("  vision generate  run a image vision completion");
             Console.WriteLine("");
             Console.WriteLine("Tests:");
             Console.WriteLine("  test all         run all tests");
@@ -1047,6 +1060,129 @@
             }
         }
 
+        #endregion
+
+        #region Vision Tests
+
+        static async Task GenerateVisionStream()
+        {
+            if (!EnsureModelSelected()) return;
+            try
+            {
+                string raw = GetSomeInput.Inputty.GetString(
+                    "Local image path(s) (png/jpg/webp) — comma or space separated:",
+                    null,
+                    false);
+                if (string.IsNullOrWhiteSpace(raw))
+                {
+                    Console.WriteLine("✗ No input provided.");
+                    return;
+                }
+
+                var pathTokens = raw
+                    .Split(new[] { ',', '\n', '\r', '\t', ' ' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(p => p.Trim().Trim('"'))
+                    .Where(p => !string.IsNullOrWhiteSpace(p))
+                    .Distinct()
+                    .ToList();
+
+                if (pathTokens.Count == 0)
+                {
+                    Console.WriteLine("✗ No usable file paths found.");
+                    return;
+                }
+
+                var missing = pathTokens.Where(p => !File.Exists(p)).ToList();
+                if (missing.Count > 0)
+                {
+                    Console.WriteLine("✗ File(s) not found:");
+                    foreach (var m in missing) Console.WriteLine("  - " + m);
+                    return;
+                }
+
+                var imagesBase64 = new List<string>(pathTokens.Count);
+                foreach (var path in pathTokens)
+                {
+                    byte[] bytes = await File.ReadAllBytesAsync(path).ConfigureAwait(false);
+                    imagesBase64.Add(Convert.ToBase64String(bytes));
+                }
+                Console.WriteLine($"✓ Vision ready. Loaded {pathTokens.Count} image(s).");
+                Console.WriteLine("Type '/exit' to end the conversation at any time.");
+
+                bool firstTurn = true;
+                while (true)
+                {
+                    string userPrompt;
+
+                    if (firstTurn)
+                    {
+                        userPrompt = Inputty.GetString(
+                            "USER (initial prompt):",
+                            "Provide a full description of the image.",
+                            true);
+                    }
+                    else
+                    {
+                        Console.WriteLine("\n" + new string('─', 60));
+                        userPrompt = Inputty.GetString(
+                            "USER:",
+                            null,
+                            false);
+                    }
+
+                    if (string.IsNullOrWhiteSpace(userPrompt) || userPrompt.Trim().ToLower() == "/exit")
+                    {
+                        Console.WriteLine("Goodbye!");
+                        break;
+                    }
+
+                    var sw = System.Diagnostics.Stopwatch.StartNew();
+                    Console.WriteLine("\nASSISTANT:");
+                    var result = new System.Text.StringBuilder();
+                    bool hasContent = false;
+                    try
+                    {
+                        var imagesToSend = firstTurn ? imagesBase64 : new List<string>();
+                        firstTurn = false;
+                        await foreach (var chunk in _AIDriver.Vision.GenerateCompletionStream(
+                            _CurrentModel,
+                            imagesToSend,
+                            userPrompt,
+                            maxTokens: 512,
+                            temperature: 0.1f
+                        ).ConfigureAwait(false))
+                        {
+                            if (!string.IsNullOrEmpty(chunk))
+                            {
+                                Console.Write(chunk);
+                                result.Append(chunk);
+                                hasContent = true;
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.ResetColor();
+                        Console.WriteLine($"\n✗ Error during generation: {ex.Message}");
+                        continue;
+                    }
+
+                    Console.ResetColor();
+                    sw.Stop();
+
+                    if (!hasContent)
+                        Console.WriteLine("(No response generated)");
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("✗ Vision request cancelled by timeout/user.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"✗ Vision test failed:{Environment.NewLine}{ex}");
+            }
+        }
         #endregion
 
         #region Helpers

@@ -1,20 +1,22 @@
 ﻿namespace SharpAI.Engines
 {
     using System;
+    using System.IO;
     using System.Collections.Generic;
     using System.Linq;
     using System.Runtime.CompilerServices;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using SyslogLogging;
     using LLama;
     using LLama.Common;
+    using LLama.Native;
     using LLama.Sampling;
+    using SyslogLogging;
 
     /// <summary>
     /// LlamaSharp implementation of the AI provider base class.
-    /// Provides text generation, embeddings, and chat completion capabilities using the LlamaSharp library.
+    /// Provides text generation, embeddings, chat completion and vision capabilities using the LlamaSharp library.
     /// </summary>
     public class LlamaSharpEngine : EngineBase
     {
@@ -33,8 +35,8 @@
                     // Get embedding dimensions by testing with a small input
                     try
                     {
-                        var testEmbeddings = _Embedder.GetEmbeddings("test").Result;
-                        var testEmbedding = testEmbeddings.Single();
+                        IReadOnlyList<float[]> testEmbeddings = _Embedder.GetEmbeddings("test").Result;
+                        float[] testEmbedding = testEmbeddings.Single();
                         _EmbeddingDimensions = testEmbedding.Length;
                     }
                     catch
@@ -94,7 +96,7 @@
                 return 0;
             try
             {
-                var toks = _Context.Tokenize(text, addBos, parseSpecial);
+                LLamaToken[] toks = _Context.Tokenize(text, addBos, parseSpecial);
                 return toks.Length;
             }
             catch
@@ -102,6 +104,7 @@
                 return Math.Max(1, text.Length / 4);
             }
         }
+
         #endregion
 
         #region Private-Members
@@ -118,9 +121,11 @@
         private bool _IsInitialized = false;
         private bool _Disposed = false;
         private int _EmbeddingDimensions = -1;
+        private string _MultiModalProjectorPath = null;
+        private LLavaWeights _ClipProjector = null;
+        private InteractiveExecutor _VisionExecutor = null;
         private readonly SemaphoreSlim _EmbedderSemaphore = new SemaphoreSlim(1, 1);
         private readonly SemaphoreSlim _GenerationSemaphore = new SemaphoreSlim(1, 1);
-
         #endregion
 
         #region Constructors-and-Factories
@@ -150,12 +155,13 @@
 
             try
             {
-                // these do not implement IDisposable
                 _ChatSession = null;
                 _Executor = null;
                 _StatelessExecutor = null;
+                _VisionExecutor = null;
 
                 _Embedder?.Dispose();
+                _ClipProjector?.Dispose();
                 _Context?.Dispose();
                 _Model?.Dispose();
 
@@ -192,7 +198,7 @@
             {
                 try
                 {
-                    var gpuLayers = GetOptimalGpuLayers();
+                    int gpuLayers = GetOptimalGpuLayers();
                     _Logging.Debug(_Header + $"initializing LlamaSharp with {(gpuLayers != 0 ? "GPU" : "CPU")} acceleration{(gpuLayers != 0 ? $" ({gpuLayers} layers requested)" : "")}");
 
                     ModelParams parameters = new ModelParams(modelPath)
@@ -246,7 +252,7 @@
         {
             try
             {
-                var gpuDeviceCount = LLama.Native.NativeApi.llama_max_devices();
+                long gpuDeviceCount = LLama.Native.NativeApi.llama_max_devices();
 
                 if (gpuDeviceCount > 0)
                 {
@@ -384,7 +390,7 @@
                     }
                 };
 
-                await foreach (var curr in _StatelessExecutor.InferAsync(prompt, inferenceParams, token).ConfigureAwait(false))
+                await foreach (string curr in _StatelessExecutor.InferAsync(prompt, inferenceParams, token).ConfigureAwait(false))
                 {
                     yield return curr;
                 }
@@ -424,7 +430,7 @@
 
                 StringBuilder result = new StringBuilder();
 
-                await foreach (var curr in _StatelessExecutor!.InferAsync(prompt, inferenceParams, token).ConfigureAwait(false))
+                await foreach (string curr in _StatelessExecutor!.InferAsync(prompt, inferenceParams, token).ConfigureAwait(false))
                 {
                     result.Append(curr);
                 }
@@ -465,9 +471,246 @@
                     }
                 };
 
-                await foreach (var curr in _StatelessExecutor!.InferAsync(prompt, inferenceParams, token).ConfigureAwait(false))
+                await foreach (string curr in _StatelessExecutor!.InferAsync(prompt, inferenceParams, token).ConfigureAwait(false))
                 {
                     yield return curr;
+                }
+            }
+            finally
+            {
+                _GenerationSemaphore.Release();
+            }
+        }
+
+        #endregion
+
+        #region Vision-Implementation
+
+        /// <summary>
+        /// Configure LLaVA projector (mmproj) for vision. If a path is provided it must exist.
+        /// </summary>
+        /// <param name="multiModalProjectorPath">Full path to mmproj GGUF or a directory to search; optional.</param>
+        public void ConfigureVision(string multiModalProjectorPath = null)
+        {
+            if (!string.IsNullOrWhiteSpace(multiModalProjectorPath))
+            {
+                if (Directory.Exists(multiModalProjectorPath))
+                {
+                    string selected = Directory.EnumerateFiles(multiModalProjectorPath, "*.gguf", SearchOption.TopDirectoryOnly)
+                        .Where(f => f.IndexOf("mmproj", StringComparison.OrdinalIgnoreCase) >= 0)
+                        .OrderByDescending(f => f.IndexOf("f16", StringComparison.OrdinalIgnoreCase) >= 0)
+                        .ThenBy(f => Path.GetFileName(f).Length)
+                        .FirstOrDefault();
+
+                    if (string.IsNullOrWhiteSpace(selected))
+                        throw new FileNotFoundException("No mmproj GGUF found in the specified directory.", multiModalProjectorPath);
+
+                    _MultiModalProjectorPath = selected;
+                    _Logging?.Debug(_Header + $"vision projector configured from directory: {_MultiModalProjectorPath}");
+                    return;
+                }
+
+                if (!File.Exists(multiModalProjectorPath))
+                    throw new FileNotFoundException("LLaVA projector (mmproj) not found.", multiModalProjectorPath);
+
+                _MultiModalProjectorPath = multiModalProjectorPath;
+                _Logging?.Debug(_Header + $"vision projector configured: {_MultiModalProjectorPath}");
+                return;
+            }
+
+            _Logging?.Warn(_Header + "no mmproj GGUF found next to the model; vision will be disabled until ConfigureVision() is called.");
+        }
+
+        /// <summary>
+        /// Generate vision completion with image bytes
+        /// </summary>
+        /// <param name="imagesBytes">Collection of image byte arrays</param>
+        /// <param name="prompt">Text prompt to combine with the images</param>
+        /// <param name="maxTokens">Maximum number of tokens to generate</param>
+        /// <param name="temperature">Sampling temperature (0.0 to 1.0)</param>
+        /// <param name="token">Cancellation token</param>
+        /// <returns>Generated text response</returns>
+        public async Task<string> GenerateVisionCompletionAsync(
+            IEnumerable<byte[]> imagesBytes,
+            string prompt = "Provide a full description of the image.",
+            int maxTokens = 1024,
+            float temperature = 0.1f,
+            CancellationToken token = default)
+        {
+            ThrowIfNotInitialized();
+
+            List<byte[]> imageList = (imagesBytes ?? Enumerable.Empty<byte[]>())
+                .Where(b => b != null && b.Length > 0)
+                .ToList();
+
+            if (string.IsNullOrWhiteSpace(_MultiModalProjectorPath) || !File.Exists(_MultiModalProjectorPath))
+                throw new FileNotFoundException("Configured LLaVA mmproj GGUF not found.", _MultiModalProjectorPath);
+
+            if (_ClipProjector == null)
+            {
+                _ClipProjector = await LLavaWeights.LoadFromFileAsync(_MultiModalProjectorPath);
+                _Logging?.Debug(_Header + "LLaVA projector loaded");
+            }
+
+            if (_VisionExecutor == null)
+            {
+                _VisionExecutor = new InteractiveExecutor(_Context, _ClipProjector);
+                _Logging?.Debug(_Header + "vision executor initialized");
+            }
+
+            bool hasImages = imageList.Count > 0;
+            string instruction = string.IsNullOrWhiteSpace(prompt) ? "Provide a full description of the image." : prompt.Trim();
+            string formattedPrompt = hasImages
+                ? $"<image>\nUSER:\n{instruction}\nASSISTANT:\n"
+                : $"USER:\n{instruction}\nASSISTANT:\n";
+
+            InferenceParams inferenceParams = new InferenceParams
+            {
+                MaxTokens = Math.Max(maxTokens, 100),
+                SamplingPipeline = new DefaultSamplingPipeline
+                {
+                    Temperature = Math.Clamp(temperature, 0f, 1f)
+                },
+                AntiPrompts = new List<string>()
+            };
+
+            await _GenerationSemaphore.WaitAsync(token).ConfigureAwait(false);
+            try
+            {
+                if (hasImages)
+                {
+                    _VisionExecutor.Context.NativeHandle.MemorySequenceRemove(LLamaSeqId.Zero, -1, -1);
+                    _VisionExecutor.Images.Clear();
+                    foreach (byte[] imageBytes in imageList)
+                    {
+                        _VisionExecutor.Images.Add(imageBytes);
+                    }
+
+                    _Logging?.Debug(_Header + $"processing {imageList.Count} image(s) with vision model");
+                }
+
+                StringBuilder result = new StringBuilder();
+                int tokenCount = 0;
+
+                await foreach (string textChunk in _VisionExecutor.InferAsync(formattedPrompt, inferenceParams, token).ConfigureAwait(false))
+                {
+                    if (!string.IsNullOrEmpty(textChunk))
+                    {
+                        result.Append(textChunk);
+                        tokenCount++;
+                    }
+                }
+
+                string response = result.ToString();
+
+                if (tokenCount == 0)
+                {
+                    _Logging?.Debug(_Header + "No tokens generated with anti-prompts, retrying without");
+
+                    InferenceParams noStopParams = new InferenceParams
+                    {
+                        MaxTokens = Math.Max(maxTokens, 100),
+                        SamplingPipeline = new DefaultSamplingPipeline
+                        {
+                            Temperature = Math.Clamp(temperature, 0f, 1f)
+                        },
+                        AntiPrompts = new List<string>()
+                    };
+
+                    result.Clear();
+                    await foreach (string textChunk in _VisionExecutor.InferAsync(formattedPrompt, noStopParams, token).ConfigureAwait(false))
+                    {
+                        result.Append(textChunk);
+                    }
+                    response = result.ToString();
+                }
+                return response ?? string.Empty;
+            }
+            catch (Exception ex)
+            {
+                _Logging?.Error(_Header + "Exception during vision completion:" + Environment.NewLine + ex.ToString());
+                throw new Exception($"Failed to generate vision completion: {ex.Message}", ex);
+            }
+            finally
+            {
+                _GenerationSemaphore.Release();
+            }
+        }
+
+        /// <summary>
+        /// Generate streaming vision completion with image bytes.
+        /// Provides real-time token streaming for vision model responses.
+        /// </summary>
+        /// <param name="imagesBytes">Collection of image byte arrays</param>
+        /// <param name="prompt">Text prompt to combine with the images</param>
+        /// <param name="maxTokens">Maximum number of tokens to generate</param>
+        /// <param name="temperature">Sampling temperature (0.0 to 1.0)</param>
+        /// <param name="token">Cancellation token</param>
+        /// <returns>Async enumerable of text chunks</returns>
+        public async IAsyncEnumerable<string> GenerateVisionCompletionStreamAsync(
+            IEnumerable<byte[]> imagesBytes,
+            string prompt = "Provide a full description of the image.",
+            int maxTokens = 1024,
+            float temperature = 0.1f,
+            [EnumeratorCancellation] CancellationToken token = default)
+        {
+            ThrowIfNotInitialized();
+
+            List<byte[]> imageList = (imagesBytes ?? Enumerable.Empty<byte[]>())
+                .Where(b => b != null && b.Length > 0)
+                .ToList();
+
+            if (string.IsNullOrWhiteSpace(_MultiModalProjectorPath) || !File.Exists(_MultiModalProjectorPath))
+                throw new FileNotFoundException("Configured LLaVA mmproj GGUF not found.", _MultiModalProjectorPath);
+
+            if (_ClipProjector == null)
+            {
+                _ClipProjector = await LLavaWeights.LoadFromFileAsync(_MultiModalProjectorPath);
+                _Logging?.Debug(_Header + "LLaVA projector loaded");
+            }
+
+            if (_VisionExecutor == null)
+            {
+                _VisionExecutor = new InteractiveExecutor(_Context, _ClipProjector);
+                _Logging?.Debug(_Header + "vision executor initialized");
+            }
+
+            bool hasImages = imageList.Count > 0;
+            string instruction = string.IsNullOrWhiteSpace(prompt) ? "Provide a full description of the image." : prompt.Trim();
+
+            string formattedPrompt = hasImages
+                ? $"<image>\nUSER:\n{instruction}\nASSISTANT:\n"
+                : $"USER:\n{instruction}\nASSISTANT:\n";
+
+            InferenceParams inferenceParams = new InferenceParams
+            {
+                MaxTokens = Math.Max(maxTokens, 100),
+                SamplingPipeline = new DefaultSamplingPipeline
+                {
+                    Temperature = Math.Clamp(temperature, 0f, 1f)
+                },
+                AntiPrompts = new List<string>()
+            };
+
+            await _GenerationSemaphore.WaitAsync(token).ConfigureAwait(false);
+            try
+            {
+                if (hasImages)
+                {
+                    _VisionExecutor.Context.NativeHandle.MemorySequenceRemove(LLamaSeqId.Zero, -1, -1);
+                    _VisionExecutor.Images.Clear();
+                    foreach (byte[] imageBytes in imageList)
+                    {
+                        _VisionExecutor.Images.Add(imageBytes);
+                    }
+                }
+
+                await foreach (string textChunk in _VisionExecutor.InferAsync(formattedPrompt, inferenceParams, token).ConfigureAwait(false))
+                {
+                    if (!string.IsNullOrEmpty(textChunk))
+                    {
+                        yield return textChunk;
+                    }
                 }
             }
             finally
@@ -515,7 +758,7 @@
                 List<string> chunks = SplitTextIntoChunks(text, charLimit);
                 List<float[]> embeddings = new List<float[]>();
 
-                foreach (var (chunk, index) in chunks.Select((c, i) => (c, i)))
+                foreach ((string chunk, int index) in chunks.Select((c, i) => (c, i)))
                 {
                     try
                     {
@@ -525,8 +768,8 @@
                     {
                         _Logging?.Warn(_Header + $"chunk {index + 1} too long after split, retrying with smaller chunks");
                         int retryLimit = charLimit / 2;
-                        var subChunks = SplitTextIntoChunks(chunk, retryLimit);
-                        foreach (var subChunk in subChunks)
+                        List<string> subChunks = SplitTextIntoChunks(chunk, retryLimit);
+                        foreach (string subChunk in subChunks)
                         {
                             embeddings.Add(await TryEmbed(subChunk).ConfigureAwait(false));
                         }
@@ -547,10 +790,9 @@
             }
         }
 
-
         private List<string> SplitTextIntoChunks(string text, int maxCharacters)
         {
-            var chunks = new List<string>();
+            List<string> chunks = new List<string>();
             int currentIndex = 0;
 
             while (currentIndex < text.Length)
@@ -594,9 +836,9 @@
             }
 
             int dimensions = embeddings[0].Length;
-            var averaged = new float[dimensions];
+            float[] averaged = new float[dimensions];
 
-            foreach (var embedding in embeddings)
+            foreach (float[] embedding in embeddings)
             {
                 if (embedding.Length != dimensions)
                 {
@@ -622,6 +864,7 @@
             if (!_IsInitialized) throw new InvalidOperationException("Provider must be initialized before use. Call InitializeAsync() first.");
             if (_Disposed) throw new ObjectDisposedException(nameof(LlamaSharpEngine));
         }
+
         #endregion
     }
 }

@@ -1,56 +1,61 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-	  <TargetFramework>net8.0</TargetFramework>
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
 	  <Version>1.0.9</Version>
-	  <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-	  <Title>SharpAI</Title>
-	  <Authors>Joel Christner</Authors>
-	  <Description>Transform your .NET applications into AI powerhouses - embed models directly or deploy as an Ollama-compatible API server. No cloud dependencies, no limits, just pure local inference.</Description>
-	  <Copyright>(c)2025 Joel Christner</Copyright>
-	  <GenerateDocumentationFile>True</GenerateDocumentationFile>
-	  <DocumentationFile>SharpAI.xml</DocumentationFile>
-	  <ApplicationIcon>logo.ico</ApplicationIcon>
-	  <PackageProjectUrl>https://github.com/jchristn/sharpai</PackageProjectUrl>
-	  <PackageIcon>logo.png</PackageIcon>
-	  <PackageReadmeFile>README.md</PackageReadmeFile>
-	  <RepositoryUrl>https://github.com/jchristn/sharpai</RepositoryUrl>
-	  <RepositoryType>git</RepositoryType>
-	  <PackageTags>ai embedding embeddings completion completions chat assistant agent model models huggingface ollama</PackageTags>
-	  <PackageReleaseNotes>Initial release</PackageReleaseNotes>
-	  <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
-	  <IncludeSymbols>True</IncludeSymbols>
-	  <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-  </PropertyGroup>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<Title>SharpAI</Title>
+		<Authors>Joel Christner</Authors>
+		<Description>Transform your .NET applications into AI powerhouses - embed models directly or deploy as an Ollama-compatible API server. No cloud dependencies, no limits, just pure local inference.</Description>
+		<Copyright>(c)2025 Joel Christner</Copyright>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+		<DocumentationFile>SharpAI.xml</DocumentationFile>
+		<ApplicationIcon>logo.ico</ApplicationIcon>
+		<PackageProjectUrl>https://github.com/jchristn/sharpai</PackageProjectUrl>
+		<PackageIcon>logo.png</PackageIcon>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<RepositoryUrl>https://github.com/jchristn/sharpai</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageTags>ai embedding embeddings completion completions chat assistant agent model models huggingface ollama</PackageTags>
+		<PackageReleaseNotes>Initial release</PackageReleaseNotes>
+		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+		<IncludeSymbols>True</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <Content Include="logo.ico" />
-  </ItemGroup>
+	<ItemGroup>
+		<Content Include="logo.ico" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <None Include="..\..\assets\logo.png">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
-    <None Include="..\..\LICENSE.md">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
-    <None Include="..\..\README.md">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
-  </ItemGroup>
+	<ItemGroup>
+		<None Include="..\..\assets\logo.png">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="..\..\LICENSE.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="..\..\README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Inputty" Version="1.0.13" />
-    <PackageReference Include="LLamaSharp" Version="0.25.0" />
-    <PackageReference Include="LLamaSharp.Backend.Cpu" Version="0.25.0" />
-    <PackageReference Include="LLamaSharp.Backend.Cuda12" Version="0.25.0" />
-    <PackageReference Include="RestWrapper" Version="3.1.5" />
-    <PackageReference Include="SyslogLogging" Version="2.0.8" />
-    <PackageReference Include="System.Text.Json" Version="9.0.8" />
-    <PackageReference Include="WatsonORM.Sqlite" Version="3.0.14" />
-  </ItemGroup>
-
+	<ItemGroup>
+		<PackageReference Include="Inputty" Version="1.0.13" />
+		<PackageReference Include="LLamaSharp" Version="0.25.0" />
+		<PackageReference Include="LLamaSharp.Backend.Cpu" Version="0.25.0" />
+		<PackageReference Include="LLamaSharp.Backend.Cuda12" Version="0.25.0" />
+		<PackageReference Include="RestWrapper" Version="3.1.5" />
+		<PackageReference Include="SyslogLogging" Version="2.0.8" />
+		<PackageReference Include="System.Text.Json" Version="9.0.8" />
+		<PackageReference Include="WatsonORM.Sqlite" Version="3.0.14" />
+	</ItemGroup>
+	<ItemGroup>
+		<None Include="Dlls\win-x64\llava_shared.dll" CopyToOutputDirectory="PreserveNewest">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<TargetPath>llava_shared.dll</TargetPath>
+		</None>
+	</ItemGroup>
 </Project>
