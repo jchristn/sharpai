@@ -77,7 +77,7 @@
         {
             get
             {
-                return _mmprojPath ?? string.Empty;
+                return _MultiModalProjectorPath ?? string.Empty;
             }
         }
 
@@ -91,7 +91,7 @@
         private string _DatabaseFilename = null;
         private string _HuggingFaceApiKey = null;
         private string _ModelDirectory = "./models/";
-        private string _mmprojPath = null;
+        private string _MultiModalProjectorPath = null;
 
         private WatsonORM _ORM = null;
 
@@ -112,13 +112,13 @@
         /// <param name="databaseFilename">Database filename.</param>
         /// <param name="huggingFaceApiKey">HuggingFace API key.</param>
         /// <param name="modelDirectory">Model storage directory.</param>
-        /// <param name="mmprojPath">Path to a LLaVA projector GGUF.</param>
+        /// <param name="multiModalProjectorPath">Path to a LLaVA projector GGUF.</param>
         public AIDriver(
             LoggingModule logging, 
             string databaseFilename = "./sharpai.db",
             string huggingFaceApiKey = null,
             string modelDirectory = "./models/",
-            string mmprojPath = null)
+            string multiModalProjectorPath = null)
         {
             if (String.IsNullOrEmpty(databaseFilename)) throw new ArgumentNullException(nameof(databaseFilename));
             if (String.IsNullOrEmpty(modelDirectory)) throw new ArgumentNullException(nameof(modelDirectory));
@@ -129,7 +129,7 @@
             _DatabaseFilename = databaseFilename;
             _HuggingFaceApiKey = huggingFaceApiKey;
             _ModelDirectory = modelDirectory;
-            _mmprojPath = mmprojPath;
+            _MultiModalProjectorPath = multiModalProjectorPath;
 
             _ORM = new WatsonORM(new DatabaseWrapper.Core.DatabaseSettings(_DatabaseFilename));
             _ORM.InitializeDatabase();
@@ -142,7 +142,7 @@
             _Embeddings = new EmbeddingsDriver(_Logging, _Serializer, _Models);
             _Completion = new CompletionDriver(_Logging, _Serializer, _Models);
             _Chat = new ChatDriver(_Logging, _Serializer, _Models);
-            _Vision = new VisionDriver(_Logging, _Serializer, _Models, _mmprojPath);
+            _Vision = new VisionDriver(_Logging, _Serializer, _Models, _MultiModalProjectorPath);
 
             _Logging.Debug(_Header + "initialized");
         }

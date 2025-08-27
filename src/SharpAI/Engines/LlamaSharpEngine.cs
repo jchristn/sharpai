@@ -35,8 +35,8 @@
                     // Get embedding dimensions by testing with a small input
                     try
                     {
-                        var testEmbeddings = _Embedder.GetEmbeddings("test").Result;
-                        var testEmbedding = testEmbeddings.Single();
+                        IReadOnlyList<float[]> testEmbeddings = _Embedder.GetEmbeddings("test").Result;
+                        float[] testEmbedding = testEmbeddings.Single();
                         _EmbeddingDimensions = testEmbedding.Length;
                     }
                     catch
@@ -96,7 +96,7 @@
                 return 0;
             try
             {
-                var toks = _Context.Tokenize(text, addBos, parseSpecial);
+                LLamaToken[] toks = _Context.Tokenize(text, addBos, parseSpecial);
                 return toks.Length;
             }
             catch
@@ -121,7 +121,7 @@
         private bool _IsInitialized = false;
         private bool _Disposed = false;
         private int _EmbeddingDimensions = -1;
-        private string _mmprojPath = null;
+        private string _MultiModalProjectorPath = null;
         private LLavaWeights _ClipProjector = null;
         private InteractiveExecutor _VisionExecutor = null;
         private readonly SemaphoreSlim _EmbedderSemaphore = new SemaphoreSlim(1, 1);
@@ -198,7 +198,7 @@
             {
                 try
                 {
-                    var gpuLayers = GetOptimalGpuLayers();
+                    int gpuLayers = GetOptimalGpuLayers();
                     _Logging.Debug(_Header + $"initializing LlamaSharp with {(gpuLayers != 0 ? "GPU" : "CPU")} acceleration{(gpuLayers != 0 ? $" ({gpuLayers} layers requested)" : "")}");
 
                     ModelParams parameters = new ModelParams(modelPath)
@@ -252,7 +252,7 @@
         {
             try
             {
-                var gpuDeviceCount = LLama.Native.NativeApi.llama_max_devices();
+                long gpuDeviceCount = LLama.Native.NativeApi.llama_max_devices();
 
                 if (gpuDeviceCount > 0)
                 {
@@ -390,7 +390,7 @@
                     }
                 };
 
-                await foreach (var curr in _StatelessExecutor.InferAsync(prompt, inferenceParams, token).ConfigureAwait(false))
+                await foreach (string curr in _StatelessExecutor.InferAsync(prompt, inferenceParams, token).ConfigureAwait(false))
                 {
                     yield return curr;
                 }
@@ -430,7 +430,7 @@
 
                 StringBuilder result = new StringBuilder();
 
-                await foreach (var curr in _StatelessExecutor!.InferAsync(prompt, inferenceParams, token).ConfigureAwait(false))
+                await foreach (string curr in _StatelessExecutor!.InferAsync(prompt, inferenceParams, token).ConfigureAwait(false))
                 {
                     result.Append(curr);
                 }
@@ -471,7 +471,7 @@
                     }
                 };
 
-                await foreach (var curr in _StatelessExecutor!.InferAsync(prompt, inferenceParams, token).ConfigureAwait(false))
+                await foreach (string curr in _StatelessExecutor!.InferAsync(prompt, inferenceParams, token).ConfigureAwait(false))
                 {
                     yield return curr;
                 }
@@ -489,32 +489,32 @@
         /// <summary>
         /// Configure LLaVA projector (mmproj) for vision. If a path is provided it must exist.
         /// </summary>
-        /// <param name="mmprojPath">Full path to mmproj GGUF or a directory to search; optional.</param>
-        public void ConfigureVision(string mmprojPath = null)
+        /// <param name="multiModalProjectorPath">Full path to mmproj GGUF or a directory to search; optional.</param>
+        public void ConfigureVision(string multiModalProjectorPath = null)
         {
-            if (!string.IsNullOrWhiteSpace(mmprojPath))
+            if (!string.IsNullOrWhiteSpace(multiModalProjectorPath))
             {
-                if (Directory.Exists(mmprojPath))
+                if (Directory.Exists(multiModalProjectorPath))
                 {
-                    var selected = Directory.EnumerateFiles(mmprojPath, "*.gguf", SearchOption.TopDirectoryOnly)
+                    string selected = Directory.EnumerateFiles(multiModalProjectorPath, "*.gguf", SearchOption.TopDirectoryOnly)
                         .Where(f => f.IndexOf("mmproj", StringComparison.OrdinalIgnoreCase) >= 0)
                         .OrderByDescending(f => f.IndexOf("f16", StringComparison.OrdinalIgnoreCase) >= 0)
                         .ThenBy(f => Path.GetFileName(f).Length)
                         .FirstOrDefault();
 
                     if (string.IsNullOrWhiteSpace(selected))
-                        throw new FileNotFoundException("No mmproj GGUF found in the specified directory.", mmprojPath);
+                        throw new FileNotFoundException("No mmproj GGUF found in the specified directory.", multiModalProjectorPath);
 
-                    _mmprojPath = selected;
-                    _Logging?.Debug(_Header + $"vision projector configured from directory: {_mmprojPath}");
+                    _MultiModalProjectorPath = selected;
+                    _Logging?.Debug(_Header + $"vision projector configured from directory: {_MultiModalProjectorPath}");
                     return;
                 }
 
-                if (!File.Exists(mmprojPath))
-                    throw new FileNotFoundException("LLaVA projector (mmproj) not found.", mmprojPath);
+                if (!File.Exists(multiModalProjectorPath))
+                    throw new FileNotFoundException("LLaVA projector (mmproj) not found.", multiModalProjectorPath);
 
-                _mmprojPath = mmprojPath;
-                _Logging?.Debug(_Header + $"vision projector configured: {_mmprojPath}");
+                _MultiModalProjectorPath = multiModalProjectorPath;
+                _Logging?.Debug(_Header + $"vision projector configured: {_MultiModalProjectorPath}");
                 return;
             }
 
@@ -539,16 +539,16 @@
         {
             ThrowIfNotInitialized();
 
-            var imageList = (imagesBytes ?? Enumerable.Empty<byte[]>())
+            List<byte[]> imageList = (imagesBytes ?? Enumerable.Empty<byte[]>())
                 .Where(b => b != null && b.Length > 0)
                 .ToList();
 
-            if (string.IsNullOrWhiteSpace(_mmprojPath) || !File.Exists(_mmprojPath))
-                throw new FileNotFoundException("Configured LLaVA mmproj GGUF not found.", _mmprojPath);
+            if (string.IsNullOrWhiteSpace(_MultiModalProjectorPath) || !File.Exists(_MultiModalProjectorPath))
+                throw new FileNotFoundException("Configured LLaVA mmproj GGUF not found.", _MultiModalProjectorPath);
 
             if (_ClipProjector == null)
             {
-                _ClipProjector = await LLavaWeights.LoadFromFileAsync(_mmprojPath);
+                _ClipProjector = await LLavaWeights.LoadFromFileAsync(_MultiModalProjectorPath);
                 _Logging?.Debug(_Header + "LLaVA projector loaded");
             }
 
@@ -564,7 +564,7 @@
                 ? $"<image>\nUSER:\n{instruction}\nASSISTANT:\n"
                 : $"USER:\n{instruction}\nASSISTANT:\n";
 
-            var inferenceParams = new InferenceParams
+            InferenceParams inferenceParams = new InferenceParams
             {
                 MaxTokens = Math.Max(maxTokens, 100),
                 SamplingPipeline = new DefaultSamplingPipeline
@@ -581,7 +581,7 @@
                 {
                     _VisionExecutor.Context.NativeHandle.MemorySequenceRemove(LLamaSeqId.Zero, -1, -1);
                     _VisionExecutor.Images.Clear();
-                    foreach (var imageBytes in imageList)
+                    foreach (byte[] imageBytes in imageList)
                     {
                         _VisionExecutor.Images.Add(imageBytes);
                     }
@@ -589,10 +589,10 @@
                     _Logging?.Debug(_Header + $"processing {imageList.Count} image(s) with vision model");
                 }
 
-                var result = new StringBuilder();
+                StringBuilder result = new StringBuilder();
                 int tokenCount = 0;
 
-                await foreach (var textChunk in _VisionExecutor.InferAsync(formattedPrompt, inferenceParams, token).ConfigureAwait(false))
+                await foreach (string textChunk in _VisionExecutor.InferAsync(formattedPrompt, inferenceParams, token).ConfigureAwait(false))
                 {
                     if (!string.IsNullOrEmpty(textChunk))
                     {
@@ -601,13 +601,13 @@
                     }
                 }
 
-                var response = result.ToString();
+                string response = result.ToString();
 
                 if (tokenCount == 0)
                 {
                     _Logging?.Debug(_Header + "No tokens generated with anti-prompts, retrying without");
 
-                    var noStopParams = new InferenceParams
+                    InferenceParams noStopParams = new InferenceParams
                     {
                         MaxTokens = Math.Max(maxTokens, 100),
                         SamplingPipeline = new DefaultSamplingPipeline
@@ -618,7 +618,7 @@
                     };
 
                     result.Clear();
-                    await foreach (var textChunk in _VisionExecutor.InferAsync(formattedPrompt, noStopParams, token).ConfigureAwait(false))
+                    await foreach (string textChunk in _VisionExecutor.InferAsync(formattedPrompt, noStopParams, token).ConfigureAwait(false))
                     {
                         result.Append(textChunk);
                     }
@@ -656,16 +656,16 @@
         {
             ThrowIfNotInitialized();
 
-            var imageList = (imagesBytes ?? Enumerable.Empty<byte[]>())
+            List<byte[]> imageList = (imagesBytes ?? Enumerable.Empty<byte[]>())
                 .Where(b => b != null && b.Length > 0)
                 .ToList();
 
-            if (string.IsNullOrWhiteSpace(_mmprojPath) || !File.Exists(_mmprojPath))
-                throw new FileNotFoundException("Configured LLaVA mmproj GGUF not found.", _mmprojPath);
+            if (string.IsNullOrWhiteSpace(_MultiModalProjectorPath) || !File.Exists(_MultiModalProjectorPath))
+                throw new FileNotFoundException("Configured LLaVA mmproj GGUF not found.", _MultiModalProjectorPath);
 
             if (_ClipProjector == null)
             {
-                _ClipProjector = await LLavaWeights.LoadFromFileAsync(_mmprojPath);
+                _ClipProjector = await LLavaWeights.LoadFromFileAsync(_MultiModalProjectorPath);
                 _Logging?.Debug(_Header + "LLaVA projector loaded");
             }
 
@@ -682,7 +682,7 @@
                 ? $"<image>\nUSER:\n{instruction}\nASSISTANT:\n"
                 : $"USER:\n{instruction}\nASSISTANT:\n";
 
-            var inferenceParams = new InferenceParams
+            InferenceParams inferenceParams = new InferenceParams
             {
                 MaxTokens = Math.Max(maxTokens, 100),
                 SamplingPipeline = new DefaultSamplingPipeline
@@ -699,13 +699,13 @@
                 {
                     _VisionExecutor.Context.NativeHandle.MemorySequenceRemove(LLamaSeqId.Zero, -1, -1);
                     _VisionExecutor.Images.Clear();
-                    foreach (var imageBytes in imageList)
+                    foreach (byte[] imageBytes in imageList)
                     {
                         _VisionExecutor.Images.Add(imageBytes);
                     }
                 }
 
-                await foreach (var textChunk in _VisionExecutor.InferAsync(formattedPrompt, inferenceParams, token).ConfigureAwait(false))
+                await foreach (string textChunk in _VisionExecutor.InferAsync(formattedPrompt, inferenceParams, token).ConfigureAwait(false))
                 {
                     if (!string.IsNullOrEmpty(textChunk))
                     {
@@ -724,6 +724,7 @@
         #endregion
 
         #region Private-Methods
+
         private async Task<float[]> ProcessTextWithChunking(string text, CancellationToken token)
         {
             if (string.IsNullOrWhiteSpace(text))
@@ -757,7 +758,7 @@
                 List<string> chunks = SplitTextIntoChunks(text, charLimit);
                 List<float[]> embeddings = new List<float[]>();
 
-                foreach (var (chunk, index) in chunks.Select((c, i) => (c, i)))
+                foreach ((string chunk, int index) in chunks.Select((c, i) => (c, i)))
                 {
                     try
                     {
@@ -767,8 +768,8 @@
                     {
                         _Logging?.Warn(_Header + $"chunk {index + 1} too long after split, retrying with smaller chunks");
                         int retryLimit = charLimit / 2;
-                        var subChunks = SplitTextIntoChunks(chunk, retryLimit);
-                        foreach (var subChunk in subChunks)
+                        List<string> subChunks = SplitTextIntoChunks(chunk, retryLimit);
+                        foreach (string subChunk in subChunks)
                         {
                             embeddings.Add(await TryEmbed(subChunk).ConfigureAwait(false));
                         }
@@ -791,7 +792,7 @@
 
         private List<string> SplitTextIntoChunks(string text, int maxCharacters)
         {
-            var chunks = new List<string>();
+            List<string> chunks = new List<string>();
             int currentIndex = 0;
 
             while (currentIndex < text.Length)
@@ -835,9 +836,9 @@
             }
 
             int dimensions = embeddings[0].Length;
-            var averaged = new float[dimensions];
+            float[] averaged = new float[dimensions];
 
-            foreach (var embedding in embeddings)
+            foreach (float[] embedding in embeddings)
             {
                 if (embedding.Length != dimensions)
                 {

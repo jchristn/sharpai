@@ -22,7 +22,7 @@ namespace SharpAI
         private LoggingModule _Logging = null;
         private Serializer _Serializer = null;
         private ModelDriver _Models = null;
-        private string _mmprojPath = null;
+        private string _MultiModalProjectorPath = null;
         private static readonly Regex _DataUrlPrefix =
             new(@"^data:image\/[a-zA-Z0-9.+-]+;base64,", RegexOptions.Compiled);
 
@@ -36,13 +36,13 @@ namespace SharpAI
         /// <param name="logging">Logging module.</param>
         /// <param name="serializer">Serializer.</param>
         /// <param name="models">Model driver.</param>
-        /// <param name="mmprojPath">Path to a LLaVA projector GGUF.</param>
-        public VisionDriver(LoggingModule logging, Serializer serializer, ModelDriver models, string mmprojPath)
+        /// <param name="multiModalProjectorPath">Path to a LLaVA projector GGUF.</param>
+        public VisionDriver(LoggingModule logging, Serializer serializer, ModelDriver models, string multiModalProjectorPath)
         {
             _Logging = logging ?? new LoggingModule();
             _Serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
             _Models = models ?? throw new ArgumentNullException(nameof(models));
-            _mmprojPath = mmprojPath;
+            _MultiModalProjectorPath = multiModalProjectorPath;
             _Logging.Debug(_Header + "initialized");
         }
 
@@ -74,14 +74,14 @@ namespace SharpAI
             if (maxTokens < 100) throw new ArgumentOutOfRangeException(nameof(maxTokens));
             if (temperature < 0.0f || temperature > 1.0f) throw new ArgumentOutOfRangeException(nameof(temperature));
 
-            var bytes = new List<byte[]>();
-            foreach (var b64 in imagesBase64 ?? Enumerable.Empty<string>())
+            List<byte[]> bytes = new List<byte[]>();
+            foreach (string b64 in imagesBase64 ?? Enumerable.Empty<string>())
             {
                 if (string.IsNullOrWhiteSpace(b64)) continue;
                 bytes.Add(DecodeBase64ToBytes(b64));
             }
-            var engine = GetModelEngine(model);
-            engine.ConfigureVision(_mmprojPath);
+            LlamaSharpEngine engine = GetModelEngine(model);
+            engine.ConfigureVision(_MultiModalProjectorPath);
             return await engine.GenerateVisionCompletionAsync(
                 bytes, prompt ?? string.Empty, maxTokens, temperature, token
             ).ConfigureAwait(false);
@@ -112,8 +112,8 @@ namespace SharpAI
             if (maxTokens < 100) throw new ArgumentOutOfRangeException(nameof(maxTokens));
             if (temperature < 0.0f || temperature > 1.0f) throw new ArgumentOutOfRangeException(nameof(temperature));
 
-            var bytes = new List<byte[]>();
-            foreach (var b64 in imagesBase64 ?? Enumerable.Empty<string>())
+            List<byte[]> bytes = new List<byte[]>();
+            foreach (string b64 in imagesBase64 ?? Enumerable.Empty<string>())
             {
                 if (string.IsNullOrWhiteSpace(b64)) continue;
 
@@ -126,9 +126,9 @@ namespace SharpAI
                     _Logging?.Warn(_Header + $"failed to decode base64 image: {ex.Message}");
                 }
             }
-            var engine = GetModelEngine(model);
-            engine.ConfigureVision(_mmprojPath);
-            await foreach (var chunk in engine.GenerateVisionCompletionStreamAsync(
+            LlamaSharpEngine engine = GetModelEngine(model);
+            engine.ConfigureVision(_MultiModalProjectorPath);
+            await foreach (string chunk in engine.GenerateVisionCompletionStreamAsync(
                 bytes,
                 prompt ?? string.Empty,
                 maxTokens,
@@ -147,7 +147,7 @@ namespace SharpAI
 
         private static byte[] DecodeBase64ToBytes(string input)
         {
-            var cleaned = _DataUrlPrefix.Replace(input?.Trim() ?? "", string.Empty);
+            string cleaned = _DataUrlPrefix.Replace(input?.Trim() ?? "", string.Empty);
             try
             {
                 return Convert.FromBase64String(cleaned);

@@ -47,7 +47,7 @@
             <param name="databaseFilename">Database filename.</param>
             <param name="huggingFaceApiKey">HuggingFace API key.</param>
             <param name="modelDirectory">Model storage directory.</param>
-            <param name="mmprojPath">Path to a LLaVA projector GGUF.</param>
+            <param name="multiModalProjectorPath">Path to a LLaVA projector GGUF.</param>
         </member>
         <member name="T:SharpAI.ChatDriver">
             <summary>
@@ -506,7 +506,7 @@
             <summary>
             Configure LLaVA projector (mmproj) for vision. If a path is provided it must exist.
             </summary>
-            <param name="mmprojPath">Full path to mmproj GGUF or a directory to search; optional.</param>
+            <param name="multiModalProjectorPath">Full path to mmproj GGUF or a directory to search; optional.</param>
         </member>
         <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateVisionCompletionAsync(System.Collections.Generic.IEnumerable{System.Byte[]},System.String,System.Int32,System.Single,System.Threading.CancellationToken)">
             <summary>
@@ -3240,7 +3240,7 @@
             <param name="logging">Logging module.</param>
             <param name="serializer">Serializer.</param>
             <param name="models">Model driver.</param>
-            <param name="mmprojPath">Path to a LLaVA projector GGUF.</param>
+            <param name="multiModalProjectorPath">Path to a LLaVA projector GGUF.</param>
         </member>
         <member name="M:SharpAI.VisionDriver.GenerateCompletion(System.String,System.Collections.Generic.IEnumerable{System.String},System.String,System.Int32,System.Single,System.Threading.CancellationToken)">
             <summary>

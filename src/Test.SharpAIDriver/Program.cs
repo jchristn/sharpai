@@ -21,7 +21,7 @@
         static string _HuggingFaceApiKey = null;
         static string _ModelDirectory = "./models/";
         static string _CurrentModel = null;
-        static string _mmprojPath = null;
+        static string _MultiModalProjectorPath = null;
 
         public static async Task Main(string[] args)
         {
@@ -133,7 +133,7 @@
             _DatabaseFilename = Inputty.GetString("Database filename:", _DatabaseFilename, false);
             _HuggingFaceApiKey = Inputty.GetString("HuggingFace API key:", _HuggingFaceApiKey, false);
             _ModelDirectory = Inputty.GetString("Model directory:", _ModelDirectory, false);
-            _mmprojPath = Inputty.GetString("Vision projector (mmproj) GGUF full path:", null, true);
+            _MultiModalProjectorPath = Inputty.GetString("Vision projector (mmproj) GGUF full path:", null, true);
             _Debug = Inputty.GetBoolean("Enable debug logging:", _Debug);
 
             _Logging = new LoggingModule();
@@ -149,7 +149,7 @@
                     _DatabaseFilename,
                     _HuggingFaceApiKey,
                     _ModelDirectory,
-                    _mmprojPath);
+                    _MultiModalProjectorPath);
 
                 Console.WriteLine("AI Driver initialized successfully!");
                 Console.WriteLine("");
