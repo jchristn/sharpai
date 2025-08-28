@@ -114,6 +114,7 @@
 
         private LLamaWeights _Model = null;
         private LLamaContext _Context = null;
+        private LLamaWeights _EmbeddingModel = null;
         private LLamaEmbedder _Embedder = null;
         private InteractiveExecutor _Executor = null;
         private StatelessExecutor _StatelessExecutor = null;
@@ -161,6 +162,7 @@
                 _VisionExecutor = null;
 
                 _Embedder?.Dispose();
+                _EmbeddingModel?.Dispose();
                 _ClipProjector?.Dispose();
                 _Context?.Dispose();
                 _Model?.Dispose();
@@ -224,8 +226,8 @@
                             Threads = Math.Max(1, Environment.ProcessorCount - 1),
                         };
 
-                        LLamaWeights embeddingModel = LLamaWeights.LoadFromFile(embeddingParams);
-                        _Embedder = new LLamaEmbedder(embeddingModel, embeddingParams);
+                        _EmbeddingModel = LLamaWeights.LoadFromFile(embeddingParams);
+                        _Embedder = new LLamaEmbedder(_EmbeddingModel, embeddingParams);
                     }
                     catch (Exception ex)
                     {
@@ -730,7 +732,7 @@
             if (string.IsNullOrWhiteSpace(text))
                 throw new ArgumentException("Text cannot be null or empty", nameof(text));
 
-            int contextSize = (int)(_Embedder?.Context.ContextSize ?? 512);
+            int contextSize = (int)(_EmbeddingModel?.ContextSize ?? 512);
             int tokenLimit = (int)(contextSize * 0.8);
             int charLimit = tokenLimit * 3;
 
