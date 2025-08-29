@@ -173,7 +173,7 @@
             string optimizedDoc = docExtractRaw;
             if (!string.IsNullOrWhiteSpace(docExtractRaw))
             {
-                var docChunks = GetCachedRelevantChunks(docExtractRaw, userQuery, model);
+                List<string> docChunks = GetCachedRelevantChunks(docExtractRaw, userQuery, model);
                 optimizedDoc = string.Join("\n\n", docChunks);
                 optimizedDoc = optimizedDoc.Length > 0 ? LightCompress(optimizedDoc) : optimizedDoc;
                 optimizedDoc = TrimToTokens(optimizedDoc, allowedPromptTokens, engine);
@@ -183,7 +183,7 @@
             string optimizedVec = vectorHitsRaw;
             if (!string.IsNullOrWhiteSpace(vectorHitsRaw))
             {
-                var vecChunks = GetCachedRelevantChunks(vectorHitsRaw, userQuery, model);
+                List<string> vecChunks = GetCachedRelevantChunks(vectorHitsRaw, userQuery, model);
                 optimizedVec = string.Join("\n\n", vecChunks);
                 optimizedVec = optimizedVec.Length > 0 ? LightCompress(optimizedVec) : optimizedVec;
                 optimizedVec = TrimToTokens(optimizedVec, allowedPromptTokens, engine);
