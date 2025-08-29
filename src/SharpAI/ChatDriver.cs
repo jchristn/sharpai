@@ -114,7 +114,7 @@
             if (prompt == null) prompt = "";
 
             LlamaSharpEngine engine = GetModelEngine(model);
-            string processedPrompt = ProcessPromptWithContext(prompt, model);
+            string processedPrompt = ProcessPromptWithContext(prompt, model, maxTokens, engine);
             string optimizedPrompt = OptimizePromptForTokenLimitExact(model, processedPrompt, maxTokens, engine);
             await foreach (string curr in engine.GenerateChatCompletionStreamAsync(optimizedPrompt, maxTokens, temperature, null, token).ConfigureAwait(false))
             {
@@ -144,7 +144,7 @@
             if (prompt == null) prompt = "";
 
             LlamaSharpEngine engine = GetModelEngine(model);
-            string processedPrompt = ProcessPromptWithContext(prompt, model);
+            string processedPrompt = ProcessPromptWithContext(prompt, model, maxTokens, engine);
             string optimizedPrompt = OptimizePromptForTokenLimitExact(model, processedPrompt, maxTokens, engine);
 
             return await engine.GenerateChatCompletionAsync(optimizedPrompt, maxTokens, temperature, null, token).ConfigureAwait(false);
@@ -156,7 +156,7 @@
 
         private LlamaSharpEngine GetModelEngine(string model) => _Models.GetEngine(model);
 
-        private string ProcessPromptWithContext(string prompt, string model)
+        private string ProcessPromptWithContext(string prompt, string model, int maxGenTokens, LlamaSharpEngine engine)
         {
             if (string.IsNullOrWhiteSpace(prompt))
                 return prompt;
@@ -166,26 +166,33 @@
                 return prompt;
 
             string userQuery = ExtractUserQueryFromPrompt(prompt);
+            int nCtxUsable = GetMaxContextTokens(model, engine);
+            const int safety = 64;
+
+            int allowedPromptTokens = Math.Max(256, nCtxUsable - maxGenTokens - safety);
             string optimizedDoc = docExtractRaw;
             if (!string.IsNullOrWhiteSpace(docExtractRaw))
             {
-                List<string> docChunks = GetCachedRelevantChunks(docExtractRaw, userQuery, model);
+                var docChunks = GetCachedRelevantChunks(docExtractRaw, userQuery, model);
                 optimizedDoc = string.Join("\n\n", docChunks);
-                _Logging.Debug($"{_Header}DOC_EXTRACT: selected {docChunks.Count} relevant chunks");
+                optimizedDoc = optimizedDoc.Length > 0 ? LightCompress(optimizedDoc) : optimizedDoc;
+                optimizedDoc = TrimToTokens(optimizedDoc, allowedPromptTokens, engine);
+                _Logging.Debug($"{_Header}DOC_EXTRACT: chunks={docChunks.Count}, final≈{CountTokensFast(engine, optimizedDoc)}t (budget={allowedPromptTokens}t)");
             }
 
             string optimizedVec = vectorHitsRaw;
             if (!string.IsNullOrWhiteSpace(vectorHitsRaw))
             {
-                List<string> vecChunks = GetCachedRelevantChunks(vectorHitsRaw, userQuery, model);
+                var vecChunks = GetCachedRelevantChunks(vectorHitsRaw, userQuery, model);
                 optimizedVec = string.Join("\n\n", vecChunks);
-                _Logging.Debug($"{_Header}VECTOR_HITS: selected {vecChunks.Count} relevant chunks");
+                optimizedVec = optimizedVec.Length > 0 ? LightCompress(optimizedVec) : optimizedVec;
+                optimizedVec = TrimToTokens(optimizedVec, allowedPromptTokens, engine);
+                _Logging.Debug($"{_Header}VECTOR_HITS: chunks={vecChunks.Count}, final≈{CountTokensFast(engine, optimizedVec)}t (budget={allowedPromptTokens}t)");
             }
 
             string processed = prompt;
             if (!string.IsNullOrWhiteSpace(docExtractRaw))
                 processed = ReplaceSectionInPrompt(processed, "DOC_EXTRACT", optimizedDoc);
-
             if (!string.IsNullOrWhiteSpace(vectorHitsRaw))
                 processed = ReplaceSectionInPrompt(processed, "VECTOR_HITS", optimizedVec);
 
@@ -453,6 +460,11 @@
             return string.Join("\n", trimmed);
         }
 
+        private string TrimToTokens(string text, int tokenBudget, LlamaSharpEngine engine)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return text;
+            return CountTokensFast(engine, text) <= tokenBudget ? text : TruncatePromptByTokens(text, tokenBudget, engine);
+        }
         #endregion
     }
 }
