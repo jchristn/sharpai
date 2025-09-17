@@ -345,6 +345,21 @@
                 };
 
                 await DownloadFileAsync(sourceUrl, destinationFilename, suppressFailureCallback, token).ConfigureAwait(false);
+
+                // Verify download actually succeeded
+                if (!File.Exists(destinationFilename))
+                {
+                    _Logging.Warn($"{_Header}download completed but file does not exist: {destinationFilename}");
+                    return false;
+                }
+
+                FileInfo fileInfo = new FileInfo(destinationFilename);
+                if (fileInfo.Length == 0)
+                {
+                    _Logging.Warn($"{_Header}download completed but file is empty: {destinationFilename}");
+                    return false;
+                }
+
                 return true;
             }
             catch (TaskCanceledException)
@@ -384,6 +399,9 @@
             if (string.IsNullOrWhiteSpace(sourceUrl))
                 throw new ArgumentNullException(nameof(sourceUrl));
 
+            string downloadUrl = "";
+            bool cleanup = false;
+            
             try
             {
                 _Logging.Debug(_Header + $"starting download from {sourceUrl} to {destinationFilename}");
@@ -396,29 +414,34 @@
                 }
 
                 // First, get the metadata to find the actual download URL for LFS files
-                string actualDownloadUrl = await GetActualDownloadUrlAsync(sourceUrl, token).ConfigureAwait(false);
+                downloadUrl = await GetActualDownloadUrlAsync(sourceUrl, token).ConfigureAwait(false);
 
                 using (var httpClient = new HttpClient())
                 {
                     // Get response with headers first to check content length
-                    using (var response = await httpClient.GetAsync(actualDownloadUrl, HttpCompletionOption.ResponseHeadersRead, token).ConfigureAwait(false))
+                    using (var response = await httpClient
+                               .GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead, token)
+                               .ConfigureAwait(false))
                     {
                         response.EnsureSuccessStatusCode();
 
                         var contentLength = response.Content.Headers.ContentLength;
                         var isChunked = response.Headers.TransferEncodingChunked ?? false;
 
-                        _Logging.Debug(_Header + $"content length: {contentLength?.ToString() ?? "unknown"}, chunked: {isChunked}");
+                        _Logging.Debug(_Header +
+                                       $"content length {contentLength?.ToString() ?? "unknown"} bytes (chunked transfer: {isChunked})");
 
                         using (var contentStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
-                        using (var fileStream = new FileStream(destinationFilename, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize: 65536, useAsync: true))
+                        using (var fileStream = new FileStream(destinationFilename, FileMode.Create, FileAccess.Write,
+                                   FileShare.None, bufferSize: 65536, useAsync: true))
                         {
                             var buffer = new byte[65536]; // 64KB buffer
                             long totalBytesRead = 0;
                             int bytesRead;
                             DateTime lastProgressUpdate = DateTime.UtcNow;
 
-                            while ((bytesRead = await contentStream.ReadAsync(buffer, 0, buffer.Length, token).ConfigureAwait(false)) > 0)
+                            while ((bytesRead = await contentStream.ReadAsync(buffer, 0, buffer.Length, token)
+                                       .ConfigureAwait(false)) > 0)
                             {
                                 await fileStream.WriteAsync(buffer, 0, bytesRead, token).ConfigureAwait(false);
                                 totalBytesRead += bytesRead;
@@ -455,7 +478,8 @@
                         }
 
                         var fileInfo = new FileInfo(destinationFilename);
-                        _Logging.Info(_Header + $"successfully downloaded {fileInfo.Length} bytes to {destinationFilename}");
+                        _Logging.Info(_Header +
+                                      $"successfully downloaded {fileInfo.Length} bytes to {destinationFilename}");
                     }
                 }
             }
@@ -467,29 +491,43 @@
             {
                 throw;
             }
+            catch (HttpRequestException hre)
+            {
+                _Logging.Warn(_Header + "HTTP exception for URL " + downloadUrl + ": " + hre.Message);
+                cleanup = true;
+                
+                // Report failure through callback
+                progressCallback?.Invoke(sourceUrl, 0, -1);
+            }
             catch (Exception ex)
             {
                 _Logging.Warn(_Header + "exception in download:" + Environment.NewLine + ex.ToString());
+                cleanup = true;
 
                 // Report failure through callback
                 progressCallback?.Invoke(sourceUrl, 0, -1);
 
-                // Clean up partial file if it exists
-                try
+                string errorMsg = $"Error downloading file:{Environment.NewLine}{ex.ToString()}";
+                throw;
+            }
+            finally
+            {
+                if (cleanup)
                 {
-                    if (File.Exists(destinationFilename))
+                    // Clean up partial file if it exists
+                    try
                     {
-                        File.Delete(destinationFilename);
-                        _Logging.Debug(_Header + "cleaned up partial download file");
+                        if (File.Exists(destinationFilename))
+                        {
+                            File.Delete(destinationFilename);
+                            _Logging.Debug(_Header + "cleaned up partial download file");
+                        }
+                    }
+                    catch
+                    {
+                        // Ignore cleanup errors
                     }
                 }
-                catch
-                {
-                    // Ignore cleanup errors
-                }
-
-                string errorMsg = $"error downloading file:{Environment.NewLine}{ex.ToString()}";
-                throw new Exception(errorMsg, ex);
             }
         }
 

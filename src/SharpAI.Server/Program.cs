@@ -106,7 +106,6 @@
             if (!File.Exists(Constants.SettingsFile))
             {
                 Console.WriteLine("Settings file " + Constants.SettingsFile + " does not exist, creating");
-                Console.WriteLine("");
 
                 _Settings = new Settings();
                 _Settings.SoftwareVersion = _Version;
@@ -116,6 +115,16 @@
             else
             {
                 _Settings = _Serializer.DeserializeJsonFromFile<Settings>(Constants.SettingsFile);
+            }
+
+            if (_Settings.HuggingFace == null
+                || String.IsNullOrEmpty(_Settings.HuggingFace.ApiKey)
+                || _Settings.HuggingFace.ApiKey.Equals(Constants.DefaultHuggingFaceApiKey))
+            {
+                Console.WriteLine();
+                Console.WriteLine("Modify the " + Constants.SettingsFile + " file to set your HuggingFace API key, exiting");
+                Console.WriteLine();
+                Environment.Exit(1);
             }
         }
 

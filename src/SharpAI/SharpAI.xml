@@ -232,6 +232,11 @@
             Favicon content type.
             </summary>
         </member>
+        <member name="F:SharpAI.Constants.DefaultHuggingFaceApiKey">
+            <summary>
+            HuggingFace API key.
+            </summary>
+        </member>
         <member name="T:SharpAI.EmbeddingsDriver">
             <summary>
             Embeddings driver.
@@ -266,6 +271,11 @@
         <member name="T:SharpAI.Engines.EngineBase">
             <summary>
             Base class for AI providers that support embeddings and text generation.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Engines.EngineBase.IsDisposed">
+            <summary>
+            Boolean indicating if the engine is disposed.
             </summary>
         </member>
         <member name="P:SharpAI.Engines.EngineBase.ModelPath">
@@ -408,6 +418,11 @@
             <summary>
             LlamaSharp implementation of the AI provider base class.
             Provides text generation, embeddings, chat completion and vision capabilities using the LlamaSharp library.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Engines.LlamaSharpEngine.IsDisposed">
+            <summary>
+            Boolean indicating if the engine is disposed.
             </summary>
         </member>
         <member name="P:SharpAI.Engines.LlamaSharpEngine.EmbeddingDimensions">

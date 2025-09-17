@@ -59,17 +59,38 @@
 
             lock (_EnginesLock)
             {
-                if (_Engines.ContainsKey(filename)) return _Engines[filename];
+                bool create = false;
+                
+                if (_Engines.ContainsKey(filename))
+                {
+                    engine = _Engines[filename];
+                    if (engine == null)
+                    {
+                        _Engines.Remove(filename);
+                        create = true;
+                    }
+
+                    if (engine.IsDisposed)
+                    {
+                        _Engines.Remove(filename);
+                        create = true;
+                    }
+                }
                 else
+                {
+                    create = true;
+                }
+
+                if (create)
                 {
                     engine = new LlamaSharpEngine(_Logging);
                     engine.ModelPath = filename;
                     engine.InitializeAsync(filename).Wait();
                     _Engines.Add(filename, engine);
                 }
+                    
+                return engine;
             }
-
-            return engine;
         }
 
         #endregion

@@ -11,6 +11,11 @@
     public abstract class EngineBase : IDisposable
     {
         /// <summary>
+        /// Boolean indicating if the engine is disposed.
+        /// </summary>
+        public abstract bool IsDisposed { get; }
+
+        /// <summary>
         /// Path to the model file (ONNX, GGUF, etc.).
         /// </summary>
         public string ModelPath { get; set; } = string.Empty;

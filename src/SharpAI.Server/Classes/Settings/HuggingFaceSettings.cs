@@ -10,8 +10,14 @@
         /// <summary>
         /// API key.
         /// </summary>
-        public string ApiKey { get; set; } = "My API key";
+        public string ApiKey
+        {
+            get => _ApiKey;
+            set => _ApiKey = (!String.IsNullOrEmpty(value) ? value : throw new ArgumentNullException(nameof(ApiKey)));
+        }
 
+        private string _ApiKey = Constants.DefaultHuggingFaceApiKey;
+        
         /// <summary>
         /// HuggingFace settings.
         /// </summary>

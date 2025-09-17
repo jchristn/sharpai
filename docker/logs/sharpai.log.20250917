@@ -1,0 +1,46 @@
+2025-09-17 20:36:41 b7d620350326 Debug [ModelEngineService] initialized
+2025-09-17 20:36:41 b7d620350326 Debug [HuggingFace] initialized
+2025-09-17 20:36:41 b7d620350326 Debug [OllamaApiHandler] initialized
+2025-09-17 20:36:41 b7d620350326 Debug [SharpAI] starting SharpAI server
+2025-09-17 20:36:47 b7d620350326 Debug [HuggingFace] filtering GGUF files for model bartowski/Qwen2.5-3B-GGUF
+2025-09-17 20:36:47 b7d620350326 Debug [HuggingFace] retrieving model files for bartowski/Qwen2.5-3B-GGUF
+2025-09-17 20:36:48 b7d620350326 Error [HuggingFace] request failed with status 401:
+{"error":"Invalid credentials in Authorization header"}
+2025-09-17 20:36:48 b7d620350326 Warn [HuggingFace] exception retrieving model files:
+System.Collections.Generic.KeyNotFoundException: Request failed with status 401:
+{"error":"Invalid credentials in Authorization header"}
+   at SharpAI.Hosting.HuggingFaceClient.GetModelFilesAsync(String modelName, CancellationToken token) in /src/SharpAI/Hosting/HuggingFace/HuggingFaceClient.cs:line 148
+2025-09-17 20:36:48 b7d620350326 Warn [SharpAI] exception of type Exception: 
+System.Exception: Error retrieving model files:
+System.Collections.Generic.KeyNotFoundException: Request failed with status 401:
+{"error":"Invalid credentials in Authorization header"}
+   at SharpAI.Hosting.HuggingFaceClient.GetModelFilesAsync(String modelName, CancellationToken token) in /src/SharpAI/Hosting/HuggingFace/HuggingFaceClient.cs:line 148
+ ---> System.Collections.Generic.KeyNotFoundException: Request failed with status 401:
+{"error":"Invalid credentials in Authorization header"}
+   at SharpAI.Hosting.HuggingFaceClient.GetModelFilesAsync(String modelName, CancellationToken token) in /src/SharpAI/Hosting/HuggingFace/HuggingFaceClient.cs:line 148
+   --- End of inner exception stack trace ---
+   at SharpAI.Hosting.HuggingFaceClient.GetModelFilesAsync(String modelName, CancellationToken token) in /src/SharpAI/Hosting/HuggingFace/HuggingFaceClient.cs:line 178
+   at SharpAI.Hosting.HuggingFaceClient.GetGgufFilesAsync(String modelName, CancellationToken token) in /s
+2025-09-17 20:36:48 b7d620350326 Warn rc/SharpAI/Hosting/HuggingFace/HuggingFaceClient.cs:line 192
+   at SharpAI.Server.API.REST.Ollama.OllamaApiHandler.PullModel(AppRequest req, PullModelRequest pmr, CancellationToken token) in /src/SharpAI.Server/API/REST/Ollama/OllamaApiHandler.cs:line 126
+   at SharpAI.Server.Program.<>c.<<InitializeRestServer>b__17_5>d.MoveNext() in /src/SharpAI.Server/Program.cs:line 229
+--- End of stack trace from previous location ---
+   at SwiftStack.Rest.RestApp.<>c__DisplayClass57_0`1.<<RegisterBodyRoute>b__0>d.MoveNext()
+2025-09-17 20:36:48 b7d620350326 Warn [SharpAI] exception of type IOException: 
+System.IO.IOException: Response is configured to use chunked transfer-encoding.  Use SendChunk() and SendFinalChunk().
+   at WatsonWebserver.HttpResponse.Send(String data, CancellationToken token)
+   at SwiftStack.Rest.RestApp.HandleException(HttpContextBase ctx, Exception e)
+   at SwiftStack.Rest.RestApp.<>c__DisplayClass57_0`1.<<RegisterBodyRoute>b__0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at WatsonWebserver.Webserver.<>c__DisplayClass16_0.<<AcceptConnections>b__0>d.MoveNext()
+2025-09-17 20:36:52 b7d620350326 Debug [SharpAI] shutdown requested
+2025-09-17 20:48:46 6073fa164292 Debug [ModelEngineService] initialized
+2025-09-17 20:48:46 6073fa164292 Debug [HuggingFace] initialized
+2025-09-17 20:48:46 6073fa164292 Debug [OllamaApiHandler] initialized
+2025-09-17 20:48:46 6073fa164292 Debug [SharpAI] starting SharpAI server
+2025-09-17 20:48:47 6073fa164292 Debug [SharpAI] shutdown requested
+2025-09-17 20:51:37 e75816fbf88e Debug [ModelEngineService] initialized
+2025-09-17 20:51:37 e75816fbf88e Debug [HuggingFace] initialized
+2025-09-17 20:51:37 e75816fbf88e Debug [OllamaApiHandler] initialized
+2025-09-17 20:51:37 e75816fbf88e Debug [SharpAI] starting SharpAI server
+2025-09-17 20:51:40 e75816fbf88e Debug [SharpAI] shutdown requested

@@ -114,5 +114,9 @@
         /// </summary>
         public static string FaviconContentType = "image/png";
 
+        /// <summary>
+        /// HuggingFace API key.
+        /// </summary>
+        public static string DefaultHuggingFaceApiKey = "My HuggingFace API Key";
     }
 }
