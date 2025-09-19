@@ -116,13 +116,6 @@
                 req.Http.Response.ContentType = Constants.NdJsonContentType;
                 req.Http.Response.ChunkedTransfer = true;
 
-                string pullingManifest = _Serializer.SerializeJson(new
-                {
-                    status = "pulling manifest"
-                }, false) + Environment.NewLine;
-
-                await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(pullingManifest), false, token).ConfigureAwait(false);
-
                 List<GgufFileInfo> ggufFiles = await _HuggingFaceClient.GetGgufFilesAsync(pmr.Model, token).ConfigureAwait(false);
                 if (ggufFiles == null || ggufFiles.Count < 1)
                 {
@@ -133,9 +126,17 @@
                         error = "pull model manifest: file does not exist"
                     }, false) + Environment.NewLine;
 
+                    req.Http.Response.StatusCode = 404;
                     await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(notFound), true, token).ConfigureAwait(false);
                     return null;
                 }
+
+                string pullingManifest = _Serializer.SerializeJson(new
+                {
+                    status = "pulling manifest"
+                }, false) + Environment.NewLine;
+
+                await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(pullingManifest), false, token).ConfigureAwait(false);
 
                 GgufFileInfo preferred = null;
 

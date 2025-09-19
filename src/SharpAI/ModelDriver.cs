@@ -260,7 +260,7 @@
                 }
 
                 List<GgufFileInfo> ggufFiles = await _HuggingFace.GetGgufFilesAsync(name, token).ConfigureAwait(false);
-                if (ggufFiles == null)
+                if (ggufFiles == null || ggufFiles.Count < 1)
                 {
                     _Logging.Warn(_Header + "no GGUF files found for model " + name);
                     throw new Exception("No GGUF files found for model '" + name + "'.");

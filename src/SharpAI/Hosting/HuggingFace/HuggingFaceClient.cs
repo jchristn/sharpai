@@ -145,7 +145,7 @@
                         if (response.StatusCode < 200 || response.StatusCode >= 300)
                         {
                             _Logging.Error(_Header + $"request failed with status {response.StatusCode}" + (!String.IsNullOrEmpty(response.DataAsString) ? ":" + Environment.NewLine + response.DataAsString : ""));
-                            throw new KeyNotFoundException("Request failed with status " + response.StatusCode + (!String.IsNullOrEmpty(response.DataAsString) ? ":" + Environment.NewLine + response.DataAsString : ""));
+                            return null;
                         }
 
                         JsonDocument jsonDocument = JsonDocument.Parse(response.DataAsString);
@@ -190,6 +190,7 @@
             _Logging.Debug(_Header + $"filtering GGUF files for model {modelName}");
 
             List<HuggingFaceModelFile> allFiles = await GetModelFilesAsync(modelName, token).ConfigureAwait(false);
+            if (allFiles == null || allFiles.Count < 1) return null;
 
             List<GgufFileInfo> ggufFiles = allFiles.Where(f =>
                 f.Type?.Equals("file", StringComparison.OrdinalIgnoreCase) == true &&
@@ -224,6 +225,7 @@
             _Logging.Debug(_Header + $"getting GGUF files with quantization {quantizationType} for model: {modelName}");
 
             List<GgufFileInfo> allGgufFiles = await GetGgufFilesAsync(modelName, token).ConfigureAwait(false);
+            if (allGgufFiles == null || allGgufFiles.Count < 1) return null;
 
             List<GgufFileInfo> filteredFiles = allGgufFiles.Where(f =>
                 f.QuantizationType?.Equals(quantizationType, StringComparison.OrdinalIgnoreCase) == true
@@ -244,6 +246,7 @@
             _Logging.Debug(_Header + $"getting available quantization types for model: {modelName}");
 
             List<GgufFileInfo> ggufFiles = await GetGgufFilesAsync(modelName, token).ConfigureAwait(false);
+            if (ggufFiles == null || ggufFiles.Count < 1) return null;
 
             List<string> quantTypes = ggufFiles
                 .Where(f => !string.IsNullOrEmpty(f.QuantizationType))
