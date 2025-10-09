@@ -17,13 +17,14 @@
     using SharpAI.Server.API.REST.Ollama;
     using SharpAI.Server.API.REST.OpenAI;
     using SharpAI.Server.Classes;
+    using SharpAI.Server.Classes.Runtime;
     using SharpAI.Server.Classes.Settings;
     using SharpAI.Services;
     using SwiftStack;
     using SwiftStack.Rest;
     using SyslogLogging;
     using Watson.ORM.Sqlite;
-    
+
     using Constants = SharpAI.Constants;
 
     /// <summary>
@@ -54,6 +55,7 @@
         private static OllamaApiHandler _OllamaApiHandler = null;
         private static OpenAIApiHandler _OpenAIApiHandler = null;
         private static CancellationTokenSource _TokenSource = new CancellationTokenSource();
+        private static bool _ShutdownRequested = false;
 
         #endregion
 
@@ -69,14 +71,20 @@
             Welcome();
             ParseArguments(args);
             LoadSettings();
+            InitializeBootstrapper();
             InitializeGlobals();
             InitializeRestServer();
 
             Console.CancelKeyPress += (sender, e) =>
             {
                 e.Cancel = true;
-                _TokenSource.Cancel();
-                _Logging.Debug(_Header + "shutdown requested");
+
+                if (!_ShutdownRequested)
+                {
+                    _ShutdownRequested = true;
+                    _TokenSource.Cancel();
+                    _Logging.Debug(_Header + "shutdown requested");
+                }
             };
 
             _Logging.Debug(_Header + "starting SharpAI server");
@@ -119,6 +127,26 @@
             else
             {
                 _Settings = _Serializer.DeserializeJsonFromFile<Settings>(Constants.SettingsFile);
+            }
+        }
+
+        private static void InitializeBootstrapper()
+        {
+            // Create a temporary logging instance for bootstrapper initialization
+            // This must happen before any LlamaSharp types are referenced
+            LoggingModule tempLogging = new LoggingModule();
+            tempLogging.Settings.EnableConsole = true;
+            tempLogging.Settings.EnableColors = true;
+
+            try
+            {
+                NativeLibraryBootstrapper.Initialize(_Settings, tempLogging);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("WARNING: Native library bootstrapper initialization failed:");
+                Console.WriteLine(ex.ToString());
+                Console.WriteLine("Continuing with default LlamaSharp library loading...");
             }
         }
 

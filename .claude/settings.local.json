@@ -3,7 +3,10 @@
     "allow": [
       "Bash(dir)",
       "Bash(dir /s/b srcSharpAI.Server*.cs)",
-      "Bash(dir /s/b srcSharpAI*.cs)"
+      "Bash(dir /s/b srcSharpAI*.cs)",
+      "Bash(chmod:*)",
+      "Bash(dotnet build)",
+      "Bash(dotnet build:*)"
     ],
     "deny": [],
     "ask": []
