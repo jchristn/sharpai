@@ -320,7 +320,7 @@
             }
             catch (KeyNotFoundException)
             {
-                _Logging.Warn(_Header + "unable to find repository or GGUF files for " + pmr.Model);
+                _Logging.Warn(_Header + "unable to find repository or GGUF files for " + modelName);
 
                 string notFound = _Serializer.SerializeJson(new
                 {
@@ -332,7 +332,8 @@
             }
             finally
             {
-                _Pulls.TryRemove(pmr.Model, out _);
+                if (!String.IsNullOrEmpty(modelName))
+                    _Pulls.TryRemove(modelName, out _);
             }
         }
 

@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(dir)"
+      "Bash(dir)",
+      "Bash(dir /s/b srcSharpAI.Server*.cs)",
+      "Bash(dir /s/b srcSharpAI*.cs)"
     ],
     "deny": [],
     "ask": []
