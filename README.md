@@ -4,7 +4,7 @@
 
 # SharpAI
 
-**Transform your .NET applications into AI powerhouses - embed models directly or deploy as an Ollama-compatible API server. No cloud dependencies, no limits, just pure local inference.**
+**Transform your .NET applications into AI powerhouses - embed models directly or deploy as an Ollama-compatible and OpenAI-compatible API server. No cloud dependencies, no limits, just local embeddings and inference.**
 
 <p align="center">
   <img src="https://img.shields.io/badge/.NET-5C2D91?style=for-the-badge&logo=.net&logoColor=white" />
@@ -23,7 +23,7 @@
 </p>
 
 <p align="center">
-  <strong>A .NET library for local AI model inference with Ollama-compatible REST API</strong>
+  <strong>A .NET library for local AI model inference with Ollama-compatible and OpenAI-compatible REST APIs</strong>
 </p>
 
 <p align="center">
@@ -34,8 +34,8 @@
 
 ## 🚀 Features
 
-- **Ollama-Compatible REST API Server** - Provides endpoints compatible with Ollama's API
-- **Model Management** - Download and manage GGUF models from HuggingFace
+- **Ollama and OpenAI Compatible REST API Server** - Provides endpoints compatible with API from Ollama and OpenAI
+- **Model Management** - Download and manage GGUF models from HuggingFace using Ollama APIs
 - **Multiple Inference Types**:
   - Text embeddings generation
   - Text completions
@@ -93,7 +93,13 @@ var ai = new AIDriver(
 );
 
 // Download a model from HuggingFace (GGUF format)
-await ai.Models.Add("microsoft/phi-2");
+await ai.Models.Add(
+    name: "microsoft/phi-2",
+    quantizationPriority: null,
+    progressCallback: (url, bytesDownloaded, percentComplete) =>
+    {
+        Console.WriteLine($"Progress: {percentComplete:P0}");
+    });
 
 // Generate a completion
 string response = await ai.Completion.GenerateCompletion(
@@ -122,7 +128,10 @@ List<ModelFile> models = ai.Models.All();
 ModelFile model = ai.Models.GetByName("microsoft/phi-2");
 
 // Download a new model from HuggingFace
-ModelFile downloaded = await ai.Models.Add("meta-llama/Llama-2-7b-chat-hf");
+ModelFile downloaded = await ai.Models.Add(
+    name: "meta-llama/Llama-2-7b-chat-hf",
+    quantizationPriority: null,
+    progressCallback: null);
 
 // Delete a model
 ai.Models.Delete("microsoft/phi-2");
@@ -384,14 +393,17 @@ Supported text generation formats:
 
 SharpAI includes a fully-functional REST API server through the **SharpAI.Server** project, which provides Ollama-compatible endpoints. The server acts and behaves like Ollama (with minor gaps), allowing you to use existing Ollama clients and integrations with SharpAI.
 
-Key endpoints include:
+Ollama API endpoints include:
 - `/api/generate` - Text generation
 - `/api/chat` - Chat completions
-- `/api/embeddings` - Generate embeddings
+- `/api/embed` - Generate embeddings
 - `/api/tags` - List available models
 - `/api/pull` - Download models from HuggingFace
 
-Refer to the SharpAI.Server documentation for deployment and configuration details.
+OpenAI API endpoints include:
+- `/v1/embeddings` - Generate embeddings
+- `/v1/completions` - Text generation
+- `/v1/chat/completions` - Chat completions
 
 ## ⚙️ Requirements
 
@@ -495,11 +507,19 @@ Modify the `sharpai.json` file to supply your configuration.
 
 ### Networking
 
-The container exposes port 8000 by default. You can access the API at:
+The container exposes port 8000 by default. 
+
+You can access Ollama APIs at:
 - `http://localhost:8000/api/tags` - List available models
+- `http://localhost:8000/api/pull` - Pull a model
 - `http://localhost:8000/api/generate` - Generate text
 - `http://localhost:8000/api/chat` - Chat completions
-- `http://localhost:8000/api/embeddings` - Generate embeddings
+- `http://localhost:8000/api/embed` - Generate embeddings
+
+You can access OpenAI APIs at:
+- `http://localhost:8000/v1/embeddings` - Generate embeddings
+- `http://localhost:8000/v1/completions` - Generate text
+- `http://localhost:8000/v1/chat/completions` - Chat completions
 
 ### Example Usage
 
@@ -544,7 +564,7 @@ version: '3.8'
 
 services:
   sharpai:
-    image: jchristn/sharpai:v3.1.0
+    image: jchristn/sharpai:v1.0.0
     ports:
       - "8000:8000"
     volumes:
@@ -576,7 +596,7 @@ docker run --gpus all \
   -v ./sharpai.db:/app/sharpai.db \
   -v ./logs:/app/logs \
   -v ./models:/app/models \
-  jchristn/sharpai:v3.1.0
+  jchristn/sharpai:v1.0.0
 ```
 
 For Docker Compose, add:
@@ -603,15 +623,7 @@ services:
 
 Please see the [CHANGELOG.md](CHANGELOG.md) file for detailed version history and release notes.
 
-## 🗺️ Roadmap
-
-The following features are planned for future releases:
-
-- **Enriching Model Metadata Locally** - Enhanced local tracking of model capabilities, performance metrics, and usage statistics
-- **Classifications for Models** - Automatic categorization of models by their primary use case (embeddings vs generation)
-- **Native SharpAI API** - Additional functionality beyond Ollama compatibility for advanced use cases
-
-Have a feature request or idea? Please [file an issue](https://github.com/yourusername/sharpai/issues) on our GitHub repository. We welcome community input on our roadmap!
+Have a bug, feature request, or idea? Please [file an issue](https://github.com/yourusername/sharpai/issues) on our GitHub repository. We welcome community input on our roadmap!
 
 ## 📄 License
 
