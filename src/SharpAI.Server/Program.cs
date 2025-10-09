@@ -218,6 +218,19 @@
             _App.Rest.PreRoutingRoute = async (ctx) =>
             {
                 ctx.Response.Headers.Add(Constants.RequestIdHeader, Guid.NewGuid().ToString());
+
+                if (_Settings.Debug.RequestBody)
+                {
+                    if (ctx.Request.ChunkedTransfer) _Logging.Debug(_Header + "chunked request body detected, skipping logging");
+                    else if (!String.IsNullOrEmpty(ctx.Request.DataAsString))
+                    {
+                        _Logging.Debug(_Header + "request body:" + Environment.NewLine + ctx.Request.DataAsString);
+                    }
+                    else
+                    {
+                        _Logging.Debug(_Header + "no request body");
+                    }
+                }
             };
 
             _App.Rest.PostRoutingRoute = null; // use built-in

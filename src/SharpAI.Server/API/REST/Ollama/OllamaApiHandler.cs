@@ -77,7 +77,11 @@
             OllamaPullModelRequest pmr, 
             CancellationToken token = default)
         {
-            if (String.IsNullOrEmpty(pmr.Model))
+            string modelName = null;
+            if (!String.IsNullOrEmpty(pmr.Name)) modelName = pmr.Name;
+            if (!String.IsNullOrEmpty(pmr.Model)) modelName = pmr.Model;
+
+            if (String.IsNullOrEmpty(modelName))
             {
                 _Logging.Warn(_Header + "no model name supplied");
 
@@ -92,16 +96,16 @@
             #region Hold-Concurrent-Pulls
 
             int heldCount = 0;
-            while (_Pulls.ContainsKey(pmr.Model))
+            while (_Pulls.ContainsKey(modelName))
             {
                 if (heldCount % 10 == 0)
-                    _Logging.Debug(_Header + "holding pull request for " + pmr.Model + " due to an existing pull");
+                    _Logging.Debug(_Header + "holding pull request for " + modelName + " due to an existing pull");
 
                 heldCount++;
                 await Task.Delay(1000, token).ConfigureAwait(false);
             }
 
-            _Pulls.TryAdd(pmr.Model, true);
+            _Pulls.TryAdd(modelName, true);
 
             #endregion
 
@@ -109,10 +113,10 @@
             {
                 #region Check-for-Existing
 
-                ModelFile existing = _ModelFileService.GetByName(pmr.Model);
+                ModelFile existing = _ModelFileService.GetByName(modelName);
                 if (existing != null)
                 {
-                    _Logging.Debug(_Header + "model " + pmr.Model + " already exists");
+                    _Logging.Debug(_Header + "model " + modelName + " already exists");
 
                     req.Http.Response.ContentType = Constants.JsonContentType;
 
@@ -129,10 +133,10 @@
                 req.Http.Response.ContentType = Constants.NdJsonContentType;
                 req.Http.Response.ChunkedTransfer = true;
 
-                List<GgufFileInfo> ggufFiles = await _HuggingFaceClient.GetGgufFilesAsync(pmr.Model, token).ConfigureAwait(false);
+                List<GgufFileInfo> ggufFiles = await _HuggingFaceClient.GetGgufFilesAsync(modelName, token).ConfigureAwait(false);
                 if (ggufFiles == null || ggufFiles.Count < 1)
                 {
-                    _Logging.Warn(_Header + "no GGUF files found for model " + pmr.Model);
+                    _Logging.Warn(_Header + "no GGUF files found for model " + modelName);
 
                     string notFound = _Serializer.SerializeJson(new
                     {
@@ -158,20 +162,20 @@
                 else
                     preferred = GgufSelector.SortByPreference(ggufFiles, _Settings.QuantizationPriority).First();
 
-                _Logging.Debug(_Header + "using GGUF file " + preferred.Path + " as the preferred file for model " + pmr.Model);
+                _Logging.Debug(_Header + "using GGUF file " + preferred.Path + " as the preferred file for model " + modelName);
 
                 #endregion
 
                 #region Get-Download-URLs
 
-                List<string> urls = _HuggingFaceClient.GetDownloadUrls(pmr.Model, preferred);
+                List<string> urls = _HuggingFaceClient.GetDownloadUrls(modelName, preferred);
                 if (urls == null || urls.Count < 1)
                 {
-                    _Logging.Warn("no download URLs found for model " + pmr.Model);
-                    throw new SwiftStackException(ApiResultEnum.InternalError, "No download URLs found for the specified model " + pmr.Model + ".");
+                    _Logging.Warn("no download URLs found for model " + modelName);
+                    throw new SwiftStackException(ApiResultEnum.InternalError, "No download URLs found for the specified model " + modelName + ".");
                 }
 
-                string msg = _Header + "attempting download of model " + pmr.Model + " from the following URLs:";
+                string msg = _Header + "attempting download of model " + modelName + " from the following URLs:";
                 foreach (string url in urls)
                 {
                     msg += Environment.NewLine + "| " + url;
@@ -185,7 +189,7 @@
 
                 ModelFile modelFile = new ModelFile
                 {
-                    Name = pmr.Model
+                    Name = modelName
                 };
 
                 bool success = false;
@@ -200,7 +204,7 @@
 
                         string progress = _Serializer.SerializeJson(new
                         {
-                            status = "pulling " + pmr.Model,
+                            status = "pulling " + modelName,
                             downloaded = bytesDownloaded,
                             percent = Convert.ToDecimal(complete)
                         }, false) + Environment.NewLine;
@@ -215,7 +219,7 @@
 
                 foreach (string url in urls)
                 {
-                    _Logging.Debug(_Header + "attempting download of model " + pmr.Model + " using URL " + url + " to file " + modelFile.GUID.ToString());
+                    _Logging.Debug(_Header + "attempting download of model " + modelName + " using URL " + url + " to file " + modelFile.GUID.ToString());
 
                     success = await _HuggingFaceClient.TryDownloadFileAsync(url, filename, progressCallback, token).ConfigureAwait(false);
                     if (success)
@@ -223,7 +227,7 @@
                         fileLength = new FileInfo(filename).Length;
                         if (File.Exists(filename) && new FileInfo(filename).Length == preferred.Size)
                         {
-                            _Logging.Info(_Header + "successfully downloaded model " + pmr.Model + " using URL " + url + " to file " + filename);
+                            _Logging.Info(_Header + "successfully downloaded model " + modelName + " using URL " + url + " to file " + filename);
                             successUrl = url;
                             success = true;
                             break;
@@ -237,11 +241,11 @@
 
                 if (!success || String.IsNullOrEmpty(filename))
                 {
-                    _Logging.Warn(_Header + "unable to download model " + pmr.Model + " using " + urls.Count + " URL(s)");
-                    throw new SwiftStackException(ApiResultEnum.InternalError, "Unable to download model " + pmr.Model + " using " + urls.Count + " URL(s).");
+                    _Logging.Warn(_Header + "unable to download model " + modelName + " using " + urls.Count + " URL(s)");
+                    throw new SwiftStackException(ApiResultEnum.InternalError, "Unable to download model " + modelName + " using " + urls.Count + " URL(s).");
                 }
 
-                _Logging.Info(_Header + "downloaded GGUF file for " + pmr.Model);
+                _Logging.Info(_Header + "downloaded GGUF file for " + modelName);
 
                 #endregion
 
@@ -270,11 +274,11 @@
 
                     try
                     {
-                        md = await _HuggingFaceClient.GetModelMetadata(pmr.Model, token).ConfigureAwait(false);
+                        md = await _HuggingFaceClient.GetModelMetadata(modelName, token).ConfigureAwait(false);
                         if (md == null)
                         {
-                            _Logging.Warn(_Header + "unable to retrieve metadata for " + pmr.Model);
-                            throw new SwiftStackException(ApiResultEnum.InternalError, "Unable to retrieve metadata for model '" + pmr.Model + "'.");
+                            _Logging.Warn(_Header + "unable to retrieve metadata for " + modelName);
+                            throw new SwiftStackException(ApiResultEnum.InternalError, "Unable to retrieve metadata for model '" + modelName + "'.");
                         }
                     }
                     catch (Exception e)
@@ -304,6 +308,8 @@
                         downloaded = fileLength,
                         percent = 1
                     }, false) + Environment.NewLine;
+
+                    _Logging.Info(_Header + "successfully pulled model " + modelName);
 
                     await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(complete), true, token).ConfigureAwait(false);
 
