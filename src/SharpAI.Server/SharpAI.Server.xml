@@ -4,6 +4,21 @@
         <name>SharpAI.Server</name>
     </assembly>
     <members>
+        <member name="T:SharpAI.Server.Classes.Settings.DebugSettings">
+            <summary>
+            Debug settings.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.DebugSettings.RequestBody">
+            <summary>
+            True to enable request body logging.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Server.Classes.Settings.DebugSettings.#ctor">
+            <summary>
+            Debug settings.
+            </summary>
+        </member>
         <member name="T:SharpAI.Server.Classes.Settings.HuggingFaceSettings">
             <summary>
             HuggingFace settings.
@@ -97,6 +112,11 @@
         <member name="P:SharpAI.Server.Classes.Settings.Settings.Rest">
             <summary>
             REST settings.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.Settings.Debug">
+            <summary>
+            Debug settings.
             </summary>
         </member>
         <member name="P:SharpAI.Server.Classes.Settings.Settings.QuantizationPriority">

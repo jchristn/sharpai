@@ -114,6 +114,15 @@
         }
 
         /// <summary>
+        /// Debug settings.
+        /// </summary>
+        public DebugSettings Debug
+        {
+            get => _Debug;
+            set => _Debug = (value != null ? value : new DebugSettings());
+        }
+
+        /// <summary>
         /// Quantization priority.  If null or empty, Ollama quantization priority will be used.
         /// </summary>
         public Dictionary<string, int> QuantizationPriority
@@ -139,6 +148,7 @@
         private DatabaseSettings _Database = new DatabaseSettings(Constants.DatabaseFile);
         private HuggingFaceSettings _HuggingFace = new HuggingFaceSettings();
         private WebserverSettings _Rest = new WebserverSettings();
+        private DebugSettings _Debug = new DebugSettings();
         private Dictionary<string, int> _QuantizationPriority = new Dictionary<string, int>(StringComparer.InvariantCultureIgnoreCase);
 
         #endregion
