@@ -90,6 +90,11 @@
         public static string NdJsonContentType = "application/x-ndjson";
 
         /// <summary>
+        /// Event-stream content type for server-sent events (SSE).
+        /// </summary>
+        public static string EventStreamContentType = "text/event-stream";
+
+        /// <summary>
         /// HTML content type.
         /// </summary>
         public static string HtmlContentType = "text/html";
@@ -118,5 +123,10 @@
         /// HuggingFace API key.
         /// </summary>
         public static string DefaultHuggingFaceApiKey = "My HuggingFace API Key";
+
+        /// <summary>
+        /// SharpAI request ID header.
+        /// </summary>
+        public static string RequestIdHeader = "X-SharpAI-Request";
     }
 }

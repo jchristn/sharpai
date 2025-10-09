@@ -72,9 +72,22 @@
 
         #region Public-Methods
 
-        internal async Task<object> PullModel(AppRequest req, PullModelRequest pmr, CancellationToken token = default)
+        internal async Task<object> PullModel(
+            AppRequest req, 
+            OllamaPullModelRequest pmr, 
+            CancellationToken token = default)
         {
-            if (String.IsNullOrEmpty(pmr.Model)) throw new ArgumentNullException(nameof(pmr.Model));
+            if (String.IsNullOrEmpty(pmr.Model))
+            {
+                _Logging.Warn(_Header + "no model name supplied");
+
+                req.Http.Response.StatusCode = 400;
+
+                return new
+                {
+                    error = "invalid model name"
+                };
+            }
 
             #region Hold-Concurrent-Pulls
 
@@ -103,7 +116,7 @@
 
                     req.Http.Response.ContentType = Constants.JsonContentType;
 
-                    return new PullModelStatus
+                    return new OllamaPullModelResultMessage
                     {
                         Status = "success"
                     };
@@ -317,22 +330,25 @@
             }
         }
 
-        internal async Task<object> DeleteModel(AppRequest req, DeleteModelRequest dmr, CancellationToken token = default)
+        internal async Task<object> DeleteModel(
+            AppRequest req, 
+            OllamaDeleteModelRequest dmr, 
+            CancellationToken token = default)
         {
-            if (String.IsNullOrEmpty(dmr.Name)) throw new ArgumentNullException(nameof(dmr.Name));
+            if (String.IsNullOrEmpty(dmr.Model)) throw new ArgumentNullException(nameof(dmr.Model));
 
             req.Http.Response.ContentType = Constants.JsonContentType;
 
-            ModelFile modelFile = _ModelFileService.GetByName(dmr.Name);
+            ModelFile modelFile = _ModelFileService.GetByName(dmr.Model);
             if (modelFile == null)
             {
-                _Logging.Warn(_Header + "model " + dmr.Name + " not found");
+                _Logging.Warn(_Header + "model " + dmr.Model + " not found");
 
                 req.Http.Response.StatusCode = 404;
 
                 return new
                 {
-                    error = $"model '{dmr.Name}' not found"
+                    error = $"model '{dmr.Model}' not found"
                 };
             }
             else
@@ -343,7 +359,9 @@
             }
         }
 
-        internal async Task<object> ListLocalModels(AppRequest req, CancellationToken token = default)
+        internal async Task<object> ListLocalModels(
+            AppRequest req, 
+            CancellationToken token = default)
         {
             List<ModelFile> modelFiles = _ModelFileService.All();
             if (modelFiles == null || modelFiles.Count < 1)
@@ -366,13 +384,16 @@
             return ret;
         }
 
-        internal async Task<object> GenerateEmbeddings(AppRequest req, GenerateEmbeddingsRequest ger, CancellationToken token = default)
+        internal async Task<object> GenerateEmbeddings(
+            AppRequest req, 
+            OllamaGenerateEmbeddingsRequest ger, 
+            CancellationToken token = default)
         {
             if (String.IsNullOrEmpty(ger.Model)) throw new ArgumentNullException(nameof(ger.Model));
 
             req.Http.Response.ContentType = Constants.JsonContentType;
 
-            GenerateEmbeddingsResult ret = new GenerateEmbeddingsResult
+            OllamaGenerateEmbeddingsResult ret = new OllamaGenerateEmbeddingsResult
             {
                 Model = ger.Model
             };
@@ -404,19 +425,23 @@
                 };
             }
 
-            if (ger.IsInputSingleton)
+            if (ger.IsSingleInput())
             {
-                string input = ger.GetInputAsSingleton();
+                string input = ger.GetInput();
+
+                float[][] embeddings = new float[1][];
+
                 ret.Embeddings = new float[1][];
 
                 if (!String.IsNullOrEmpty(input))
                 {
-                    ret.Embeddings[0] = await engine.GenerateEmbeddingsAsync(input, token).ConfigureAwait(false);
+                    embeddings[0] = await engine.GenerateEmbeddingsAsync(input, token).ConfigureAwait(false);
+                    ret.Embeddings = embeddings;
                 }
             }
             else
             {
-                string[] inputs = ger.GetInputAsArray();
+                string[] inputs = ger.GetInputs();
 
                 foreach (string input in inputs)
                 {
@@ -433,13 +458,16 @@
                     }
                 }
 
-                ret.Embeddings = await engine.GenerateEmbeddingsAsync(inputs, token).ConfigureAwait(false);
+                ret.Embeddings = await engine.GenerateEmbeddingsAsync(inputs.ToArray(), token).ConfigureAwait(false);
             }
 
             return ret;
         }
 
-        internal async Task<object> GenerateCompletion(AppRequest req, GenerateCompletionRequest gcr, CancellationToken token = default)
+        internal async Task<object> GenerateCompletion(
+            AppRequest req, 
+            OllamaGenerateCompletionRequest gcr, 
+            CancellationToken token = default)
         {
             if (String.IsNullOrEmpty(gcr.Model)) throw new ArgumentNullException(nameof(gcr.Model));
 
@@ -474,7 +502,7 @@
                 };
             }
 
-            if (!gcr.Stream)
+            if (gcr.Stream == null || !gcr.Stream.Value)
             {
                 string response = await engine.GenerateTextAsync(
                     gcr.Prompt,
@@ -539,7 +567,10 @@
             }
         }
 
-        internal async Task<object> GenerateChatCompletion(AppRequest req, GenerateChatCompletionRequest gcr, CancellationToken token = default)
+        internal async Task<object> GenerateChatCompletion(
+            AppRequest req, 
+            OllamaGenerateChatCompletionRequest gcr, 
+            CancellationToken token = default)
         {
             if (String.IsNullOrEmpty(gcr.Model)) throw new ArgumentNullException(nameof(gcr.Model));
 
@@ -565,7 +596,7 @@
             if (gcr.Messages != null && gcr.Messages.Count > 0)
             {
                 int added = 0;
-                foreach (Message msg in gcr.Messages)
+                foreach (OllamaChatMessage msg in gcr.Messages)
                 {
                     if (added > 0) promptBuilder.Append("\n");
                     promptBuilder.Append($"{msg.Role}: {msg.Content}");
@@ -584,7 +615,7 @@
                 };
             }
 
-            if (!gcr.Stream)
+            if (gcr.Stream == null || !gcr.Stream.Value)
             {
                 string response = await engine.GenerateChatCompletionAsync(
                     promptBuilder.ToString(),

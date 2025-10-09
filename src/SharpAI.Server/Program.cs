@@ -4,6 +4,7 @@
     using System.Collections.Generic;
     using System.IO;
     using System.Text;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -11,8 +12,10 @@
     using SharpAI.Engines;
     using SharpAI.Hosting;
     using SharpAI.Models.Ollama;
+    using SharpAI.Models.OpenAI;
     using SharpAI.Serialization;
     using SharpAI.Server.API.REST.Ollama;
+    using SharpAI.Server.API.REST.OpenAI;
     using SharpAI.Server.Classes;
     using SharpAI.Server.Classes.Settings;
     using SharpAI.Services;
@@ -49,6 +52,7 @@
         private static HuggingFaceClient _HuggingFaceClient = null;
         private static SwiftStackApp _App = null;
         private static OllamaApiHandler _OllamaApiHandler = null;
+        private static OpenAIApiHandler _OpenAIApiHandler = null;
         private static CancellationTokenSource _TokenSource = new CancellationTokenSource();
 
         #endregion
@@ -116,16 +120,6 @@
             {
                 _Settings = _Serializer.DeserializeJsonFromFile<Settings>(Constants.SettingsFile);
             }
-
-            if (_Settings.HuggingFace == null
-                || String.IsNullOrEmpty(_Settings.HuggingFace.ApiKey)
-                || _Settings.HuggingFace.ApiKey.Equals(Constants.DefaultHuggingFaceApiKey))
-            {
-                Console.WriteLine();
-                Console.WriteLine("Modify the " + Constants.SettingsFile + " file to set your HuggingFace API key, exiting");
-                Console.WriteLine();
-                Environment.Exit(1);
-            }
         }
 
         private static void InitializeGlobals()
@@ -180,6 +174,14 @@
                 _ModelEngineService,
                 _HuggingFaceClient);
 
+            _OpenAIApiHandler = new OpenAIApiHandler(
+                _Settings,
+                _Logging,
+                _Serializer,
+                _ModelFileService,
+                _ModelEngineService,
+                _HuggingFaceClient);
+
             #endregion
         }
 
@@ -204,6 +206,7 @@
                     case ArgumentNullException:
                     case ArgumentException:
                     case InvalidOperationException:
+                    case JsonException:
                         req.Response.StatusCode = 400;
                         throw new SwiftStackException(ApiResultEnum.BadRequest, e.Message);
                     default:
@@ -211,6 +214,13 @@
                         throw new SwiftStackException(ApiResultEnum.InternalError, e.Message);
                 }
             };
+
+            _App.Rest.PreRoutingRoute = async (ctx) =>
+            {
+                ctx.Response.Headers.Add(Constants.RequestIdHeader, Guid.NewGuid().ToString());
+            };
+
+            _App.Rest.PostRoutingRoute = null; // use built-in
 
             _App.Rest.Get("/", async (req) =>
             {
@@ -232,15 +242,15 @@
 
             #region Ollama-Endpoints
 
-            _App.Rest.Post<PullModelRequest>("/api/pull", async (req) =>
+            _App.Rest.Post<OllamaPullModelRequest>("/api/pull", async (req) =>
             {
-                PullModelRequest pmr = req.GetData<PullModelRequest>();
+                OllamaPullModelRequest pmr = req.GetData<OllamaPullModelRequest>();
                 return await _OllamaApiHandler.PullModel(req, pmr, _TokenSource.Token).ConfigureAwait(false);
             }, false); // pull a model
 
-            _App.Rest.Delete<DeleteModelRequest>("/api/delete", async (req) =>
+            _App.Rest.Delete<OllamaDeleteModelRequest>("/api/delete", async (req) =>
             {
-                DeleteModelRequest dmr = req.GetData<DeleteModelRequest>();
+                OllamaDeleteModelRequest dmr = req.GetData<OllamaDeleteModelRequest>();
                 return await _OllamaApiHandler.DeleteModel(req, dmr, _TokenSource.Token).ConfigureAwait(false);
             }, false); // delete a model
 
@@ -249,33 +259,51 @@
                 return await _OllamaApiHandler.ListLocalModels(req, _TokenSource.Token).ConfigureAwait(false);
             }, false); // list local models
 
-            #endregion
-
-            #region Embeddings
-
-            _App.Rest.Post<GenerateEmbeddingsRequest>("/api/embed", async (req) =>
+            _App.Rest.Post<OllamaGenerateEmbeddingsRequest>("/api/embed", async (req) =>
             {
-                GenerateEmbeddingsRequest ger = req.GetData<GenerateEmbeddingsRequest>();
+                OllamaGenerateEmbeddingsRequest ger = req.GetData<OllamaGenerateEmbeddingsRequest>();
                 return await _OllamaApiHandler.GenerateEmbeddings(req, ger, _TokenSource.Token).ConfigureAwait(false);
             }, false); // generate embeddings (single, multiple)
 
-            #endregion
-
-            #region Completions
-
-            _App.Rest.Post<GenerateCompletionRequest>("/api/generate", async (req) =>
+            _App.Rest.Post<OllamaGenerateCompletionRequest>("/api/generate", async (req) =>
             {
-                GenerateCompletionRequest gcr = req.GetData<GenerateCompletionRequest>();
+                OllamaGenerateCompletionRequest gcr = req.GetData<OllamaGenerateCompletionRequest>();
                 object ret = await _OllamaApiHandler.GenerateCompletion(req, gcr, _TokenSource.Token).ConfigureAwait(false);
                 if (req.Http.Response.ChunkedTransfer) return null;
                 else return ret;
             }, false); // generate text
 
-            _App.Rest.Post<GenerateChatCompletionRequest>("/api/chat", async (req) =>
+            _App.Rest.Post<OllamaGenerateChatCompletionRequest>("/api/chat", async (req) =>
             {
-                GenerateChatCompletionRequest gccr = req.GetData<GenerateChatCompletionRequest>();
+                OllamaGenerateChatCompletionRequest gccr = req.GetData<OllamaGenerateChatCompletionRequest>();
                 object ret = await _OllamaApiHandler.GenerateChatCompletion(req, gccr, _TokenSource.Token).ConfigureAwait(false);
                 if (req.Http.Response.ChunkedTransfer) return null;
+                else return ret;
+            }, false); // generate chat completion
+
+            #endregion
+
+            #region OpenAI-Endpoints
+
+            _App.Rest.Post<OpenAIGenerateEmbeddingsRequest>("/v1/embeddings", async (req) =>
+            {
+                OpenAIGenerateEmbeddingsRequest ger = req.GetData<OpenAIGenerateEmbeddingsRequest>();
+                return await _OpenAIApiHandler.GenerateEmbeddings(req, ger, _TokenSource.Token).ConfigureAwait(false);
+            }, false); // generate embeddings (single, multiple)
+
+            _App.Rest.Post<OpenAIGenerateCompletionRequest>("/v1/completions", async (req) =>
+            {
+                OpenAIGenerateCompletionRequest gcr = req.GetData<OpenAIGenerateCompletionRequest>();
+                object ret = await _OpenAIApiHandler.GenerateCompletion(req, gcr, _TokenSource.Token).ConfigureAwait(false);
+                if (req.Http.Response.ServerSentEvents) return null;
+                else return ret;
+            }, false); // generate text
+
+            _App.Rest.Post<OpenAIGenerateChatCompletionRequest>("/v1/chat/completions", async (req) =>
+            {
+                OpenAIGenerateChatCompletionRequest gccr = req.GetData<OpenAIGenerateChatCompletionRequest>();
+                object ret = await _OpenAIApiHandler.GenerateChatCompletion(req, gccr, _TokenSource.Token).ConfigureAwait(false);
+                if (req.Http.Response.ServerSentEvents) return null;
                 else return ret;
             }, false); // generate chat completion
 

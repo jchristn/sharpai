@@ -207,6 +207,11 @@
             Newline-delimited JSON content type.
             </summary>
         </member>
+        <member name="F:SharpAI.Constants.EventStreamContentType">
+            <summary>
+            Event-stream content type for server-sent events (SSE).
+            </summary>
+        </member>
         <member name="F:SharpAI.Constants.HtmlContentType">
             <summary>
             HTML content type.
@@ -235,6 +240,11 @@
         <member name="F:SharpAI.Constants.DefaultHuggingFaceApiKey">
             <summary>
             HuggingFace API key.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Constants.RequestIdHeader">
+            <summary>
+            SharpAI request ID header.
             </summary>
         </member>
         <member name="T:SharpAI.EmbeddingsDriver">
@@ -2080,483 +2090,3613 @@
             </summary>
             <returns>Object.</returns>
         </member>
-        <member name="T:SharpAI.Models.Ollama.DeleteModelRequest">
+        <member name="T:SharpAI.Models.Ollama.OllamaChatCompletionMetrics">
+            <summary>
+            Performance metrics for chat completion.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaChatCompletionMetrics.PromptTokens">
+            <summary>
+            Number of tokens in the prompt.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaChatCompletionMetrics.CompletionTokens">
+            <summary>
+            Number of tokens generated.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaChatCompletionMetrics.TotalTokens">
+            <summary>
+            Total number of tokens.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaChatCompletionMetrics.PromptTokensPerSecond">
+            <summary>
+            Prompt evaluation rate (tokens/second).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaChatCompletionMetrics.GenerationTokensPerSecond">
+            <summary>
+            Generation rate (tokens/second).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaChatCompletionMetrics.TotalDurationMs">
+            <summary>
+            Total response time in milliseconds.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaChatCompletionMetrics.LoadDurationMs">
+            <summary>
+            Model load time in milliseconds.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaChatCompletionMetrics.PromptEvalDurationMs">
+            <summary>
+            Prompt evaluation time in milliseconds.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaChatCompletionMetrics.GenerationDurationMs">
+            <summary>
+            Generation time in milliseconds.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaChatCompletionMetrics.FromResult(SharpAI.Models.Ollama.OllamaGenerateChatCompletionResult)">
+            <summary>
+            Creates metrics from a chat completion result.
+            </summary>
+            <param name="result">The chat completion result.</param>
+            <returns>Metrics object or null if insufficient data.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaChatCompletionMetrics.#ctor">
+            <summary>
+            Ollama chat completion metrics.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.OllamaChatMessage">
+            <summary>
+            Ollama chat message.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaChatMessage.Role">
+            <summary>
+            Role of the message sender (required).
+            Valid values: "system", "user", "assistant", "tool"
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaChatMessage.Content">
+            <summary>
+            Content of the message (required).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaChatMessage.Images">
+            <summary>
+            Base64-encoded images for multimodal models (optional).
+            Only valid for user messages.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaChatMessage.ToolCalls">
+            <summary>
+            Tool calls made by the assistant (optional).
+            Only valid for assistant messages.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaChatMessage.#ctor">
+            <summary>
+            Ollama chat message.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.OllamaChatResponseMessage">
+            <summary>
+            Extension of OllamaChatMessage for response-specific properties.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaChatResponseMessage.IsToolCallResponse">
+            <summary>
+            Tool calls made by the assistant (if any).
+            Inherited from OllamaChatMessage.
+            </summary>
+            <summary>
+            Checks if this is a tool call response.
+            </summary>
+            <returns>True if the message contains tool calls.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaChatResponseMessage.GetFirstToolCall">
+            <summary>
+            Gets the first tool call if available.
+            </summary>
+            <returns>First tool call or null if none.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaChatResponseMessage.#ctor">
+            <summary>
+            Ollama chat response message.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.OllamaCompletionContext">
+            <summary>
+            Helper class for managing completion context across requests.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionContext.Data">
+            <summary>
+            The context data.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionContext.Model">
+            <summary>
+            The model this context is for.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionContext.LastUpdated">
+            <summary>
+            When this context was last updated.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaCompletionContext.FromResult(SharpAI.Models.Ollama.OllamaGenerateCompletionResult)">
+            <summary>
+            Creates a context from a completion result.
+            </summary>
+            <param name="result">The completion result.</param>
+            <returns>Context object or null if no context available.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaCompletionContext.IsValidForModel(System.String)">
+            <summary>
+            Checks if this context is valid for a given model.
+            </summary>
+            <param name="modelName">The model name to check.</param>
+            <returns>True if context is valid for the model.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaCompletionContext.GetAge">
+            <summary>
+            Gets the age of this context.
+            </summary>
+            <returns>Time since last update.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaCompletionContext.#ctor">
+            <summary>
+            Ollama completion context.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.OllamaCompletionMetrics">
+            <summary>
+            Performance metrics for completion generation.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionMetrics.PromptTokens">
+            <summary>
+            Number of tokens in the prompt.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionMetrics.CompletionTokens">
+            <summary>
+            Number of tokens generated.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionMetrics.TotalTokens">
+            <summary>
+            Total number of tokens.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionMetrics.ContextSize">
+            <summary>
+            Size of the context maintained.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionMetrics.PromptTokensPerSecond">
+            <summary>
+            Prompt evaluation rate (tokens/second).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionMetrics.GenerationTokensPerSecond">
+            <summary>
+            Generation rate (tokens/second).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionMetrics.TotalDurationMs">
+            <summary>
+            Total response time in milliseconds.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionMetrics.LoadDurationMs">
+            <summary>
+            Model load time in milliseconds.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionMetrics.PromptEvalDurationMs">
+            <summary>
+            Prompt evaluation time in milliseconds.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionMetrics.GenerationDurationMs">
+            <summary>
+            Generation time in milliseconds.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaCompletionMetrics.FromResult(SharpAI.Models.Ollama.OllamaGenerateCompletionResult)">
+            <summary>
+            Creates metrics from a completion result.
+            </summary>
+            <param name="result">The completion result.</param>
+            <returns>Metrics object or null if insufficient data.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaCompletionMetrics.#ctor">
+            <summary>
+            Ollama completion metrics.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.OllamaCompletionOptions">
+            <summary>
+            Ollama completion options for model parameters.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionOptions.Seed">
+            <summary>
+            Random seed for generation (optional).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionOptions.NumPredict">
+            <summary>
+            Number of tokens to generate (optional, default: infinite).
+            -1 = infinite, -2 = fill context
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionOptions.NumGpu">
+            <summary>
+            Number of layers to offload to GPU (optional).
+            0 = no GPU, -1 = all layers
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionOptions.Temperature">
+            <summary>
+            Temperature for sampling (optional, default: 0.8).
+            Range: 0.0 to 2.0
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionOptions.TopK">
+            <summary>
+            Top-k sampling parameter (optional, default: 40).
+            Range: 0 to 100
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionOptions.TopP">
+            <summary>
+            Top-p sampling parameter (optional, default: 0.9).
+            Range: 0.0 to 1.0
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionOptions.MinP">
+            <summary>
+            Min-p sampling parameter (optional, default: 0.0).
+            Range: 0.0 to 1.0
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionOptions.TfsZ">
+            <summary>
+            Tail free sampling parameter (optional, default: 1.0).
+            Range: 0.0 to 1.0
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionOptions.TypicalP">
+            <summary>
+            Typical sampling parameter (optional, default: 1.0).
+            Range: 0.0 to 1.0
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionOptions.RepeatPenalty">
+            <summary>
+            Repeat penalty (optional, default: 1.1).
+            Range: 0.0 to 2.0
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionOptions.RepeatLastN">
+            <summary>
+            Last n tokens to consider for repeat penalty (optional, default: 64).
+            Range: 0 to context size
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionOptions.PresencePenalty">
+            <summary>
+            Presence penalty (optional, default: 0.0).
+            Range: -2.0 to 2.0
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionOptions.FrequencyPenalty">
+            <summary>
+            Frequency penalty (optional, default: 0.0).
+            Range: -2.0 to 2.0
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionOptions.Mirostat">
+            <summary>
+            Mirostat sampling mode (0/1/2) (optional, default: 0).
+            0 = disabled, 1 = Mirostat v1, 2 = Mirostat v2
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionOptions.MirostatTau">
+            <summary>
+            Mirostat target entropy tau (optional, default: 5.0).
+            Range: 0.0 to 10.0
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionOptions.MirostatEta">
+            <summary>
+            Mirostat learning rate eta (optional, default: 0.1).
+            Range: 0.0 to 1.0
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionOptions.PenalizeNewline">
+            <summary>
+            Penalize newline tokens (optional, default: true).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionOptions.Stop">
+            <summary>
+            Stop sequences for generation (optional).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionOptions.Numa">
+            <summary>
+            Enable NUMA support (optional, default: false).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionOptions.NumCtx">
+            <summary>
+            Context size (optional, default: 2048).
+            Range: 128 to 1048576
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionOptions.NumBatch">
+            <summary>
+            Batch size for prompt evaluation (optional, default: 512).
+            Range: 1 to context size
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionOptions.NumThread">
+            <summary>
+            Number of threads to use (optional).
+            Range: 1 to 128
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionOptions.NumKeep">
+            <summary>
+            Number of tokens to keep from initial prompt (optional, default: 4).
+            Range: 0 to context size
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionOptions.UseMlock">
+            <summary>
+            Use memory locking (optional, default: false).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionOptions.UseMmap">
+            <summary>
+            Use memory mapping (optional, default: true).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionOptions.VocabOnly">
+            <summary>
+            Vocabulary only mode (optional, default: false).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionOptions.LowVram">
+            <summary>
+            Low VRAM mode (optional, default: false).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionOptions.F16Kv">
+            <summary>
+            F16 key-value storage (optional, default: true).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionOptions.MainGpu">
+            <summary>
+            Main GPU index (optional).
+            Range: 0 to number of GPUs - 1
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionOptions.LogitsAll">
+            <summary>
+            Logits all mode (optional).
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaCompletionOptions.#ctor">
+            <summary>
+            Ollama completion options.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.OllamaDeleteModelRequest">
             <summary>
             Ollama delete model request.
             </summary>
         </member>
-        <member name="P:SharpAI.Models.Ollama.DeleteModelRequest.Name">
+        <member name="P:SharpAI.Models.Ollama.OllamaDeleteModelRequest.Model">
             <summary>
-            Name.
+            Name of the model to delete (required).
+            No one knows why Ollama chose to use the 'name' property here instead of 'model', which is used by the other APIs.
             </summary>
         </member>
-        <member name="M:SharpAI.Models.Ollama.DeleteModelRequest.#ctor">
+        <member name="M:SharpAI.Models.Ollama.OllamaDeleteModelRequest.#ctor">
             <summary>
             Ollama delete model request.
             </summary>
         </member>
-        <member name="T:SharpAI.Models.Ollama.GenerateChatCompletionRequest">
+        <member name="T:SharpAI.Models.Ollama.OllamaEmbeddingsInputConverter">
+            <summary>
+            Custom JSON converter for flexible input handling (string or array of strings).
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaEmbeddingsInputConverter.Read(System.Text.Json.Utf8JsonReader@,System.Type,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Read.
+            </summary>
+            <param name="reader">Reader.</param>
+            <param name="typeToConvert">Type to convert.</param>
+            <param name="options">Options.</param>
+            <returns>Object.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaEmbeddingsInputConverter.Write(System.Text.Json.Utf8JsonWriter,System.Object,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Write.
+            </summary>
+            <param name="writer">Writer.</param>
+            <param name="value">Value.</param>
+            <param name="options">Options.</param>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.OllamaEmbeddingsOptions">
+            <summary>
+            Ollama embeddings options.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaEmbeddingsOptions.NumThread">
+            <summary>
+            Number of threads to use (optional).
+            Range: 1 to 128
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaEmbeddingsOptions.NumCtx">
+            <summary>
+            Context size (optional).
+            Range: 128 to 1048576
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaEmbeddingsOptions.NumGpu">
+            <summary>
+            Number of layers to offload to GPU (optional).
+            0 = no GPU, -1 = all layers
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaEmbeddingsOptions.MainGpu">
+            <summary>
+            Main GPU index (optional).
+            Range: 0 to number of GPUs - 1
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaEmbeddingsOptions.LowVram">
+            <summary>
+            Low VRAM mode (optional, default: false).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaEmbeddingsOptions.F16Kv">
+            <summary>
+            F16 key-value storage (optional, default: true).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaEmbeddingsOptions.Numa">
+            <summary>
+            Enable NUMA support (optional, default: false).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaEmbeddingsOptions.UseMmap">
+            <summary>
+            Use memory mapping (optional, default: true).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaEmbeddingsOptions.UseMlock">
+            <summary>
+            Use memory locking (optional, default: false).
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaEmbeddingsOptions.#ctor">
+            <summary>
+            Ollama embeddings options.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.OllamaEmbeddingsOutputConverter">
+            <summary>
+            Custom JSON converter for flexible embeddings handling (single array or array of arrays).
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaEmbeddingsOutputConverter.Read(System.Text.Json.Utf8JsonReader@,System.Type,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Read.
+            </summary>
+            <param name="reader">Reader.</param>
+            <param name="typeToConvert">Type to convert.</param>
+            <param name="options">Options.</param>
+            <returns>Object.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaEmbeddingsOutputConverter.Write(System.Text.Json.Utf8JsonWriter,System.Object,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Write.
+            </summary>
+            <param name="writer">Writer.</param>
+            <param name="value">Value.</param>
+            <param name="options">Options.</param>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.OllamaGenerateChatCompletionChunk">
+            <summary>
+            Ollama generate chat completion chunk (single chunk from streaming response).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateChatCompletionChunk.Model">
+            <summary>
+            The model that generated the response.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateChatCompletionChunk.CreatedAt">
+            <summary>
+            The timestamp of when the response was created.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateChatCompletionChunk.Message">
+            <summary>
+            The partial message generated by the model.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateChatCompletionChunk.Done">
+            <summary>
+            Whether the response is complete.
+            False for intermediate chunks, true for the final chunk.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateChatCompletionChunk.DoneReason">
+            <summary>
+            Reason why the response is done.
+            Examples: "stop", "length", "function_call"
+            Only present in the final chunk (when done=true).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateChatCompletionChunk.TotalDuration">
+            <summary>
+            Total duration in nanoseconds.
+            Only present in the final chunk (when done=true).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateChatCompletionChunk.LoadDuration">
+            <summary>
+            Model load duration in nanoseconds.
+            Only present in the final chunk (when done=true).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateChatCompletionChunk.PromptEvalCount">
+            <summary>
+            Number of tokens in the prompt.
+            Only present in the final chunk (when done=true).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateChatCompletionChunk.PromptEvalDuration">
+            <summary>
+            Prompt evaluation duration in nanoseconds.
+            Only present in the final chunk (when done=true).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateChatCompletionChunk.EvalCount">
+            <summary>
+            Number of tokens generated in the response.
+            Only present in the final chunk (when done=true).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateChatCompletionChunk.EvalDuration">
+            <summary>
+            Response generation duration in nanoseconds.
+            Only present in the final chunk (when done=true).
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaGenerateChatCompletionChunk.#ctor">
+            <summary>
+            Ollama generate chat completion chunk.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.OllamaGenerateChatCompletionRequest">
             <summary>
             Ollama generate chat completion request.
             </summary>
         </member>
-        <member name="P:SharpAI.Models.Ollama.GenerateChatCompletionRequest.Model">
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateChatCompletionRequest.Model">
             <summary>
-            Model.
+            Model name to use for chat completion (required).
             </summary>
         </member>
-        <member name="P:SharpAI.Models.Ollama.GenerateChatCompletionRequest.Messages">
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateChatCompletionRequest.Messages">
             <summary>
-            Messages.
+            Messages for the chat (required).
             </summary>
         </member>
-        <member name="P:SharpAI.Models.Ollama.GenerateChatCompletionRequest.Stream">
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateChatCompletionRequest.Options">
             <summary>
-            True to enable response streaming.
+            Additional model parameters (optional).
             </summary>
         </member>
-        <member name="P:SharpAI.Models.Ollama.GenerateChatCompletionRequest.Options">
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateChatCompletionRequest.Format">
             <summary>
-            Generation options.
+            Format to return the response in. Currently only "json" is supported (optional).
             </summary>
         </member>
-        <member name="T:SharpAI.Models.Ollama.GenerateCompletionRequest">
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateChatCompletionRequest.Template">
+            <summary>
+            The full prompt template (overrides what is defined in the Modelfile) (optional).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateChatCompletionRequest.Stream">
+            <summary>
+            Enable streaming of generated text (optional, defaults to true).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateChatCompletionRequest.KeepAlive">
+            <summary>
+            How long to keep the model loaded in memory (optional).
+            Examples: "5m", "10m", "1h", "never"
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateChatCompletionRequest.Tools">
+            <summary>
+            Tools/functions available for the model to use (optional).
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaGenerateChatCompletionRequest.#ctor">
+            <summary>
+            Ollama generate chat completion request.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.OllamaGenerateChatCompletionResult">
+            <summary>
+            Ollama generate chat completion result.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateChatCompletionResult.Model">
+            <summary>
+            The model that generated the response.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateChatCompletionResult.CreatedAt">
+            <summary>
+            The timestamp of when the response was created.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateChatCompletionResult.Message">
+            <summary>
+            The message generated by the model.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateChatCompletionResult.Done">
+            <summary>
+            Whether the response is complete.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateChatCompletionResult.DoneReason">
+            <summary>
+            Reason why the response is done.
+            Examples: "stop", "length", "function_call"
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateChatCompletionResult.TotalDuration">
+            <summary>
+            Total duration in nanoseconds.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateChatCompletionResult.LoadDuration">
+            <summary>
+            Model load duration in nanoseconds.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateChatCompletionResult.PromptEvalCount">
+            <summary>
+            Number of tokens in the prompt.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateChatCompletionResult.PromptEvalDuration">
+            <summary>
+            Prompt evaluation duration in nanoseconds.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateChatCompletionResult.EvalCount">
+            <summary>
+            Number of tokens generated in the response.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateChatCompletionResult.EvalDuration">
+            <summary>
+            Response generation duration in nanoseconds.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaGenerateChatCompletionResult.GetPromptTokensPerSecond">
+            <summary>
+            Gets the prompt evaluation rate in tokens per second.
+            </summary>
+            <returns>Tokens per second for prompt evaluation, or null if data unavailable.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaGenerateChatCompletionResult.GetGenerationTokensPerSecond">
+            <summary>
+            Gets the response generation rate in tokens per second.
+            </summary>
+            <returns>Tokens per second for generation, or null if data unavailable.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaGenerateChatCompletionResult.GetTotalDurationMilliseconds">
+            <summary>
+            Gets the total response time in milliseconds.
+            </summary>
+            <returns>Total duration in milliseconds, or null if unavailable.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaGenerateChatCompletionResult.GetLoadDurationMilliseconds">
+            <summary>
+            Gets the model load time in milliseconds.
+            </summary>
+            <returns>Load duration in milliseconds, or null if unavailable.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaGenerateChatCompletionResult.HasToolCalls">
+            <summary>
+            Checks if the response contains tool calls.
+            </summary>
+            <returns>True if the message contains tool calls.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaGenerateChatCompletionResult.GetTotalTokenCount">
+            <summary>
+            Gets the total number of tokens (prompt + generated).
+            </summary>
+            <returns>Total token count, or null if data unavailable.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaGenerateChatCompletionResult.#ctor">
+            <summary>
+            Ollama generate chat completion result.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.OllamaGenerateChatCompletionStreamingResult">
+            <summary>
+            Ollama generate chat completion streaming result wrapper.
+            This wrapper is returned immediately and contains an async enumerable stream of chunks.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateChatCompletionStreamingResult.Chunks">
+            <summary>
+            The async enumerable stream of chat completion chunks.
+            Yields OllamaGenerateChatCompletionChunk objects as they arrive from the server.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaGenerateChatCompletionStreamingResult.#ctor">
+            <summary>
+            Ollama generate chat completion streaming result.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.OllamaGenerateCompletionChunk">
+            <summary>
+            Ollama generate completion chunk (single chunk from streaming response).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateCompletionChunk.Model">
+            <summary>
+            The model that generated the response.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateCompletionChunk.CreatedAt">
+            <summary>
+            The timestamp of when the response was created.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateCompletionChunk.Response">
+            <summary>
+            The partial generated text response.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateCompletionChunk.Done">
+            <summary>
+            Whether the response is complete.
+            False for intermediate chunks, true for the final chunk.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateCompletionChunk.Context">
+            <summary>
+            Context for maintaining conversation state.
+            Only present in the final chunk (when done=true).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateCompletionChunk.TotalDuration">
+            <summary>
+            Total duration in nanoseconds.
+            Only present in the final chunk (when done=true).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateCompletionChunk.LoadDuration">
+            <summary>
+            Model load duration in nanoseconds.
+            Only present in the final chunk (when done=true).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateCompletionChunk.PromptEvalCount">
+            <summary>
+            Number of tokens in the prompt.
+            Only present in the final chunk (when done=true).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateCompletionChunk.PromptEvalDuration">
+            <summary>
+            Prompt evaluation duration in nanoseconds.
+            Only present in the final chunk (when done=true).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateCompletionChunk.EvalCount">
+            <summary>
+            Number of tokens generated in the response.
+            Only present in the final chunk (when done=true).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateCompletionChunk.EvalDuration">
+            <summary>
+            Response generation duration in nanoseconds.
+            Only present in the final chunk (when done=true).
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaGenerateCompletionChunk.#ctor">
+            <summary>
+            Ollama generate completion chunk.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.OllamaGenerateCompletionRequest">
             <summary>
             Ollama generate completion request.
             </summary>
         </member>
-        <member name="P:SharpAI.Models.Ollama.GenerateCompletionRequest.Model">
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateCompletionRequest.Model">
             <summary>
-            Model.
+            Model name to use for generation (required).
             </summary>
         </member>
-        <member name="P:SharpAI.Models.Ollama.GenerateCompletionRequest.Prompt">
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateCompletionRequest.Prompt">
             <summary>
-            Prompt.
+            The prompt to generate a response for (required).
             </summary>
         </member>
-        <member name="P:SharpAI.Models.Ollama.GenerateCompletionRequest.Stream">
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateCompletionRequest.Options">
             <summary>
-            True to enable response streaming.
+            Additional model parameters (optional).
             </summary>
         </member>
-        <member name="P:SharpAI.Models.Ollama.GenerateCompletionRequest.Options">
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateCompletionRequest.System">
             <summary>
-            Generation options.
+            System message to use (overrides what is defined in the Modelfile) (optional).
             </summary>
         </member>
-        <member name="M:SharpAI.Models.Ollama.GenerateCompletionRequest.#ctor">
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateCompletionRequest.Template">
+            <summary>
+            The full prompt or prompt template (overrides what is defined in the Modelfile) (optional).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateCompletionRequest.Context">
+            <summary>
+            The context from a previous request, used to keep a conversation going (optional).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateCompletionRequest.Stream">
+            <summary>
+            Enable streaming of generated text (optional, defaults to true).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateCompletionRequest.Raw">
+            <summary>
+            If false, the response will not include the prompt (optional).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateCompletionRequest.Format">
+            <summary>
+            Format to return the response in. Currently only "json" is supported (optional).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateCompletionRequest.Images">
+            <summary>
+            Base64-encoded images for multimodal models (optional).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateCompletionRequest.KeepAlive">
+            <summary>
+            How long to keep the model loaded in memory (optional).
+            Examples: "5m", "10m", "1h", "never"
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaGenerateCompletionRequest.#ctor">
             <summary>
             Ollama generate completion request.
             </summary>
         </member>
-        <member name="T:SharpAI.Models.Ollama.GenerateEmbeddingsRequest">
+        <member name="T:SharpAI.Models.Ollama.OllamaGenerateCompletionResult">
+            <summary>
+            Ollama generate completion result.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateCompletionResult.Model">
+            <summary>
+            The model that generated the response.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateCompletionResult.CreatedAt">
+            <summary>
+            The timestamp of when the response was created.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateCompletionResult.Response">
+            <summary>
+            The generated text response.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateCompletionResult.Context">
+            <summary>
+            Context for maintaining conversation state.
+            Can be passed in the next request to continue the conversation.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateCompletionResult.TotalDuration">
+            <summary>
+            Total duration in nanoseconds.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateCompletionResult.LoadDuration">
+            <summary>
+            Model load duration in nanoseconds.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateCompletionResult.PromptEvalCount">
+            <summary>
+            Number of tokens in the prompt.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateCompletionResult.PromptEvalDuration">
+            <summary>
+            Prompt evaluation duration in nanoseconds.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateCompletionResult.EvalCount">
+            <summary>
+            Number of tokens generated in the response.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateCompletionResult.EvalDuration">
+            <summary>
+            Response generation duration in nanoseconds.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaGenerateCompletionResult.GetPromptTokensPerSecond">
+            <summary>
+            Gets the prompt evaluation rate in tokens per second.
+            </summary>
+            <returns>Tokens per second for prompt evaluation, or null if data unavailable.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaGenerateCompletionResult.GetGenerationTokensPerSecond">
+            <summary>
+            Gets the response generation rate in tokens per second.
+            </summary>
+            <returns>Tokens per second for generation, or null if data unavailable.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaGenerateCompletionResult.GetTotalDurationMilliseconds">
+            <summary>
+            Gets the total response time in milliseconds.
+            </summary>
+            <returns>Total duration in milliseconds, or null if unavailable.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaGenerateCompletionResult.GetLoadDurationMilliseconds">
+            <summary>
+            Gets the model load time in milliseconds.
+            </summary>
+            <returns>Load duration in milliseconds, or null if unavailable.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaGenerateCompletionResult.GetPromptEvalDurationMilliseconds">
+            <summary>
+            Gets the prompt evaluation time in milliseconds.
+            </summary>
+            <returns>Prompt evaluation duration in milliseconds, or null if unavailable.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaGenerateCompletionResult.GetEvalDurationMilliseconds">
+            <summary>
+            Gets the generation time in milliseconds.
+            </summary>
+            <returns>Generation duration in milliseconds, or null if unavailable.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaGenerateCompletionResult.GetTotalTokenCount">
+            <summary>
+            Gets the total number of tokens (prompt + generated).
+            </summary>
+            <returns>Total token count, or null if data unavailable.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaGenerateCompletionResult.HasContext">
+            <summary>
+            Checks if context is available for continuing the conversation.
+            </summary>
+            <returns>True if context is available.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaGenerateCompletionResult.GetContextSize">
+            <summary>
+            Gets the size of the context in tokens.
+            </summary>
+            <returns>Context size or 0 if no context.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaGenerateCompletionResult.#ctor">
+            <summary>
+            Ollama generate completion result.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.OllamaGenerateCompletionStreamingResult">
+            <summary>
+            Ollama generate completion streaming result wrapper.
+            This wrapper is returned immediately and contains an async enumerable stream of chunks.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateCompletionStreamingResult.Chunks">
+            <summary>
+            The async enumerable stream of completion chunks.
+            Yields OllamaGenerateCompletionChunk objects as they arrive from the server.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaGenerateCompletionStreamingResult.#ctor">
+            <summary>
+            Ollama generate completion streaming result.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.OllamaGenerateEmbeddingsRequest">
             <summary>
             Ollama generate embeddings request.
             </summary>
         </member>
-        <member name="P:SharpAI.Models.Ollama.GenerateEmbeddingsRequest.Model">
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateEmbeddingsRequest.Model">
             <summary>
-            Model.
+            Model name to use for generating embeddings (required).
             </summary>
         </member>
-        <member name="P:SharpAI.Models.Ollama.GenerateEmbeddingsRequest.Input">
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateEmbeddingsRequest.Input">
             <summary>
-            Input object, either a single string or an array of strings.
+            Input text(s) to generate embeddings for (required).
+            Can be a single string or an array of strings.
+            Use SetInput() or SetInputs() to set values, and GetInputs() to retrieve as array.
             </summary>
         </member>
-        <member name="P:SharpAI.Models.Ollama.GenerateEmbeddingsRequest.Options">
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateEmbeddingsRequest.Options">
             <summary>
-            Generation options.
+            Options for generating embeddings (optional).
             </summary>
         </member>
-        <member name="P:SharpAI.Models.Ollama.GenerateEmbeddingsRequest.KeepAlive">
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateEmbeddingsRequest.KeepAlive">
             <summary>
-            Controls how long the model will stay loaded into memory following the request.
+            How long to keep the model loaded in memory (optional).
+            Examples: "5m", "10m", "1h", "never"
             </summary>
         </member>
-        <member name="P:SharpAI.Models.Ollama.GenerateEmbeddingsRequest.IsInputSingleton">
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateEmbeddingsRequest.Truncate">
             <summary>
-            Indicates whether the input is a singleton string.
+            Truncate inputs that exceed the model's context window (optional).
             </summary>
         </member>
-        <member name="P:SharpAI.Models.Ollama.GenerateEmbeddingsRequest.IsInputArray">
+        <member name="M:SharpAI.Models.Ollama.OllamaGenerateEmbeddingsRequest.SetInput(System.String)">
             <summary>
-            Indicates whether the input is an array of strings.
+            Sets a single input string.
             </summary>
+            <param name="input">The input string.</param>
         </member>
-        <member name="M:SharpAI.Models.Ollama.GenerateEmbeddingsRequest.#ctor">
+        <member name="M:SharpAI.Models.Ollama.OllamaGenerateEmbeddingsRequest.SetInputs(System.Collections.Generic.List{System.String})">
             <summary>
-            Ollama generate embeddings request.
+            Sets multiple input strings.
             </summary>
+            <param name="inputs">The array of input strings.</param>
         </member>
-        <member name="M:SharpAI.Models.Ollama.GenerateEmbeddingsRequest.GetInputAsSingleton">
+        <member name="M:SharpAI.Models.Ollama.OllamaGenerateEmbeddingsRequest.GetInput">
             <summary>
-            Get the input as a single string. Throws exception if input is not a singleton.
+            Gets the input as a single string.
+            Throws an exception if the input is a list.
             </summary>
-            <returns>Single input string.</returns>
+            <returns>The input string.</returns>
+            <exception cref="T:System.InvalidOperationException">Thrown when input is a list instead of a single string.</exception>
         </member>
-        <member name="M:SharpAI.Models.Ollama.GenerateEmbeddingsRequest.GetInputAsArray">
+        <member name="M:SharpAI.Models.Ollama.OllamaGenerateEmbeddingsRequest.GetInputs">
             <summary>
-            Get the input as an array of strings. Handles both array and singleton inputs.
+            Gets the input as an array of strings.
+            If input is a single string, returns an array with one element.
             </summary>
             <returns>Array of input strings.</returns>
         </member>
-        <member name="T:SharpAI.Models.Ollama.GenerateEmbeddingsResult">
+        <member name="M:SharpAI.Models.Ollama.OllamaGenerateEmbeddingsRequest.IsSingleInput">
+            <summary>
+            Checks if the input is a single string.
+            </summary>
+            <returns>True if input is a single string, false otherwise.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaGenerateEmbeddingsRequest.#ctor">
+            <summary>
+            Ollama generate embeddings request.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.OllamaGenerateEmbeddingsResult">
             <summary>
             Ollama generate embeddings result.
             </summary>
         </member>
-        <member name="P:SharpAI.Models.Ollama.GenerateEmbeddingsResult.Model">
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateEmbeddingsResult.Model">
             <summary>
-            Model identifier.
+            The model that generated the embeddings.
             </summary>
         </member>
-        <member name="P:SharpAI.Models.Ollama.GenerateEmbeddingsResult.Embeddings">
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateEmbeddingsResult.Embeddings">
             <summary>
-            Embeddings.
+            Generated embedding(s).
+            Can be a single array of floats or an array of arrays of floats.
+            Use GetEmbedding() for single result or GetEmbeddings() for multiple results.
             </summary>
         </member>
-        <member name="M:SharpAI.Models.Ollama.GenerateEmbeddingsResult.#ctor">
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateEmbeddingsResult.TotalDuration">
+            <summary>
+            Total duration in nanoseconds.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateEmbeddingsResult.LoadDuration">
+            <summary>
+            Model load duration in nanoseconds.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaGenerateEmbeddingsResult.PromptEvalCount">
+            <summary>
+            Prompt evaluation count.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaGenerateEmbeddingsResult.GetEmbedding">
+            <summary>
+            Gets a single embedding array.
+            Throws if the result contains multiple embeddings.
+            </summary>
+            <returns>Single embedding array.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaGenerateEmbeddingsResult.GetEmbeddings">
+            <summary>
+            Gets all embeddings as a list of arrays.
+            If result is a single embedding, returns a list with one element.
+            </summary>
+            <returns>List of embedding arrays.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaGenerateEmbeddingsResult.IsSingleEmbedding">
+            <summary>
+            Checks if the result contains a single embedding.
+            </summary>
+            <returns>True if single embedding, false if multiple.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaGenerateEmbeddingsResult.IsMultiEmbeddings">
+            <summary>
+            Checks if the result contains multiple embeddings.
+            </summary>
+            <returns>True if multiple embeddings, false if single.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaGenerateEmbeddingsResult.GetEmbeddingCount">
+            <summary>
+            Gets the number of embeddings in the result.
+            </summary>
+            <returns>Number of embeddings.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaGenerateEmbeddingsResult.GetEmbeddingDimension">
+            <summary>
+            Gets the dimension (length) of the embeddings.
+            All embeddings in the result should have the same dimension.
+            </summary>
+            <returns>Dimension of embeddings, or null if no embeddings.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaGenerateEmbeddingsResult.#ctor">
             <summary>
             Ollama generate embeddings result.
             </summary>
         </member>
-        <member name="T:SharpAI.Models.Ollama.GenerationOptions">
-            <summary>
-            Ollama generation options.
-            </summary>
-        </member>
-        <member name="P:SharpAI.Models.Ollama.GenerationOptions.NumKeep">
-            <summary>
-            Number of tokens from prompt to keep when context fills.
-            </summary>
-        </member>
-        <member name="P:SharpAI.Models.Ollama.GenerationOptions.Seed">
-            <summary>
-            Random seed for reproducible outputs (-1 = random).
-            </summary>
-        </member>
-        <member name="P:SharpAI.Models.Ollama.GenerationOptions.NumPredict">
-            <summary>
-            Maximum tokens to generate (-1 = unlimited, -2 = fill context).
-            </summary>
-        </member>
-        <member name="P:SharpAI.Models.Ollama.GenerationOptions.TopK">
-            <summary>
-            Limits vocabulary to top K most likely tokens.
-            </summary>
-        </member>
-        <member name="P:SharpAI.Models.Ollama.GenerationOptions.TopP">
-            <summary>
-            Nucleus sampling - cumulative probability cutoff.
-            </summary>
-        </member>
-        <member name="P:SharpAI.Models.Ollama.GenerationOptions.MinP">
-            <summary>
-            Minimum probability threshold for token selection.
-            </summary>
-        </member>
-        <member name="P:SharpAI.Models.Ollama.GenerationOptions.TfsZ">
-            <summary>
-            Tail-free sampling parameter.
-            </summary>
-        </member>
-        <member name="P:SharpAI.Models.Ollama.GenerationOptions.TypicalP">
-            <summary>
-            Typical sampling parameter.
-            </summary>
-        </member>
-        <member name="P:SharpAI.Models.Ollama.GenerationOptions.RepeatLastN">
-            <summary>
-            How many tokens to consider for repetition penalty (-1 = num_ctx).
-            </summary>
-        </member>
-        <member name="P:SharpAI.Models.Ollama.GenerationOptions.Temperature">
-            <summary>
-            Controls randomness. Lower = more deterministic, higher = more creative.
-            </summary>
-        </member>
-        <member name="P:SharpAI.Models.Ollama.GenerationOptions.RepeatPenalty">
-            <summary>
-            Penalty for repeating tokens (1.0 = no penalty).
-            </summary>
-        </member>
-        <member name="P:SharpAI.Models.Ollama.GenerationOptions.PresencePenalty">
-            <summary>
-            Penalty for token presence (positive = discourage).
-            </summary>
-        </member>
-        <member name="P:SharpAI.Models.Ollama.GenerationOptions.FrequencyPenalty">
-            <summary>
-            Penalty based on token frequency.
-            </summary>
-        </member>
-        <member name="P:SharpAI.Models.Ollama.GenerationOptions.Mirostat">
-            <summary>
-            Mirostat algorithm (0=disabled, 1=v1, 2=v2).
-            </summary>
-        </member>
-        <member name="P:SharpAI.Models.Ollama.GenerationOptions.MirostatTau">
-            <summary>
-            Mirostat target entropy.
-            </summary>
-        </member>
-        <member name="P:SharpAI.Models.Ollama.GenerationOptions.MirostatEta">
-            <summary>
-            Mirostat learning rate.
-            </summary>
-        </member>
-        <member name="P:SharpAI.Models.Ollama.GenerationOptions.PenalizeNewline">
-            <summary>
-            Whether to penalize newline tokens.
-            </summary>
-        </member>
-        <member name="P:SharpAI.Models.Ollama.GenerationOptions.Numa">
-            <summary>
-            Enable NUMA optimization.
-            </summary>
-        </member>
-        <member name="P:SharpAI.Models.Ollama.GenerationOptions.NumCtx">
-            <summary>
-            Context window size (model dependent).
-            </summary>
-        </member>
-        <member name="P:SharpAI.Models.Ollama.GenerationOptions.NumBatch">
-            <summary>
-            Batch size for prompt processing.
-            </summary>
-        </member>
-        <member name="P:SharpAI.Models.Ollama.GenerationOptions.NumGpu">
-            <summary>
-            Number of GPU layers to use (-1 = auto).
-            </summary>
-        </member>
-        <member name="P:SharpAI.Models.Ollama.GenerationOptions.MainGpu">
-            <summary>
-            Primary GPU device ID.
-            </summary>
-        </member>
-        <member name="P:SharpAI.Models.Ollama.GenerationOptions.LowVram">
-            <summary>
-            Reduce VRAM usage (slower).
-            </summary>
-        </member>
-        <member name="P:SharpAI.Models.Ollama.GenerationOptions.F16Kv">
-            <summary>
-            Use 16-bit floats for key/value cache.
-            </summary>
-        </member>
-        <member name="P:SharpAI.Models.Ollama.GenerationOptions.VocabOnly">
-            <summary>
-            Load vocabulary only (for embeddings).
-            </summary>
-        </member>
-        <member name="P:SharpAI.Models.Ollama.GenerationOptions.UseMmap">
-            <summary>
-            Use memory mapping for model loading.
-            </summary>
-        </member>
-        <member name="P:SharpAI.Models.Ollama.GenerationOptions.UseMlock">
-            <summary>
-            Lock model in memory (prevents swapping).
-            </summary>
-        </member>
-        <member name="P:SharpAI.Models.Ollama.GenerationOptions.NumThread">
-            <summary>
-            Number of CPU threads to use.
-            </summary>
-        </member>
-        <member name="M:SharpAI.Models.Ollama.GenerationOptions.#ctor">
-            <summary>
-            Ollama generation options.
-            </summary>
-        </member>
-        <member name="T:SharpAI.Models.Ollama.ListLocalModelsResult">
+        <member name="T:SharpAI.Models.Ollama.OllamaListLocalModelsResult">
             <summary>
             Ollama list local models result.
             </summary>
         </member>
-        <member name="P:SharpAI.Models.Ollama.ListLocalModelsResult.Models">
+        <member name="P:SharpAI.Models.Ollama.OllamaListLocalModelsResult.Models">
             <summary>
-            Models.
+            List of models available locally.
             </summary>
         </member>
-        <member name="M:SharpAI.Models.Ollama.ListLocalModelsResult.#ctor">
+        <member name="M:SharpAI.Models.Ollama.OllamaListLocalModelsResult.GetModelCount">
+            <summary>
+            Gets the total number of models.
+            </summary>
+            <returns>Number of local models.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaListLocalModelsResult.GetTotalSizeBytes">
+            <summary>
+            Gets the total size of all models in bytes.
+            </summary>
+            <returns>Total size in bytes.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaListLocalModelsResult.GetFormattedTotalSize">
+            <summary>
+            Gets the total size of all models in a human-readable format.
+            </summary>
+            <returns>Formatted total size string.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaListLocalModelsResult.FindModel(System.String,System.Boolean)">
+            <summary>
+            Finds a model by name.
+            </summary>
+            <param name="modelName">The model name to search for.</param>
+            <param name="exactMatch">Whether to require exact match or allow partial/case-insensitive match.</param>
+            <returns>The matching model or null if not found.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaListLocalModelsResult.GetModelsByFamily(System.String)">
+            <summary>
+            Gets all models from a specific family.
+            </summary>
+            <param name="family">The model family (e.g., "llama", "mistral").</param>
+            <returns>List of models from the specified family.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaListLocalModelsResult.GetQuantizedModels">
+            <summary>
+            Gets all quantized models.
+            </summary>
+            <returns>List of quantized models.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaListLocalModelsResult.GetModelsSortedBySize(System.Boolean)">
+            <summary>
+            Gets models sorted by size.
+            </summary>
+            <param name="ascending">True for smallest first, false for largest first.</param>
+            <returns>Sorted list of models.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaListLocalModelsResult.GetModelsSortedByDate(System.Boolean)">
+            <summary>
+            Gets models sorted by modification date.
+            </summary>
+            <param name="mostRecentFirst">True for most recent first.</param>
+            <returns>Sorted list of models.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaListLocalModelsResult.GetModelsModifiedSince(System.DateTime)">
+            <summary>
+            Gets models that were modified within a specific time period.
+            </summary>
+            <param name="since">The start date/time.</param>
+            <returns>List of models modified since the specified time.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaListLocalModelsResult.GroupModelsByBaseName">
+            <summary>
+            Groups models by their base name (without tag).
+            </summary>
+            <returns>Dictionary grouping models by base name.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaListLocalModelsResult.GetStatistics">
+            <summary>
+            Gets statistics about the local models.
+            </summary>
+            <returns>Model statistics.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaListLocalModelsResult.FormatBytes(System.Int64)">
+            <summary>
+            Formats bytes into human-readable format.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaListLocalModelsResult.#ctor">
             <summary>
             Ollama list local models result.
             </summary>
         </member>
-        <member name="T:SharpAI.Models.Ollama.Message">
+        <member name="T:SharpAI.Models.Ollama.OllamaListRunningModelsResult">
             <summary>
-            Ollama message.
+            Ollama list running models result.
             </summary>
         </member>
-        <member name="P:SharpAI.Models.Ollama.Message.Role">
+        <member name="P:SharpAI.Models.Ollama.OllamaListRunningModelsResult.Models">
             <summary>
-            Role, generally system, user, or assistant.
+            List of models currently loaded in memory.
             </summary>
         </member>
-        <member name="P:SharpAI.Models.Ollama.Message.Content">
+        <member name="M:SharpAI.Models.Ollama.OllamaListRunningModelsResult.GetRunningModelCount">
             <summary>
-            Content.
+            Gets the total number of running models.
+            </summary>
+            <returns>Number of running models.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaListRunningModelsResult.GetTotalVRAMUsage">
+            <summary>
+            Gets the total VRAM usage of all running models in bytes.
+            </summary>
+            <returns>Total VRAM usage in bytes.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaListRunningModelsResult.GetFormattedTotalVRAMUsage">
+            <summary>
+            Gets the total VRAM usage formatted as a string.
+            </summary>
+            <returns>Formatted VRAM usage.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaListRunningModelsResult.GetTotalRAMUsage">
+            <summary>
+            Gets the total system RAM usage of all running models in bytes.
+            </summary>
+            <returns>Total RAM usage in bytes.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaListRunningModelsResult.GetFormattedTotalRAMUsage">
+            <summary>
+            Gets the total system RAM usage formatted as a string.
+            </summary>
+            <returns>Formatted RAM usage.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaListRunningModelsResult.GetTotalMemoryUsage">
+            <summary>
+            Gets the total memory usage (VRAM + RAM) of all running models.
+            </summary>
+            <returns>Total memory usage in bytes.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaListRunningModelsResult.GetFormattedTotalMemoryUsage">
+            <summary>
+            Gets the total memory usage formatted as a string.
+            </summary>
+            <returns>Formatted total memory usage.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaListRunningModelsResult.FindRunningModel(System.String)">
+            <summary>
+            Finds a running model by name.
+            </summary>
+            <param name="modelName">The model name to search for.</param>
+            <returns>The running model or null if not found.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaListRunningModelsResult.IsModelRunning(System.String)">
+            <summary>
+            Checks if a specific model is currently running.
+            </summary>
+            <param name="modelName">The model name to check.</param>
+            <returns>True if the model is running.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaListRunningModelsResult.GetModelsExpiringWithin(System.TimeSpan)">
+            <summary>
+            Gets models that will expire within a specified timeframe.
+            </summary>
+            <param name="within">Timespan to check for expiration.</param>
+            <returns>List of models expiring within the timeframe.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaListRunningModelsResult.GetNextExpiringModel">
+            <summary>
+            Gets the model that will expire next.
+            </summary>
+            <returns>Model with the earliest expiration or null.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaListRunningModelsResult.GetModelsSortedByMemoryUsage(System.Boolean)">
+            <summary>
+            Gets models sorted by memory usage.
+            </summary>
+            <param name="ascending">True for smallest first, false for largest first.</param>
+            <returns>Sorted list of running models.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaListRunningModelsResult.GetModelsSortedByVRAMUsage(System.Boolean)">
+            <summary>
+            Gets models sorted by VRAM usage.
+            </summary>
+            <param name="ascending">True for smallest first, false for largest first.</param>
+            <returns>Sorted list of running models.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaListRunningModelsResult.GroupByFamily">
+            <summary>
+            Groups running models by family.
+            </summary>
+            <returns>Dictionary of models grouped by family.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaListRunningModelsResult.GetStatistics">
+            <summary>
+            Gets memory usage statistics for running models.
+            </summary>
+            <returns>Memory usage statistics.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaListRunningModelsResult.FormatBytes(System.Int64)">
+            <summary>
+            Formats bytes into human-readable format.
             </summary>
         </member>
-        <member name="P:SharpAI.Models.Ollama.Message.TimestampUtc">
+        <member name="M:SharpAI.Models.Ollama.OllamaListRunningModelsResult.#ctor">
             <summary>
-            Timestamp, in UTC time.
+            Ollama list running models result.
             </summary>
         </member>
-        <member name="M:SharpAI.Models.Ollama.Message.#ctor">
+        <member name="T:SharpAI.Models.Ollama.OllamaLocalModel">
             <summary>
-            Ollama message.
+            Ollama local model information.
             </summary>
         </member>
-        <member name="T:SharpAI.Models.Ollama.ModelInfo">
+        <member name="P:SharpAI.Models.Ollama.OllamaLocalModel.Name">
             <summary>
-            Model info for Ollama API response.
+            Model name including tag (e.g., "llama2:latest").
             </summary>
         </member>
-        <member name="P:SharpAI.Models.Ollama.ModelInfo.Name">
+        <member name="P:SharpAI.Models.Ollama.OllamaLocalModel.Digest">
             <summary>
-            Model name.
+            Model digest/hash.
             </summary>
         </member>
-        <member name="P:SharpAI.Models.Ollama.ModelInfo.Model">
+        <member name="P:SharpAI.Models.Ollama.OllamaLocalModel.Size">
             <summary>
-            Model identifier.
+            Model size in bytes.
             </summary>
         </member>
-        <member name="P:SharpAI.Models.Ollama.ModelInfo.ModifiedAt">
+        <member name="P:SharpAI.Models.Ollama.OllamaLocalModel.ModifiedAt">
             <summary>
-            Timestamp when the model was last modified.
+            When the model was last modified.
             </summary>
         </member>
-        <member name="P:SharpAI.Models.Ollama.ModelInfo.Size">
+        <member name="P:SharpAI.Models.Ollama.OllamaLocalModel.Details">
             <summary>
-            Size of the model in bytes.
+            Model details including format, family, parameter size, and quantization.
             </summary>
         </member>
-        <member name="P:SharpAI.Models.Ollama.ModelInfo.Digest">
+        <member name="M:SharpAI.Models.Ollama.OllamaLocalModel.GetBaseName">
             <summary>
-            SHA256 digest of the model.
+            Gets the model's base name without tag.
+            </summary>
+            <returns>Base model name.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaLocalModel.GetTag">
+            <summary>
+            Gets the model's tag.
+            </summary>
+            <returns>Model tag or "latest" if no tag specified.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaLocalModel.GetFormattedSize">
+            <summary>
+            Gets the formatted size of the model.
+            </summary>
+            <returns>Human-readable size string.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaLocalModel.GetShortDigest">
+            <summary>
+            Gets a short digest identifier.
+            </summary>
+            <returns>First 12 characters of the digest.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaLocalModel.GetAge">
+            <summary>
+            Gets the age of the model since last modification.
+            </summary>
+            <returns>Time since last modification.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaLocalModel.GetFormattedAge">
+            <summary>
+            Gets a formatted age string.
+            </summary>
+            <returns>Human-readable age string.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaLocalModel.MatchesPattern(System.String)">
+            <summary>
+            Checks if this model matches a given pattern.
+            </summary>
+            <param name="pattern">Pattern to match (supports wildcards).</param>
+            <returns>True if the model name matches the pattern.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaLocalModel.FormatBytes(System.Int64)">
+            <summary>
+            Formats bytes into human-readable format.
             </summary>
         </member>
-        <member name="P:SharpAI.Models.Ollama.ModelInfo.Details">
+        <member name="M:SharpAI.Models.Ollama.OllamaLocalModel.#ctor">
             <summary>
-            Model info details object.
+            Ollama local model.
             </summary>
         </member>
-        <member name="M:SharpAI.Models.Ollama.ModelInfo.#ctor">
+        <member name="T:SharpAI.Models.Ollama.OllamaModelDetails">
             <summary>
-            Model info for Ollama API response.
+            Ollama model details.
             </summary>
         </member>
-        <member name="M:SharpAI.Models.Ollama.ModelInfo.FromModelFile(SharpAI.Models.ModelFile)">
+        <member name="P:SharpAI.Models.Ollama.OllamaModelDetails.ParentModel">
             <summary>
-            Convert from ModelFile to ModelInfo.
-            </summary>
-            <param name="mf">ModelFile instance.</param>
-            <returns>ModelInfo instance.</returns>
-        </member>
-        <member name="T:SharpAI.Models.Ollama.ModelInfoDetails">
-            <summary>
-            Model info details object for nested details in Ollama API response.
+            Parent model this was created from.
             </summary>
         </member>
-        <member name="P:SharpAI.Models.Ollama.ModelInfoDetails.ParentModel">
+        <member name="P:SharpAI.Models.Ollama.OllamaModelDetails.Format">
             <summary>
-            Parent model name.
+            Model format (e.g., "gguf").
             </summary>
         </member>
-        <member name="P:SharpAI.Models.Ollama.ModelInfoDetails.Format">
+        <member name="P:SharpAI.Models.Ollama.OllamaModelDetails.Family">
             <summary>
-            Model format.
+            Model family (e.g., "llama", "mistral").
             </summary>
         </member>
-        <member name="P:SharpAI.Models.Ollama.ModelInfoDetails.Family">
+        <member name="P:SharpAI.Models.Ollama.OllamaModelDetails.Families">
             <summary>
-            Model family.
+            Model families/architectures.
             </summary>
         </member>
-        <member name="P:SharpAI.Models.Ollama.ModelInfoDetails.Families">
+        <member name="P:SharpAI.Models.Ollama.OllamaModelDetails.ParameterSize">
             <summary>
-            Model families.
+            Parameter size (e.g., "7B", "13B", "70B").
             </summary>
         </member>
-        <member name="P:SharpAI.Models.Ollama.ModelInfoDetails.ParameterSize">
+        <member name="P:SharpAI.Models.Ollama.OllamaModelDetails.QuantizationLevel">
             <summary>
-            Parameter size.
+            Quantization level (e.g., "Q4_0", "Q4_K_M", "Q8_0").
             </summary>
         </member>
-        <member name="P:SharpAI.Models.Ollama.ModelInfoDetails.QuantizationLevel">
+        <member name="M:SharpAI.Models.Ollama.OllamaModelDetails.GetParameterSizeInBillions">
             <summary>
-            Quantization level.
+            Gets the estimated model size in billions of parameters.
+            </summary>
+            <returns>Number of billions of parameters, or null if cannot parse.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaModelDetails.GetQuantizationBits">
+            <summary>
+            Gets the quantization bits from the quantization level.
+            </summary>
+            <returns>Number of bits used for quantization, or null if cannot determine.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaModelDetails.IsQuantized">
+            <summary>
+            Checks if this is a quantized model.
+            </summary>
+            <returns>True if the model is quantized.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaModelDetails.BelongsToFamily(System.String)">
+            <summary>
+            Checks if this model belongs to a specific family.
+            </summary>
+            <param name="familyName">The family name to check.</param>
+            <returns>True if the model belongs to the specified family.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaModelDetails.#ctor">
+            <summary>
+            Ollama model details.
             </summary>
         </member>
-        <member name="M:SharpAI.Models.Ollama.ModelInfoDetails.#ctor">
+        <member name="T:SharpAI.Models.Ollama.OllamaModelInfoInterpreter">
             <summary>
-            Model info details object for nested details in Ollama API response.
+            Helper class for interpreting model information.
             </summary>
         </member>
-        <member name="T:SharpAI.Models.Ollama.PullModelRequest">
+        <member name="M:SharpAI.Models.Ollama.OllamaModelInfoInterpreter.#ctor(SharpAI.Models.Ollama.OllamaShowModelInfoResult)">
+            <summary>
+            Creates a new model info interpreter.
+            </summary>
+            <param name="result">The model info result to interpret.</param>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaModelInfoInterpreter.EstimateVRAMRequirement">
+            <summary>
+            Gets the estimated VRAM requirement in GB.
+            </summary>
+            <returns>Estimated VRAM in GB, or null if cannot estimate.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaModelInfoInterpreter.GetContextLength">
+            <summary>
+            Gets the context length from parameters if available.
+            </summary>
+            <returns>Context length or null if not found.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaModelInfoInterpreter.GetTemperature">
+            <summary>
+            Gets the temperature setting from parameters if available.
+            </summary>
+            <returns>Temperature value or null if not found.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaModelInfoInterpreter.MeetsRequirements(System.Nullable{System.Double},System.Nullable{System.Int32})">
+            <summary>
+            Determines if this model is suitable for a given use case.
+            </summary>
+            <param name="requiredVRAM">Required VRAM in GB.</param>
+            <param name="requiredContext">Required context length.</param>
+            <returns>True if the model meets the requirements.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaModelInfoInterpreter.GetSummary">
+            <summary>
+            Gets a summary of the model's key characteristics.
+            </summary>
+            <returns>Summary string.</returns>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.OllamaModelStatistics">
+            <summary>
+            Statistics about local models.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaModelStatistics.TotalModels">
+            <summary>
+            Total number of models.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaModelStatistics.TotalSizeBytes">
+            <summary>
+            Total size of all models in bytes.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaModelStatistics.TotalSizeFormatted">
+            <summary>
+            Total size formatted as string.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaModelStatistics.AverageSizeBytes">
+            <summary>
+            Average model size in bytes.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaModelStatistics.AverageSizeFormatted">
+            <summary>
+            Average model size formatted as string.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaModelStatistics.LargestModel">
+            <summary>
+            Largest model.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaModelStatistics.SmallestModel">
+            <summary>
+            Smallest model.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaModelStatistics.NewestModel">
+            <summary>
+            Most recently modified model.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaModelStatistics.OldestModel">
+            <summary>
+            Oldest modified model.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaModelStatistics.ModelsByFamily">
+            <summary>
+            Count of models by family.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaModelStatistics.ModelsByQuantization">
+            <summary>
+            Count of models by quantization level.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaModelStatistics.ModelsByParameterSize">
+            <summary>
+            Count of models by parameter size.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaModelStatistics.#ctor(SharpAI.Models.Ollama.OllamaListLocalModelsResult)">
+            <summary>
+            Creates statistics from a list result.
+            </summary>
+            <param name="result">The list models result.</param>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaModelStatistics.FormatBytes(System.Int64)">
+            <summary>
+            Formats bytes into human-readable format.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaModelStatistics.GetSummary">
+            <summary>
+            Gets a summary of the statistics.
+            </summary>
+            <returns>Summary string.</returns>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.OllamaPullModelRequest">
             <summary>
             Ollama pull model request.
             </summary>
         </member>
-        <member name="P:SharpAI.Models.Ollama.PullModelRequest.Model">
+        <member name="P:SharpAI.Models.Ollama.OllamaPullModelRequest.Model">
             <summary>
-            Model.
+            Model name to pull (required).
             </summary>
         </member>
-        <member name="P:SharpAI.Models.Ollama.PullModelRequest.Stream">
+        <member name="P:SharpAI.Models.Ollama.OllamaPullModelRequest.Insecure">
             <summary>
-            True to enable response streaming.
+            Allow insecure connections to the registry (optional).
             </summary>
         </member>
-        <member name="M:SharpAI.Models.Ollama.PullModelRequest.#ctor">
+        <member name="P:SharpAI.Models.Ollama.OllamaPullModelRequest.Stream">
+            <summary>
+            Enable streaming of pull progress (optional).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaPullModelRequest.Username">
+            <summary>
+            Username for registry authentication (optional).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaPullModelRequest.Password">
+            <summary>
+            Password for registry authentication (optional).
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaPullModelRequest.#ctor">
             <summary>
             Ollama pull model request.
             </summary>
         </member>
-        <member name="T:SharpAI.Models.Ollama.PullModelStatus">
+        <member name="T:SharpAI.Models.Ollama.OllamaPullModelResultMessage">
             <summary>
-            Ollama pull model status message.
+            Ollama pull model result message for streaming updates during model download.
             </summary>
         </member>
-        <member name="P:SharpAI.Models.Ollama.PullModelStatus.Status">
+        <member name="P:SharpAI.Models.Ollama.OllamaPullModelResultMessage.Status">
             <summary>
-            Status.
+            Current status of the pull operation.
+            Examples: "pulling manifest", "downloading", "verifying sha256 digest", "writing manifest", "removing any unused layers", "success"
             </summary>
         </member>
-        <member name="P:SharpAI.Models.Ollama.PullModelStatus.Digest">
+        <member name="P:SharpAI.Models.Ollama.OllamaPullModelResultMessage.Digest">
             <summary>
-            Digest (SHA-256).
+            Digest of the layer being downloaded.
+            Format: "sha256:hash"
             </summary>
         </member>
-        <member name="P:SharpAI.Models.Ollama.PullModelStatus.Total">
+        <member name="P:SharpAI.Models.Ollama.OllamaPullModelResultMessage.Total">
             <summary>
-            Total bytes.
+            Total size of the current layer in bytes.
             </summary>
         </member>
-        <member name="P:SharpAI.Models.Ollama.PullModelStatus.Completed">
+        <member name="P:SharpAI.Models.Ollama.OllamaPullModelResultMessage.Completed">
             <summary>
-            Completed bytes.
+            Number of bytes completed for the current layer.
             </summary>
         </member>
-        <member name="T:SharpAI.Models.Ollama.ShowModelInfoRequest">
+        <member name="P:SharpAI.Models.Ollama.OllamaPullModelResultMessage.Error">
+            <summary>
+            Error message if the pull operation failed.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaPullModelResultMessage.GetProgressPercentage">
+            <summary>
+            Gets the download progress as a percentage.
+            </summary>
+            <returns>Progress percentage (0-100), or null if data unavailable.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaPullModelResultMessage.GetRemainingBytes">
+            <summary>
+            Gets the remaining bytes to download.
+            </summary>
+            <returns>Remaining bytes, or null if data unavailable.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaPullModelResultMessage.GetFormattedTotalSize">
+            <summary>
+            Formats the total size in a human-readable format.
+            </summary>
+            <returns>Formatted size string (e.g., "1.5 GB").</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaPullModelResultMessage.GetFormattedCompletedSize">
+            <summary>
+            Formats the completed size in a human-readable format.
+            </summary>
+            <returns>Formatted size string (e.g., "750 MB").</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaPullModelResultMessage.GetFormattedProgress">
+            <summary>
+            Gets a formatted progress string.
+            </summary>
+            <returns>Progress string (e.g., "750 MB / 1.5 GB (50%)").</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaPullModelResultMessage.IsDownloadProgress">
+            <summary>
+            Checks if this is a download progress message.
+            </summary>
+            <returns>True if this message contains download progress information.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaPullModelResultMessage.IsComplete">
+            <summary>
+            Checks if the operation is complete.
+            </summary>
+            <returns>True if the status indicates completion.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaPullModelResultMessage.HasError">
+            <summary>
+            Checks if the operation has failed.
+            </summary>
+            <returns>True if an error occurred.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaPullModelResultMessage.IsStatusMessage">
+            <summary>
+            Checks if this is a status-only message (no download progress).
+            </summary>
+            <returns>True if this is a status message without progress data.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaPullModelResultMessage.GetLayerId">
+            <summary>
+            Gets the layer identifier from the digest.
+            </summary>
+            <returns>Short form of the digest (first 12 characters of hash), or null if no digest.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaPullModelResultMessage.EstimateTimeRemaining(System.Double)">
+            <summary>
+            Estimates time remaining based on a given download rate.
+            </summary>
+            <param name="bytesPerSecond">Current download rate in bytes per second.</param>
+            <returns>Estimated time remaining, or null if cannot be calculated.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaPullModelResultMessage.FormatBytes(System.Int64)">
+            <summary>
+            Formats bytes into human-readable format.
+            </summary>
+            <param name="bytes">Number of bytes.</param>
+            <returns>Formatted string (e.g., "1.5 GB").</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaPullModelResultMessage.#ctor">
+            <summary>
+            Ollama pull model result message.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.OllamaPullProgressTracker">
+            <summary>
+            Helper class for tracking pull operation progress across multiple messages.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaPullProgressTracker.TotalBytes">
+            <summary>
+            Total bytes to download across all layers.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaPullProgressTracker.CompletedBytes">
+            <summary>
+            Total bytes completed across all layers.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaPullProgressTracker.CurrentStatus">
+            <summary>
+            Current status message.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaPullProgressTracker.CurrentLayer">
+            <summary>
+            Current layer being downloaded.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaPullProgressTracker.LayersCompleted">
+            <summary>
+            Number of layers completed.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaPullProgressTracker.OverallProgress">
+            <summary>
+            Gets the overall progress percentage.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaPullProgressTracker.DownloadRate">
+            <summary>
+            Gets the current download rate in bytes per second.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaPullProgressTracker.ElapsedTime">
+            <summary>
+            Gets the elapsed time since the pull started.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaPullProgressTracker.Update(SharpAI.Models.Ollama.OllamaPullModelResultMessage)">
+            <summary>
+            Updates the tracker with a new message.
+            </summary>
+            <param name="message">The pull result message.</param>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaPullProgressTracker.EstimateTimeRemaining">
+            <summary>
+            Estimates time remaining for the entire pull operation.
+            </summary>
+            <returns>Estimated time remaining, or null if cannot be calculated.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaPullProgressTracker.GetSummary">
+            <summary>
+            Gets a formatted summary of the pull progress.
+            </summary>
+            <returns>Summary string.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaPullProgressTracker.FormatBytes(System.Int64)">
+            <summary>
+            Formats bytes into human-readable format.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaPullProgressTracker.FormatTimeSpan(System.TimeSpan)">
+            <summary>
+            Formats a timespan into human-readable format.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaPullProgressTracker.#ctor">
+            <summary>
+            Creates a new pull progress tracker.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.OllamaRunningModel">
+            <summary>
+            Ollama running model information.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaRunningModel.Name">
+            <summary>
+            Model name including tag.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaRunningModel.Digest">
+            <summary>
+            Model digest/hash.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaRunningModel.Size">
+            <summary>
+            Total memory size in bytes (RAM + VRAM).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaRunningModel.SizeVRAM">
+            <summary>
+            VRAM usage in bytes.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaRunningModel.ExpiresAt">
+            <summary>
+            When the model expires from memory.
+            ISO 8601 format string.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaRunningModel.Details">
+            <summary>
+            Model details including format, family, parameter size, and quantization.
+            Reusing the existing OllamaModelDetails class.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaRunningModel.GetRAMUsage">
+            <summary>
+            Gets the system RAM usage (total size minus VRAM).
+            </summary>
+            <returns>RAM usage in bytes.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaRunningModel.GetFormattedSize">
+            <summary>
+            Gets the formatted total memory size.
+            </summary>
+            <returns>Human-readable size string.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaRunningModel.GetFormattedVRAMSize">
+            <summary>
+            Gets the formatted VRAM usage.
+            </summary>
+            <returns>Human-readable VRAM size string.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaRunningModel.GetFormattedRAMSize">
+            <summary>
+            Gets the formatted RAM usage.
+            </summary>
+            <returns>Human-readable RAM size string.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaRunningModel.GetVRAMPercentage">
+            <summary>
+            Gets the percentage of memory in VRAM vs RAM.
+            </summary>
+            <returns>Percentage of memory in VRAM (0-100).</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaRunningModel.GetTimeUntilExpiration">
+            <summary>
+            Gets time until the model expires from memory.
+            </summary>
+            <returns>Time remaining or null if no expiration set.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaRunningModel.GetFormattedTimeUntilExpiration">
+            <summary>
+            Gets formatted time until expiration.
+            </summary>
+            <returns>Human-readable time remaining.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaRunningModel.HasExpired">
+            <summary>
+            Checks if the model has expired.
+            </summary>
+            <returns>True if the model has expired.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaRunningModel.GetEstimatedExpiration">
+            <summary>
+            Gets estimated expiration time based on expires_at field.
+            </summary>
+            <returns>Estimated expiration DateTime or null.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaRunningModel.GetBaseName">
+            <summary>
+            Gets the model's base name without tag.
+            </summary>
+            <returns>Base model name.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaRunningModel.GetTag">
+            <summary>
+            Gets the model's tag.
+            </summary>
+            <returns>Model tag or "latest" if no tag specified.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaRunningModel.GetMemoryUsageSummary">
+            <summary>
+            Gets a memory usage summary.
+            </summary>
+            <returns>Summary string of memory usage.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaRunningModel.FormatBytes(System.Int64)">
+            <summary>
+            Formats bytes into human-readable format.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaRunningModel.#ctor">
+            <summary>
+            Ollama running model.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.OllamaRunningModelStatistics">
+            <summary>
+            Statistics about running models.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaRunningModelStatistics.TotalRunningModels">
+            <summary>
+            Total number of running models.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaRunningModelStatistics.TotalMemoryBytes">
+            <summary>
+            Total memory usage in bytes.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaRunningModelStatistics.TotalMemoryFormatted">
+            <summary>
+            Total memory usage formatted.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaRunningModelStatistics.TotalVRAMBytes">
+            <summary>
+            Total VRAM usage in bytes.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaRunningModelStatistics.TotalVRAMFormatted">
+            <summary>
+            Total VRAM usage formatted.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaRunningModelStatistics.TotalRAMBytes">
+            <summary>
+            Total RAM usage in bytes.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaRunningModelStatistics.TotalRAMFormatted">
+            <summary>
+            Total RAM usage formatted.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaRunningModelStatistics.AverageMemoryBytes">
+            <summary>
+            Average memory per model in bytes.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaRunningModelStatistics.AverageMemoryFormatted">
+            <summary>
+            Average memory per model formatted.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaRunningModelStatistics.LargestModel">
+            <summary>
+            Model using the most memory.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaRunningModelStatistics.SmallestModel">
+            <summary>
+            Model using the least memory.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaRunningModelStatistics.NextToExpire">
+            <summary>
+            Model expiring soonest.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaRunningModelStatistics.ModelsUsingVRAM">
+            <summary>
+            Number of models with VRAM allocation.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaRunningModelStatistics.AverageVRAMPercentage">
+            <summary>
+            Average VRAM percentage across models.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaRunningModelStatistics.ModelsByFamily">
+            <summary>
+            Count of running models by family.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaRunningModelStatistics.#ctor(SharpAI.Models.Ollama.OllamaListRunningModelsResult)">
+            <summary>
+            Creates statistics from running models result.
+            </summary>
+            <param name="result">The running models result.</param>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaRunningModelStatistics.FormatBytes(System.Int64)">
+            <summary>
+            Formats bytes into human-readable format.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaRunningModelStatistics.GetSummary">
+            <summary>
+            Gets a summary of the statistics.
+            </summary>
+            <returns>Summary string.</returns>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.OllamaShowModelInfoRequest">
             <summary>
             Ollama show model information request.
             </summary>
         </member>
-        <member name="P:SharpAI.Models.Ollama.ShowModelInfoRequest.Name">
+        <member name="P:SharpAI.Models.Ollama.OllamaShowModelInfoRequest.Model">
             <summary>
-            Name.
+            Name of the model to show (required).
             </summary>
         </member>
-        <member name="M:SharpAI.Models.Ollama.ShowModelInfoRequest.#ctor">
+        <member name="P:SharpAI.Models.Ollama.OllamaShowModelInfoRequest.Verbose">
+            <summary>
+            Include verbose information about the model (optional).
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaShowModelInfoRequest.#ctor">
             <summary>
             Ollama show model information request.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.OllamaShowModelInfoResult">
+            <summary>
+            Ollama show model information result.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaShowModelInfoResult.License">
+            <summary>
+            Model license information.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaShowModelInfoResult.Modelfile">
+            <summary>
+            Model file content (when verbose is true).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaShowModelInfoResult.Parameters">
+            <summary>
+            Model parameters configuration.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaShowModelInfoResult.Template">
+            <summary>
+            Template used for prompts.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaShowModelInfoResult.System">
+            <summary>
+            System message/prompt.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaShowModelInfoResult.Details">
+            <summary>
+            Model details including format, family, families, parameter size, and quantization level.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaShowModelInfoResult.Messages">
+            <summary>
+            Messages/examples used in the model.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaShowModelInfoResult.ModelInfo">
+            <summary>
+            Model information including general metadata.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaShowModelInfoResult.ModifiedAt">
+            <summary>
+            Modified timestamp.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaShowModelInfoResult.IsVerboseResponse">
+            <summary>
+            Checks if this is a verbose response with full details.
+            </summary>
+            <returns>True if verbose information is included.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaShowModelInfoResult.HasSystemPrompt">
+            <summary>
+            Checks if the model has a system prompt configured.
+            </summary>
+            <returns>True if system prompt is present.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaShowModelInfoResult.HasExampleMessages">
+            <summary>
+            Checks if the model has example messages.
+            </summary>
+            <returns>True if example messages are present.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaShowModelInfoResult.GetParameterSize">
+            <summary>
+            Gets the model's parameter size from details if available.
+            </summary>
+            <returns>Parameter size string (e.g., "7B", "13B") or null.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaShowModelInfoResult.GetQuantizationLevel">
+            <summary>
+            Gets the model's quantization level from details if available.
+            </summary>
+            <returns>Quantization level string (e.g., "Q4_0", "Q8_0") or null.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaShowModelInfoResult.ParseParameters">
+            <summary>
+            Parses the parameters string into a dictionary.
+            </summary>
+            <returns>Dictionary of parameter key-value pairs.</returns>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaShowModelInfoResult.#ctor">
+            <summary>
+            Ollama show model information result.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.OllamaStreamingChatCompletionResult">
+            <summary>
+            Ollama streaming chat completion result.
+            Used for intermediate streaming responses.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaStreamingChatCompletionResult.Model">
+            <summary>
+            The model that generated the response.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaStreamingChatCompletionResult.CreatedAt">
+            <summary>
+            The timestamp of when the response was created.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaStreamingChatCompletionResult.Message">
+            <summary>
+            The partial message generated by the model.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaStreamingChatCompletionResult.Done">
+            <summary>
+            Whether this is the final chunk in the stream.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaStreamingChatCompletionResult.#ctor">
+            <summary>
+            Ollama streaming chat completion result.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.OllamaStreamingCompletionResult">
+            <summary>
+            Ollama streaming completion result.
+            Used for intermediate streaming responses.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaStreamingCompletionResult.Model">
+            <summary>
+            The model that generated the response.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaStreamingCompletionResult.CreatedAt">
+            <summary>
+            The timestamp of when the response was created.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaStreamingCompletionResult.Response">
+            <summary>
+            The partial response text.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaStreamingCompletionResult.Done">
+            <summary>
+            Whether this is the final chunk in the stream.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaStreamingCompletionResult.#ctor">
+            <summary>
+            Ollama streaming completion result.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.OllamaTool">
+            <summary>
+            Ollama tool definition.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaTool.Type">
+            <summary>
+            Type of tool (required).
+            Currently only "function" is supported.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaTool.Function">
+            <summary>
+            Function definition (required when type is "function").
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaTool.#ctor">
+            <summary>
+            Ollama tool.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.OllamaToolCall">
+            <summary>
+            Ollama tool call made by the assistant.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaToolCall.Function">
+            <summary>
+            Function that was called (required).
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaToolCall.#ctor">
+            <summary>
+            Ollama tool call.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.OllamaToolCallFunction">
+            <summary>
+            Ollama tool call function details.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaToolCallFunction.Name">
+            <summary>
+            Name of the function that was called (required).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaToolCallFunction.Arguments">
+            <summary>
+            Arguments passed to the function as a JSON string (required).
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaToolCallFunction.#ctor">
+            <summary>
+            Ollama tool call function.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.OllamaToolFunction">
+            <summary>
+            Ollama tool function definition.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaToolFunction.Name">
+            <summary>
+            Name of the function (required).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaToolFunction.Description">
+            <summary>
+            Description of what the function does (required).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaToolFunction.Parameters">
+            <summary>
+            Parameters the function accepts, described as a JSON Schema object (required).
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaToolFunction.#ctor">
+            <summary>
+            Ollama tool function.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.Ollama.OllamaToolParameters">
+            <summary>
+            Ollama tool parameters schema.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaToolParameters.Type">
+            <summary>
+            Type of the parameters object (required).
+            Should typically be "object".
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaToolParameters.Properties">
+            <summary>
+            Properties of the parameters object (required).
+            Each property is a JSON Schema definition.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaToolParameters.Required">
+            <summary>
+            List of required property names (optional).
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaToolParameters.#ctor">
+            <summary>
+            Ollama tool parameters.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.OpenAI.OpenAIChatChoice">
+            <summary>
+            OpenAI chat completion choice.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIChatChoice.Index">
+            <summary>
+            Index of this choice.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIChatChoice.Message">
+            <summary>
+            Chat message generated by the model.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIChatChoice.Delta">
+            <summary>
+            Delta message for streaming responses.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIChatChoice.Logprobs">
+            <summary>
+            Log probabilities information.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIChatChoice.FinishReason">
+            <summary>
+            Reason the generation stopped.
+            Possible values: "stop", "length", "tool_calls", "content_filter", "function_call"
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIChatChoice.#ctor">
+            <summary>
+            OpenAI chat choice.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.OpenAI.OpenAIChatCompletionChunk">
+            <summary>
+            OpenAI chat completion chunk (single chunk from streaming response).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIChatCompletionChunk.Id">
+            <summary>
+            Unique identifier for the chat completion.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIChatCompletionChunk.Object">
+            <summary>
+            Object type (always "chat.completion.chunk").
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIChatCompletionChunk.Created">
+            <summary>
+            Unix timestamp when the completion was created.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIChatCompletionChunk.Model">
+            <summary>
+            Model used for the completion.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIChatCompletionChunk.SystemFingerprint">
+            <summary>
+            System fingerprint.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIChatCompletionChunk.Choices">
+            <summary>
+            List of chat completion choices with delta updates.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIChatCompletionChunk.Usage">
+            <summary>
+            Usage statistics for the completion.
+            Only present in the final chunk when stream_options.include_usage is true.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIChatCompletionChunk.#ctor">
+            <summary>
+            OpenAI chat completion chunk.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.OpenAI.OpenAIChatLogprobContent">
+            <summary>
+            OpenAI chat logprob content.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIChatLogprobContent.Token">
+            <summary>
+            The token.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIChatLogprobContent.Logprob">
+            <summary>
+            Log probability of this token.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIChatLogprobContent.Bytes">
+            <summary>
+            UTF-8 byte representation of the token.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIChatLogprobContent.TopLogprobs">
+            <summary>
+            Top alternative tokens and their log probabilities.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIChatLogprobContent.#ctor">
+            <summary>
+            OpenAI chat logprob content.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.OpenAI.OpenAIChatLogprobs">
+            <summary>
+            OpenAI chat logprobs data.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIChatLogprobs.Content">
+            <summary>
+            Log probability information for each content token.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIChatLogprobs.#ctor">
+            <summary>
+            OpenAI chat logprobs.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.OpenAI.OpenAIChatMessage">
+            <summary>
+            OpenAI chat message.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIChatMessage.Role">
+            <summary>
+            Role of the message sender (required).
+            Valid values: "system", "user", "assistant", "tool"
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIChatMessage.Content">
+            <summary>
+            Content of the message.
+            Can be a string or an array of content parts for multimodal input.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIChatMessage.Name">
+            <summary>
+            Name of the author of this message.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIChatMessage.ToolCalls">
+            <summary>
+            Tool calls made by the assistant.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIChatMessage.ToolCallId">
+            <summary>
+            Tool call ID this message is responding to.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIChatMessage.#ctor">
+            <summary>
+            OpenAI chat message.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.OpenAI.OpenAICompletionChoice">
+            <summary>
+            OpenAI completion choice.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAICompletionChoice.Text">
+            <summary>
+            Generated text.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAICompletionChoice.Index">
+            <summary>
+            Index of this choice.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAICompletionChoice.Logprobs">
+            <summary>
+            Log probabilities information.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAICompletionChoice.FinishReason">
+            <summary>
+            Reason the generation stopped.
+            Possible values: "stop", "length"
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAICompletionChoice.#ctor">
+            <summary>
+            OpenAI completion choice.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.OpenAI.OpenAICompletionChunk">
+            <summary>
+            OpenAI completion chunk (single chunk from streaming response).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAICompletionChunk.Id">
+            <summary>
+            Unique identifier for the completion.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAICompletionChunk.Object">
+            <summary>
+            Object type (always "text_completion").
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAICompletionChunk.Created">
+            <summary>
+            Unix timestamp when the completion was created.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAICompletionChunk.Model">
+            <summary>
+            Model used for the completion.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAICompletionChunk.SystemFingerprint">
+            <summary>
+            System fingerprint.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAICompletionChunk.Choices">
+            <summary>
+            List of completion choices.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAICompletionChunk.#ctor">
+            <summary>
+            OpenAI completion chunk.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.OpenAI.OpenAICompletionTokensDetails">
+            <summary>
+            OpenAI completion tokens details.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAICompletionTokensDetails.ReasoningTokens">
+            <summary>
+            Number of reasoning tokens generated.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAICompletionTokensDetails.AudioTokens">
+            <summary>
+            Number of audio tokens generated.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAICompletionTokensDetails.AcceptedPredictionTokens">
+            <summary>
+            Number of tokens that were accepted.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAICompletionTokensDetails.RejectedPredictionTokens">
+            <summary>
+            Number of tokens that were rejected.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAICompletionTokensDetails.#ctor">
+            <summary>
+            OpenAI completion tokens details.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.OpenAI.OpenAIEmbedding">
+            <summary>
+            OpenAI embedding data.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIEmbedding.Object">
+            <summary>
+            Object type (always "embedding").
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIEmbedding.Index">
+            <summary>
+            Index of this embedding in the input array.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIEmbedding.Embedding">
+            <summary>
+            The embedding vector.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIEmbedding.#ctor">
+            <summary>
+            OpenAI embedding.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.OpenAI.OpenAIEmbeddingsInputConverter">
+            <summary>
+            Converter for flexible embedding input (string or array).
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.OpenAI.OpenAIEmbeddingUsage">
+            <summary>
+            OpenAI embedding usage statistics.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIEmbeddingUsage.PromptTokens">
+            <summary>
+            Number of tokens in the input.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIEmbeddingUsage.TotalTokens">
+            <summary>
+            Total number of tokens used.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIEmbeddingUsage.#ctor">
+            <summary>
+            OpenAI embedding usage.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.OpenAI.OpenAIError">
+            <summary>
+            OpenAI error message.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIError.Error">
+            <summary>
+            Error details.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIError.#ctor">
+            <summary>
+            OpenAI error message.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.OpenAI.OpenAIErrorDetails">
+            <summary>
+            OpenAI error details.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIErrorDetails.Message">
+            <summary>
+            Message.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIErrorDetails.Type">
+            <summary>
+            Type.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIErrorDetails.Parameters">
+            <summary>
+            Parameters.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIErrorDetails.Code">
+            <summary>
+            Code.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIErrorDetails.#ctor">
+            <summary>
+            OpenAI error details.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionRequest">
+            <summary>
+            OpenAI generate chat completion request.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionRequest.Model">
+            <summary>
+            ID of the model to use (required).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionRequest.Messages">
+            <summary>
+            Messages for the chat conversation (required).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionRequest.ResponseFormat">
+            <summary>
+            Response format specification.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionRequest.MaxTokens">
+            <summary>
+            The maximum number of tokens to generate.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionRequest.Temperature">
+            <summary>
+            Temperature for sampling (0-2).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionRequest.TopP">
+            <summary>
+            Nucleus sampling parameter (0-1).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionRequest.N">
+            <summary>
+            Number of chat completions to generate for each input message.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionRequest.Stream">
+            <summary>
+            Whether to stream partial progress.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionRequest.Stop">
+            <summary>
+            Up to 4 sequences where the API will stop generating further tokens.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionRequest.PresencePenalty">
+            <summary>
+            Presence penalty (-2.0 to 2.0).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionRequest.FrequencyPenalty">
+            <summary>
+            Frequency penalty (-2.0 to 2.0).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionRequest.LogitBias">
+            <summary>
+            Modify the likelihood of specified tokens appearing in the completion.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionRequest.Logprobs">
+            <summary>
+            Include the log probabilities on the logprobs most likely tokens.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionRequest.TopLogprobs">
+            <summary>
+            Number of most likely tokens to return at each token position.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionRequest.User">
+            <summary>
+            A unique identifier representing your end-user.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionRequest.Tools">
+            <summary>
+            Functions/tools the model may call.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionRequest.ToolChoice">
+            <summary>
+            Controls which (if any) tool is called by the model.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionRequest.ParallelToolCalls">
+            <summary>
+            Whether to enable parallel function calling.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionRequest.Seed">
+            <summary>
+            Random seed for deterministic generation.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionRequest.#ctor">
+            <summary>
+            OpenAI generate chat completion request.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionResult">
+            <summary>
+            OpenAI generate chat completion result.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionResult.Id">
+            <summary>
+            Unique identifier for the chat completion.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionResult.Object">
+            <summary>
+            Object type (always "chat.completion").
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionResult.Created">
+            <summary>
+            Unix timestamp when the completion was created.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionResult.Model">
+            <summary>
+            Model used for the completion.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionResult.SystemFingerprint">
+            <summary>
+            System fingerprint.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionResult.Choices">
+            <summary>
+            List of chat completion choices.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionResult.Usage">
+            <summary>
+            Usage statistics for the completion.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionResult.GetCreatedDateTime">
+            <summary>
+            Gets the created timestamp as DateTime.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionResult.GetAssistantMessage">
+            <summary>
+            Gets the primary message from the assistant.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionResult.HasToolCalls">
+            <summary>
+            Checks if any choice contains tool calls.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionResult.GetAllToolCalls">
+            <summary>
+            Gets all tool calls from all choices.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionResult.#ctor">
+            <summary>
+            OpenAI generate chat completion result.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionStreamingResult">
+            <summary>
+            OpenAI generate chat completion streaming result wrapper.
+            This wrapper is returned immediately and contains an async enumerable stream of chunks.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionStreamingResult.Chunks">
+            <summary>
+            The async enumerable stream of chat completion chunks.
+            Yields OpenAIChatCompletionChunk objects as they arrive from the server.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionStreamingResult.#ctor">
+            <summary>
+            OpenAI generate chat completion streaming result.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.OpenAI.OpenAIGenerateCompletionRequest">
+            <summary>
+            OpenAI generate completion request.
+            Note: The completions endpoint is legacy. Use chat completions for new applications.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateCompletionRequest.Model">
+            <summary>
+            ID of the model to use (required).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateCompletionRequest.Prompt">
+            <summary>
+            The prompt(s) to generate completions for (required).
+            Can be a string or an array of strings.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateCompletionRequest.Suffix">
+            <summary>
+            The suffix that comes after a completion of inserted text.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateCompletionRequest.MaxTokens">
+            <summary>
+            The maximum number of tokens to generate.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateCompletionRequest.Temperature">
+            <summary>
+            Temperature for sampling (0-2).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateCompletionRequest.TopP">
+            <summary>
+            Nucleus sampling parameter (0-1).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateCompletionRequest.N">
+            <summary>
+            Number of completions to generate for each prompt.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateCompletionRequest.Stream">
+            <summary>
+            Whether to stream partial progress.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateCompletionRequest.Logprobs">
+            <summary>
+            Include the log probabilities on the logprobs most likely tokens.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateCompletionRequest.Echo">
+            <summary>
+            Echo back the prompt in addition to the completion.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateCompletionRequest.Stop">
+            <summary>
+            Up to 4 sequences where the API will stop generating further tokens.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateCompletionRequest.PresencePenalty">
+            <summary>
+            Presence penalty (-2.0 to 2.0).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateCompletionRequest.FrequencyPenalty">
+            <summary>
+            Frequency penalty (-2.0 to 2.0).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateCompletionRequest.BestOf">
+            <summary>
+            Generates best_of completions server-side and returns the best.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateCompletionRequest.LogitBias">
+            <summary>
+            Modify the likelihood of specified tokens appearing in the completion.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateCompletionRequest.User">
+            <summary>
+            A unique identifier representing your end-user.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateCompletionRequest.Seed">
+            <summary>
+            Random seed for deterministic generation.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIGenerateCompletionRequest.GetPrompt">
+            <summary>
+            Gets the prompt as a single string.
+            Throws an exception if the prompt is a list.
+            </summary>
+            <returns>The prompt string.</returns>
+            <exception cref="T:System.InvalidOperationException">Thrown when prompt is a list instead of a single string.</exception>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIGenerateCompletionRequest.GetPrompts">
+            <summary>
+            Gets the prompt as an array of strings.
+            If prompt is a single string, returns an array with one element.
+            </summary>
+            <returns>Array of prompt strings.</returns>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIGenerateCompletionRequest.SetPrompt(System.String)">
+            <summary>
+            Sets a single prompt string.
+            </summary>
+            <param name="prompt">The prompt string.</param>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIGenerateCompletionRequest.SetPrompts(System.Collections.Generic.List{System.String})">
+            <summary>
+            Sets multiple prompts from a List.
+            </summary>
+            <param name="prompts">The list of prompt strings.</param>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIGenerateCompletionRequest.SetPrompts(System.String[])">
+            <summary>
+            Sets multiple prompts from an array.
+            </summary>
+            <param name="prompts">The array of prompt strings.</param>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIGenerateCompletionRequest.IsSinglePrompt">
+            <summary>
+            Checks if the prompt is a single string.
+            </summary>
+            <returns>True if prompt is a single string, false otherwise.</returns>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIGenerateCompletionRequest.#ctor">
+            <summary>
+            OpenAI generate completion request.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.OpenAI.OpenAIGenerateCompletionResult">
+            <summary>
+            OpenAI generate completion result.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateCompletionResult.Id">
+            <summary>
+            Unique identifier for the completion.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateCompletionResult.Object">
+            <summary>
+            Object type (always "text_completion").
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateCompletionResult.Created">
+            <summary>
+            Unix timestamp when the completion was created.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateCompletionResult.Model">
+            <summary>
+            Model used for the completion.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateCompletionResult.SystemFingerprint">
+            <summary>
+            System fingerprint.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateCompletionResult.Choices">
+            <summary>
+            List of completion choices.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateCompletionResult.Usage">
+            <summary>
+            Usage statistics for the completion.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIGenerateCompletionResult.GetCreatedDateTime">
+            <summary>
+            Gets the created timestamp as DateTime.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIGenerateCompletionResult.GetCompletionText">
+            <summary>
+            Gets the primary completion text.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIGenerateCompletionResult.HasTruncatedChoices">
+            <summary>
+            Checks if any choice was truncated due to length.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIGenerateCompletionResult.#ctor">
+            <summary>
+            OpenAI generate completion result.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.OpenAI.OpenAIGenerateCompletionStreamingResult">
+            <summary>
+            OpenAI generate completion streaming result wrapper.
+            This wrapper is returned immediately and contains an async enumerable stream of chunks.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateCompletionStreamingResult.Chunks">
+            <summary>
+            The async enumerable stream of completion chunks.
+            Yields OpenAICompletionChunk objects as they arrive from the server.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIGenerateCompletionStreamingResult.#ctor">
+            <summary>
+            OpenAI generate completion streaming result.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.OpenAI.OpenAIGenerateEmbeddingsRequest">
+            <summary>
+            OpenAI generate embeddings request.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateEmbeddingsRequest.Model">
+            <summary>
+            ID of the model to use (required).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateEmbeddingsRequest.Input">
+            <summary>
+            Input text to embed (required).
+            Can be a string or an array of strings.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateEmbeddingsRequest.EncodingFormat">
+            <summary>
+            The format to return the embeddings in.
+            Can be either "float" or "base64".
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateEmbeddingsRequest.Dimensions">
+            <summary>
+            The number of dimensions the resulting output embeddings should have.
+            Only supported in some models.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateEmbeddingsRequest.User">
+            <summary>
+            A unique identifier representing your end-user.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIGenerateEmbeddingsRequest.GetInput">
+            <summary>
+            Gets the input as a single string.
+            Throws an exception if the input is a list.
+            </summary>
+            <returns>The input string.</returns>
+            <exception cref="T:System.InvalidOperationException">Thrown when input is a list instead of a single string.</exception>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIGenerateEmbeddingsRequest.GetInputs">
+            <summary>
+            Gets the input as an array of strings.
+            If input is a single string, returns an array with one element.
+            </summary>
+            <returns>Array of input strings.</returns>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIGenerateEmbeddingsRequest.SetInputs(System.String[])">
+            <summary>
+            Sets multiple input strings from an array.
+            </summary>
+            <param name="inputs">The array of input strings.</param>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIGenerateEmbeddingsRequest.IsSingleInput">
+            <summary>
+            Checks if the input is a single string.
+            </summary>
+            <returns>True if input is a single string, false otherwise.</returns>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIGenerateEmbeddingsRequest.#ctor">
+            <summary>
+            OpenAI generate embeddings request.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.OpenAI.OpenAIGenerateEmbeddingsResult">
+            <summary>
+            OpenAI generate embeddings result.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateEmbeddingsResult.Object">
+            <summary>
+            Object type (always "list").
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateEmbeddingsResult.Data">
+            <summary>
+            List of embedding objects.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateEmbeddingsResult.Model">
+            <summary>
+            Model used to generate embeddings.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateEmbeddingsResult.Usage">
+            <summary>
+            Usage statistics.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIGenerateEmbeddingsResult.GetEmbedding">
+            <summary>
+            Gets a single embedding array.
+            Throws if the result contains multiple embeddings.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIGenerateEmbeddingsResult.GetEmbeddings">
+            <summary>
+            Gets all embeddings as a list of arrays.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIGenerateEmbeddingsResult.GetEmbeddingsArray">
+            <summary>
+            Gets all embeddings as a jagged array.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIGenerateEmbeddingsResult.IsSingleEmbedding">
+            <summary>
+            Checks if the result contains a single embedding.
+            </summary>
+            <returns>True if single embedding, false if multiple.</returns>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIGenerateEmbeddingsResult.IsMultiEmbeddings">
+            <summary>
+            Checks if the result contains multiple embeddings.
+            </summary>
+            <returns>True if multiple embeddings, false if single.</returns>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIGenerateEmbeddingsResult.GetEmbeddingCount">
+            <summary>
+            Gets the number of embeddings in the result.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIGenerateEmbeddingsResult.GetEmbeddingDimension">
+            <summary>
+            Gets the dimension of the embeddings.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIGenerateEmbeddingsResult.#ctor">
+            <summary>
+            OpenAI generate embeddings result.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.OpenAI.OpenAILogprobs">
+            <summary>
+            OpenAI logprobs data.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAILogprobs.Tokens">
+            <summary>
+            List of token strings.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAILogprobs.TokenLogprobs">
+            <summary>
+            Log probabilities for each token.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAILogprobs.TopLogprobs">
+            <summary>
+            Top log probabilities for each token position.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAILogprobs.TextOffset">
+            <summary>
+            Text offset for each token.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAILogprobs.#ctor">
+            <summary>
+            OpenAI logprobs.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.OpenAI.OpenAIPromptInputConverter">
+            <summary>
+            Converter for flexible prompt input (string or array).
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.OpenAI.OpenAIPromptTokensDetails">
+            <summary>
+            OpenAI prompt tokens details.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIPromptTokensDetails.CachedTokens">
+            <summary>
+            Number of tokens from cached content.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIPromptTokensDetails.AudioTokens">
+            <summary>
+            Number of tokens from audio input.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIPromptTokensDetails.#ctor">
+            <summary>
+            OpenAI prompt tokens details.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.OpenAI.OpenAIResponseFormat">
+            <summary>
+            OpenAI response format specification.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIResponseFormat.Type">
+            <summary>
+            Type of response format.
+            Valid values: "text", "json_object", "json_schema"
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIResponseFormat.JsonSchema">
+            <summary>
+            JSON schema for structured output (when type is "json_schema").
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIResponseFormat.#ctor">
+            <summary>
+            OpenAI response format.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.OpenAI.OpenAIStopInputConverter">
+            <summary>
+            Converter for flexible stop sequences (string or array).
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.OpenAI.OpenAIStreamingChatCompletionResult">
+            <summary>
+            OpenAI streaming chat completion result.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIStreamingChatCompletionResult.Id">
+            <summary>
+            Unique identifier for the chat completion.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIStreamingChatCompletionResult.Object">
+            <summary>
+            Object type (always "chat.completion.chunk").
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIStreamingChatCompletionResult.Created">
+            <summary>
+            Unix timestamp when the completion was created.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIStreamingChatCompletionResult.Model">
+            <summary>
+            Model used for the completion.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIStreamingChatCompletionResult.SystemFingerprint">
+            <summary>
+            System fingerprint.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIStreamingChatCompletionResult.Choices">
+            <summary>
+            List of chat completion choices with deltas.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIStreamingChatCompletionResult.Usage">
+            <summary>
+            Usage statistics (only in final chunk).
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIStreamingChatCompletionResult.IsFinalChunk">
+            <summary>
+            Checks if this is the final chunk.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIStreamingChatCompletionResult.#ctor">
+            <summary>
+            OpenAI streaming chat completion result.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.OpenAI.OpenAIStreamingCompletionResult">
+            <summary>
+            OpenAI streaming completion result.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIStreamingCompletionResult.Id">
+            <summary>
+            Unique identifier for the completion.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIStreamingCompletionResult.Object">
+            <summary>
+            Object type (always "text_completion").
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIStreamingCompletionResult.Created">
+            <summary>
+            Unix timestamp when the completion was created.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIStreamingCompletionResult.Model">
+            <summary>
+            Model used for the completion.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIStreamingCompletionResult.Choices">
+            <summary>
+            List of completion choices.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIStreamingCompletionResult.#ctor">
+            <summary>
+            OpenAI streaming completion result.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.OpenAI.OpenAITool">
+            <summary>
+            OpenAI tool definition.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAITool.Type">
+            <summary>
+            Type of tool (currently only "function" is supported).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAITool.Function">
+            <summary>
+            Function definition.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAITool.#ctor">
+            <summary>
+            OpenAI tool.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.OpenAI.OpenAIToolCall">
+            <summary>
+            OpenAI tool call.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIToolCall.Id">
+            <summary>
+            Unique identifier for the tool call.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIToolCall.Type">
+            <summary>
+            Type of tool call (currently only "function").
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIToolCall.Function">
+            <summary>
+            Function call details.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIToolCall.#ctor">
+            <summary>
+            OpenAI tool call.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.OpenAI.OpenAIToolCallFunction">
+            <summary>
+            OpenAI tool call function details.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIToolCallFunction.Name">
+            <summary>
+            Name of the function to call.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIToolCallFunction.Arguments">
+            <summary>
+            Arguments to pass to the function as a JSON string.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIToolCallFunction.#ctor">
+            <summary>
+            OpenAI tool call function.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.OpenAI.OpenAIToolFunction">
+            <summary>
+            OpenAI tool function definition.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIToolFunction.Name">
+            <summary>
+            Name of the function.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIToolFunction.Description">
+            <summary>
+            Description of what the function does.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIToolFunction.Parameters">
+            <summary>
+            Parameters the function accepts, described as a JSON Schema object.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIToolFunction.Strict">
+            <summary>
+            Whether to enable strict schema adherence.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIToolFunction.#ctor">
+            <summary>
+            OpenAI tool function.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.OpenAI.OpenAITopLogprob">
+            <summary>
+            OpenAI top logprob entry.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAITopLogprob.Token">
+            <summary>
+            The token.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAITopLogprob.Logprob">
+            <summary>
+            Log probability of this token.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAITopLogprob.Bytes">
+            <summary>
+            UTF-8 byte representation of the token.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAITopLogprob.#ctor">
+            <summary>
+            OpenAI top logprob.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.OpenAI.OpenAIUsage">
+            <summary>
+            OpenAI usage statistics.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIUsage.PromptTokens">
+            <summary>
+            Number of tokens in the prompt.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIUsage.CompletionTokens">
+            <summary>
+            Number of tokens in the completion.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIUsage.TotalTokens">
+            <summary>
+            Total number of tokens used.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIUsage.PromptTokensDetails">
+            <summary>
+            Detailed breakdown of prompt tokens (for chat completions with images).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIUsage.CompletionTokensDetails">
+            <summary>
+            Detailed breakdown of completion tokens.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.OpenAI.OpenAIUsage.#ctor">
+            <summary>
+            OpenAI usage.
             </summary>
         </member>
         <member name="T:SharpAI.Prompts.ChatFormat">
