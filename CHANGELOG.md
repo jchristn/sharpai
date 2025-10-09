@@ -37,16 +37,13 @@ v1.0.0
   - Tested on Windows 11, macOS Sequoia, Ubuntu 24.04
   - Minimum .NET 8.0 requirement
 - SharpAI.Server project included
-  - Fully Ollama-compatible REST API endpoints
-  - `/api/generate` - Text generation
-  - `/api/chat` - Chat completions  
-  - `/api/embeddings` - Generate embeddings
-  - `/api/tags` - List available models
-  - `/api/pull` - Download models from HuggingFace
+  - Ollama-compatible REST API endpoints
+  - OpenAI-compatible REST API endpoints
 - Dependencies
   - LlamaSharp for model inference
   - SyslogLogging for flexible logging
   - Watson.ORM.Sqlite for model registry
+  - SwiftStack for the application platform
   - RestWrapper for HuggingFace API integration
 
 ## Previous Versions
