@@ -5,6 +5,7 @@ namespace SharpAI.Server.Classes.Runtime
     using System.IO;
     using System.Runtime.InteropServices;
     using LLama.Native;
+    using SharpAI.Classes.Runtime;
     using SharpAI.Server.Classes.Settings;
     using SyslogLogging;
 
@@ -71,6 +72,7 @@ namespace SharpAI.Server.Classes.Runtime
 
                 string backend = DetermineBackend(settings, logging);
                 _SelectedBackend = backend;
+                NativeBackendInfo.SelectedBackend = backend;
 
                 string libraryPath = GetLibraryPath(backend, settings, logging);
 
@@ -137,6 +139,7 @@ namespace SharpAI.Server.Classes.Runtime
                                             .WithLibrary(cpuPath, "llama");
 
                                         _SelectedBackend = "cpu";
+                                        NativeBackendInfo.SelectedBackend = "cpu";
                                         logging.Info("[NativeLibraryBootstrapper] successfully configured CPU backend as fallback");
 
                                         // Force library load

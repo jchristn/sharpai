@@ -97,9 +97,30 @@ done
 echo "   ✓ libllama.dylib (already present)"
 
 echo ""
-echo "================================================"
 if [ $MISSING_COUNT -eq 0 ]; then
-    echo "SUCCESS! All dependencies copied ($COPIED files)"
+    echo "5. Fixing @rpath references with install_name_tool..."
+    echo ""
+
+    # Fix @rpath references in libllama.dylib to use @loader_path
+    cd "$TARGET_DIR" || exit 1
+
+    FIXED=0
+    DEPS_TO_FIX=("libggml.dylib" "libggml-cpu.dylib" "libggml-base.dylib" "libggml-blas.dylib" "libggml-metal.dylib")
+
+    for dep in "${DEPS_TO_FIX[@]}"; do
+        # Check if this dependency is referenced in libllama.dylib
+        if otool -L libllama.dylib | grep -q "@rpath/$dep"; then
+            echo "   → Fixing: @rpath/$dep → @loader_path/$dep"
+            install_name_tool -change "@rpath/$dep" "@loader_path/$dep" libllama.dylib
+            FIXED=$((FIXED + 1))
+        fi
+    done
+
+    echo ""
+    echo "   Fixed $FIXED @rpath reference(s)"
+    echo ""
+    echo "================================================"
+    echo "SUCCESS! All dependencies fixed"
     echo "================================================"
     echo ""
     echo "Now try running the server again:"
@@ -107,6 +128,7 @@ if [ $MISSING_COUNT -eq 0 ]; then
     echo "  dotnet run"
     echo ""
 else
+    echo "================================================"
     echo "INCOMPLETE! Still missing $MISSING_COUNT dependencies"
     echo "================================================"
     echo ""

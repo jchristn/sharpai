@@ -265,16 +265,18 @@
         {
             try
             {
-                long gpuDeviceCount = LLama.Native.NativeApi.llama_max_devices();
+                // Check which backend was selected by NativeLibraryBootstrapper
+                string selectedBackend = SharpAI.Classes.Runtime.NativeBackendInfo.SelectedBackend;
 
-                if (gpuDeviceCount > 0)
+                if (selectedBackend.Equals("cuda", StringComparison.OrdinalIgnoreCase))
                 {
-                    _Logging.Debug(_Header + $"CUDA detected, {gpuDeviceCount} GPU device(s) available");
+                    long gpuDeviceCount = LLama.Native.NativeApi.llama_max_devices();
+                    _Logging.Debug(_Header + $"CUDA backend selected, {gpuDeviceCount} GPU device(s) available");
                     return 999; // big positive -> clamp to all layers
                 }
                 else
                 {
-                    _Logging.Debug(_Header + "no CUDA devices detected, using CPU");
+                    _Logging.Debug(_Header + $"{selectedBackend} backend selected, using CPU");
                     return 0;
                 }
             }
