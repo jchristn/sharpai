@@ -14,7 +14,7 @@
     "LogDirectory": "./logs/",
     "LogFilename": "./sharpai.log",
     "ConsoleLogging": true,
-    "EnableColors": true,
+    "EnableColors": false,
     "MinimumSeverity": 0
   },
   "Storage": {
@@ -75,6 +75,12 @@
       "Requests": false,
       "Responses": false
     }
+  },
+  "Runtime": {
+    "ForceBackend": null,
+    "CpuBackendPath": null,
+    "GpuBackendPath": null,
+    "EnableNativeLogging": true
   },
   "Debug": {
     "RequestBody": false

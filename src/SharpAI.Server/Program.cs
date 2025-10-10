@@ -17,13 +17,14 @@
     using SharpAI.Server.API.REST.Ollama;
     using SharpAI.Server.API.REST.OpenAI;
     using SharpAI.Server.Classes;
+    using SharpAI.Server.Classes.Runtime;
     using SharpAI.Server.Classes.Settings;
     using SharpAI.Services;
     using SwiftStack;
     using SwiftStack.Rest;
     using SyslogLogging;
     using Watson.ORM.Sqlite;
-    
+
     using Constants = SharpAI.Constants;
 
     /// <summary>
@@ -54,6 +55,7 @@
         private static OllamaApiHandler _OllamaApiHandler = null;
         private static OpenAIApiHandler _OpenAIApiHandler = null;
         private static CancellationTokenSource _TokenSource = new CancellationTokenSource();
+        private static bool _ShutdownRequested = false;
 
         #endregion
 
@@ -69,14 +71,21 @@
             Welcome();
             ParseArguments(args);
             LoadSettings();
+            InitializeLogging();
+            InitializeBootstrapper();
             InitializeGlobals();
             InitializeRestServer();
 
             Console.CancelKeyPress += (sender, e) =>
             {
                 e.Cancel = true;
-                _TokenSource.Cancel();
-                _Logging.Debug(_Header + "shutdown requested");
+
+                if (!_ShutdownRequested)
+                {
+                    _ShutdownRequested = true;
+                    _TokenSource.Cancel();
+                    _Logging.Debug(_Header + "shutdown requested");
+                }
             };
 
             _Logging.Debug(_Header + "starting SharpAI server");
@@ -122,10 +131,8 @@
             }
         }
 
-        private static void InitializeGlobals()
+        private static void InitializeLogging()
         {
-            #region Logging
-
             List<SyslogLogging.SyslogServer> servers = new List<SyslogLogging.SyslogServer>();
 
             if (_Settings.Logging.Servers != null && _Settings.Logging.Servers.Count > 0)
@@ -141,8 +148,28 @@
             _Logging = new LoggingModule(servers, _Settings.Logging.ConsoleLogging);
             _Logging.Settings.FileLogging = FileLoggingMode.FileWithDate;
             _Logging.Settings.LogFilename = _Settings.Logging.LogDirectory + _Settings.Logging.LogFilename;
+            _Logging.Settings.EnableColors = _Settings.Logging.EnableColors;
+            _Logging.Settings.EnableConsole = _Settings.Logging.ConsoleLogging;
+            _Logging.Settings.MinimumSeverity = (Severity)_Settings.Logging.MinimumSeverity;
+        }
 
-            #endregion
+        private static void InitializeBootstrapper()
+        {
+            // This must happen before any LlamaSharp types are referenced
+            try
+            {
+                NativeLibraryBootstrapper.Initialize(_Settings, _Logging);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("WARNING: Native library bootstrapper initialization failed:");
+                Console.WriteLine(ex.ToString());
+                Console.WriteLine("Continuing with default LlamaSharp library loading...");
+            }
+        }
+
+        private static void InitializeGlobals()
+        {
 
             #region ORM
 

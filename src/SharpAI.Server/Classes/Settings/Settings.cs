@@ -138,6 +138,22 @@
             }
         }
 
+        /// <summary>
+        /// Runtime settings for native library backend configuration.
+        /// </summary>
+        public RuntimeSettings Runtime
+        {
+            get
+            {
+                return _Runtime;
+            }
+            set
+            {
+                if (value == null) value = new RuntimeSettings();
+                _Runtime = value;
+            }
+        }
+
         #endregion
 
         #region Private-Members
@@ -150,6 +166,7 @@
         private WebserverSettings _Rest = new WebserverSettings();
         private DebugSettings _Debug = new DebugSettings();
         private Dictionary<string, int> _QuantizationPriority = new Dictionary<string, int>(StringComparer.InvariantCultureIgnoreCase);
+        private RuntimeSettings _Runtime = new RuntimeSettings();
 
         #endregion
 

@@ -1,51 +1,65 @@
 #
-#
-# Run the docker build command from src, not from the project directory
-#
+# SharpAI.Server Dockerfile
+# Run docker build from src directory, not from SharpAI.Server
 #
 
 #
-#
 # Build stage
 #
-#
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0-noble AS build
 WORKDIR /src
 
 # Copy source
 COPY . .
 
-# Restore dependencies
-RUN dotnet restore "SharpAI.Server/SharpAI.Server.csproj"
-
-# Build the application
+# Build and publish
 WORKDIR /src/SharpAI.Server
-RUN dotnet build "SharpAI.Server.csproj" -c Release -o /app/build /p:GeneratePackageOnBuild=false
-
-#
-#
-# Publish stage
-#
-#
-FROM build AS publish
-RUN dotnet publish SharpAI.Server.csproj -c Release --no-self-contained \
-    -o /app/publish \
+RUN dotnet publish SharpAI.Server.csproj -c Release -o /app/publish \
+    --no-self-contained \
     /p:UseAppHost=false \
-    /p:GeneratePackageOnBuild=false \
-    /p:ErrorOnDuplicatePublishOutputFiles=false
-
-
-#
+    /p:GeneratePackageOnBuild=false
+    
 #
 # Runtime stage
+# Using Ubuntu 24.04 (Noble) base for glibc 2.39 (ARM64 native libs need 2.38+)
 #
-#
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:8.0-noble AS final
+
+# Install runtime dependencies required by LlamaSharp native libraries
+# - libgomp1: OpenMP runtime for parallel processing
+# - libstdc++6: C++ standard library
 RUN apt-get update && apt-get install -y \
-libgomp1 libstdc++6 libc6 libopenblas0 liblapack3 \
-iputils-ping traceroute net-tools curl wget dnsutils iproute2 file vim procps \
-&& rm -rf /var/lib/apt/lists/*
+    libgomp1 \
+    libstdc++6 \
+    iputils-ping \
+    traceroute \
+    net-tools \
+    curl \
+    wget \
+    dnsutils \
+    iproute2 \
+    vim \
+    file \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install NVIDIA CUDA runtime libraries (amd64 only - ARM64 doesn't support NVIDIA GPUs)
+# Using Ubuntu 22.04 repository for stable CUDA 12 packages
+RUN if [ "$(dpkg --print-architecture)" = "amd64" ]; then \
+        apt-get update && apt-get install -y --no-install-recommends \
+        gnupg2 ca-certificates && \
+        curl -fsSL https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/3bf863cc.pub | gpg --dearmor -o /usr/share/keyrings/cuda-archive-keyring.gpg && \
+        echo "deb [signed-by=/usr/share/keyrings/cuda-archive-keyring.gpg] https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/ /" > /etc/apt/sources.list.d/cuda.list && \
+        apt-get update && apt-get install -y --no-install-recommends \
+        cuda-cudart-12-4 \
+        libcublas-12-4 && \
+        rm -rf /var/lib/apt/lists/*; \
+    fi
+
 WORKDIR /app
-COPY --from=publish /app/publish .
+COPY --from=build /app/publish .
+
+# Make startup script executable
+RUN chmod +x start-linux.sh
+
 EXPOSE 8000
-ENTRYPOINT ["dotnet", "SharpAI.Server.dll"]
+ENTRYPOINT ["./start-linux.sh"]

@@ -33,7 +33,15 @@ docs/
 *~
 .DS_Store
 
-# Build artifacts and dependencies
+# .NET build artifacts ONLY (not source files)
+**/bin/
+**/obj/
+**/packages/
+*.user
+*.suo
+*.userprefs
+
+# Build artifacts
 node_modules/
 dist/
 build/
@@ -67,9 +75,13 @@ temp/
 # Data directories (common for ML projects)
 data/
 datasets/
-models/
 checkpoints/
 weights/
+
+# Specific model download directories (lowercase "models" only, not "Models")
+Docker/models/
+SharpAI.Server/bin/Debug/net8.0/models/
+SharpAI.Server/bin/Release/net8.0/models/
 
 # Virtual environments
 venv/

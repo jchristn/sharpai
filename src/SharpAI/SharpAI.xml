@@ -106,6 +106,16 @@
             <param name="token">Cancellation token.</param>
             <returns>String.</returns>
         </member>
+        <member name="T:SharpAI.Classes.Runtime.NativeBackendInfo">
+            <summary>
+            Provides information about the native backend that was selected during initialization.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Classes.Runtime.NativeBackendInfo.SelectedBackend">
+            <summary>
+            Gets or sets the backend that was selected during initialization.
+            </summary>
+        </member>
         <member name="T:SharpAI.CompletionDriver">
             <summary>
             Completion driver.

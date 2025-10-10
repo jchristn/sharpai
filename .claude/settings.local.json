@@ -3,7 +3,17 @@
     "allow": [
       "Bash(dir)",
       "Bash(dir /s/b srcSharpAI.Server*.cs)",
-      "Bash(dir /s/b srcSharpAI*.cs)"
+      "Bash(dir /s/b srcSharpAI*.cs)",
+      "Bash(chmod:*)",
+      "Bash(dotnet build)",
+      "Bash(dotnet build:*)",
+      "Bash(mv:*)",
+      "Bash(cat:*)",
+      "Bash(git log:*)",
+      "Bash(docker build:*)",
+      "Bash(docker run:*)",
+      "Bash(dos2unix:*)",
+      "WebSearch"
     ],
     "deny": [],
     "ask": []

@@ -419,6 +419,29 @@
                         nextToken = curr;
                     }
 
+                    if (nextToken != null)
+                    {
+                        OpenAIGenerateCompletionResult currEvent = new OpenAIGenerateCompletionResult
+                        {
+                            Id = req.Http.Response.Headers.Get(Constants.RequestIdHeader),
+                            Object = "text_completion",
+                            Created = ToUnixTimestamp(DateTime.UtcNow),
+                            Model = gcr.Model,
+                            Usage = null,
+                            Choices = new List<OpenAICompletionChoice>
+                                {
+                                    new OpenAICompletionChoice
+                                    {
+                                        Text = nextToken,
+                                        Index = 0
+                                    }
+                                }
+                        };
+
+                        string currEventJson = _Serializer.SerializeJson(currEvent, false);
+                        await req.Http.Response.SendEvent(currEventJson, false, token).ConfigureAwait(false);
+                    }
+
                     await req.Http.Response.SendEvent("[DONE]", true, token).ConfigureAwait(false);
                     return null;
 
@@ -464,6 +487,29 @@
 
                             nextToken = curr;
                         }
+                    }
+
+                    if (nextToken != null)
+                    {
+                        OpenAIGenerateCompletionResult currEvent = new OpenAIGenerateCompletionResult
+                        {
+                            Id = req.Http.Response.Headers.Get(Constants.RequestIdHeader),
+                            Object = "text_completion",
+                            Created = ToUnixTimestamp(DateTime.UtcNow),
+                            Model = gcr.Model,
+                            Usage = null,
+                            Choices = new List<OpenAICompletionChoice>
+                                {
+                                    new OpenAICompletionChoice
+                                    {
+                                        Text = nextToken,
+                                        Index = 0
+                                    }
+                                }
+                        };
+
+                        string currEventJson = _Serializer.SerializeJson(currEvent, false);
+                        await req.Http.Response.SendEvent(currEventJson, false, token).ConfigureAwait(false);
                     }
 
                     await req.Http.Response.SendEvent("[DONE]", true, token).ConfigureAwait(false);
@@ -624,6 +670,29 @@
                     }
 
                     nextToken = curr;
+                }
+
+                if (nextToken != null)
+                {
+                    OpenAIGenerateCompletionResult currEvent = new OpenAIGenerateCompletionResult
+                    {
+                        Id = req.Http.Response.Headers.Get(Constants.RequestIdHeader),
+                        Object = "text_completion",
+                        Created = ToUnixTimestamp(DateTime.UtcNow),
+                        Model = gcr.Model,
+                        Usage = null,
+                        Choices = new List<OpenAICompletionChoice>
+                            {
+                                new OpenAICompletionChoice
+                                {
+                                    Text = nextToken,
+                                    Index = 0
+                                }
+                            }
+                    };
+
+                    string currEventJson = _Serializer.SerializeJson(currEvent, false);
+                    await req.Http.Response.SendEvent(currEventJson, false, token).ConfigureAwait(false);
                 }
 
                 await req.Http.Response.SendEvent("[DONE]", true, token).ConfigureAwait(false);

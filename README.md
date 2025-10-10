@@ -92,9 +92,9 @@ var ai = new AIDriver(
     modelDirectory: "./models/"           
 );
 
-// Download a model from HuggingFace (GGUF format)
+// Download a model from HuggingFace (GGUF format only)
 await ai.Models.Add(
-    name: "microsoft/phi-2",
+    name: "QuantFactory/Qwen2.5-3B-GGUF",
     quantizationPriority: null,
     progressCallback: (url, bytesDownloaded, percentComplete) =>
     {
@@ -103,7 +103,7 @@ await ai.Models.Add(
 
 // Generate a completion
 string response = await ai.Completion.GenerateCompletion(
-    model: "microsoft/phi-2",
+    model: "QuantFactory/Qwen2.5-3B-GGUF",
     prompt: "Once upon a time",
     maxTokens: 512,
     temperature: 0.7f
@@ -125,19 +125,19 @@ Manages model downloads and lifecycle:
 List<ModelFile> models = ai.Models.All();
 
 // Get a specific model
-ModelFile model = ai.Models.GetByName("microsoft/phi-2");
+ModelFile model = ai.Models.GetByName("QuantFactory/Qwen2.5-3B-GGUF");
 
-// Download a new model from HuggingFace
+// Download a new model from HuggingFace (GGUF format only)
 ModelFile downloaded = await ai.Models.Add(
-    name: "meta-llama/Llama-2-7b-chat-hf",
+    name: "leliuga/all-MiniLM-L6-v2-GGUF",
     quantizationPriority: null,
     progressCallback: null);
 
 // Delete a model
-ai.Models.Delete("microsoft/phi-2");
+ai.Models.Delete("QuantFactory/Qwen2.5-3B-GGUF");
 
 // Get the filesystem path for a model
-string modelPath = ai.Models.GetFilename("microsoft/phi-2");
+string modelPath = ai.Models.GetFilename("QuantFactory/Qwen2.5-3B-GGUF");
 ```
 
 ## 🗄️ Model Management
@@ -164,14 +164,14 @@ Generate vector embeddings for text:
 ```csharp
 // Single text embedding
 float[] embedding = await ai.Embeddings.Generate(
-    model: "microsoft/phi-2",
+    model: "leliuga/all-MiniLM-L6-v2-GGUF",
     input: "This is a sample text"
 );
 
 // Multiple text embeddings
 string[] texts = { "First text", "Second text", "Third text" };
 float[][] embeddings = await ai.Embeddings.Generate(
-    model: "microsoft/phi-2",
+    model: "leliuga/all-MiniLM-L6-v2-GGUF",
     inputs: texts
 );
 ```
@@ -185,7 +185,7 @@ Generate text continuations:
 ```csharp
 // Non-streaming completion
 string completion = await ai.Completion.GenerateCompletion(
-    model: "microsoft/phi-2",
+    model: "QuantFactory/Qwen2.5-3B-GGUF",
     prompt: "The meaning of life is",
     maxTokens: 512,
     temperature: 0.7f
@@ -193,7 +193,7 @@ string completion = await ai.Completion.GenerateCompletion(
 
 // Streaming completion
 await foreach (string token in ai.Completion.GenerateCompletionStreaming(
-    model: "microsoft/phi-2",
+    model: "QuantFactory/Qwen2.5-3B-GGUF",
     prompt: "Write a poem about",
     maxTokens: 512,
     temperature: 0.8f))
@@ -211,7 +211,7 @@ Generate conversational responses:
 ```csharp
 // Non-streaming chat
 string response = await ai.Chat.GenerateCompletion(
-    model: "microsoft/phi-2",
+    model: "QuantFactory/Qwen2.5-3B-GGUF",
     prompt: chatFormattedPrompt,  // Prompt should be formatted for chat
     maxTokens: 512,
     temperature: 0.7f
@@ -219,7 +219,7 @@ string response = await ai.Chat.GenerateCompletion(
 
 // Streaming chat
 await foreach (string token in ai.Chat.GenerateCompletionStreaming(
-    model: "microsoft/phi-2",
+    model: "QuantFactory/Qwen2.5-3B-GGUF",
     prompt: chatFormattedPrompt,
     maxTokens: 512,
     temperature: 0.7f))
@@ -407,17 +407,38 @@ OpenAI API endpoints include:
 
 ## ⚙️ Requirements
 
-- .NET 8.0 or higher
-- Windows, Linux, or macOS
-- HuggingFace API key (for downloading models)
-- (Optional) GPU for acceleration (see GPU Support section)
+### System Requirements
+
+**Minimum:**
+- **OS**: Windows 10+, macOS 12+, or Linux (Ubuntu 20.04+, Debian 11+)
+- **.NET**: 8.0 or higher
+- **RAM**: Minimum 8GB of RAM recommended, have enough RAM for running models if using CPU
+- **Disk**: 20GB+ of disk space recommended, have enough capacity for downloaded models
+- **Internet**: Required for downloading models
+- **HuggingFace API Key**: Required (free at https://huggingface.co/settings/tokens)
+
+**For GPU Acceleration (Optional):**
+- **NVIDIA GPU only** with Compute Capability 6.0+ (Pascal or newer)
+- 8GB+ VRAM (16GB+ for larger models)
+- NVIDIA proprietary drivers installed
+- CUDA Toolkit 12.x (for bare-metal deployments)
+- NVIDIA Container Toolkit (for Docker deployments)
+
+**Important GPU Notes:**
+- **NVIDIA GPUs only** - AMD and Intel GPUs are not supported
+- **Apple Silicon (M1/M2/M3/M4)** - GPU acceleration (Metal) is not supported, CPU mode only
+- **Legacy Intel Macs** - NVIDIA GPUs are rare but supported if present
 
 ### Tested Platforms
 
 SharpAI has been tested on:
-- Windows 11
-- macOS Sequoia
-- Ubuntu 24.04
+- Windows 11 (x64)
+- macOS Sequoia (Apple Silicon - CPU only)
+- Ubuntu 24.04 LTS (x64)
+
+### Full Deployment Guide
+
+For detailed installation instructions, troubleshooting, and production deployment, see **[DEPLOYMENT-GUIDE.md](DEPLOYMENT-GUIDE.md)**.
 
 ## 📊 Model Information
 
@@ -438,15 +459,18 @@ Models are stored in the specified `modelDirectory` with files named by their GU
 
 ### GPU Support
 
-The library automatically detects CUDA availability and optimizes layer allocation. The `LlamaSharpEngine` determines optimal GPU layers based on available hardware.
+SharpAI automatically detects NVIDIA CUDA availability and optimizes layer allocation. The library supports **NVIDIA GPUs only**.
 
-LlamaSharp supports multiple GPU backends through LlamaSharp and llama.cpp:
-- **NVIDIA GPUs** - via CUDA
-- **AMD GPUs** - via ROCm (Linux) or Vulkan
-- **Apple Silicon** - via Metal (M1, M2, M3, etc.)
-- **Intel GPUs** - via SYCL or Vulkan
+**Supported:**
+- **NVIDIA GPUs** via CUDA (Windows and Linux)
 
-Note: The actual GPU support depends on the LlamaSharp build and backend availability on your system. CUDA support is most mature, while other backends may require specific LlamaSharp builds or additional setup.
+**Not Supported:**
+- AMD GPUs (ROCm/Vulkan not supported)
+- Apple Silicon Metal (M1/M2/M3/M4 - CPU only)
+- Intel GPUs (SYCL/Vulkan not supported)
+
+The `NativeLibraryBootstrapper` automatically detects your platform and GPU at startup, selecting the appropriate backend (CPU or CUDA). See the [Requirements](#-requirements) section for detailed GPU requirements.
+
 ## 🐳 Running in Docker
 
 SharpAI.Server is available as a Docker image, providing an easy way to deploy the Ollama-compatible API server without local installation.
@@ -539,17 +563,17 @@ You can access OpenAI APIs at:
    ./run.sh v1.0.0
    ```
 
-4. Download a model using the API:
+4. Download a model using the API (GGUF format required):
    ```bash
    curl http://localhost:8000/api/pull \
-     -d '{"name":"microsoft/phi-2"}'
+     -d '{"model":"QuantFactory/Qwen2.5-3B-GGUF"}'
    ```
 
 5. Generate text:
    ```bash
    curl http://localhost:8000/api/generate \
      -d '{
-       "model": "microsoft/phi-2",
+       "model": "QuantFactory/Qwen2.5-3B-GGUF",
        "prompt": "Why is the sky blue?",
        "stream": false
      }'
@@ -560,8 +584,6 @@ You can access OpenAI APIs at:
 For production deployments, you can use Docker Compose. Create a `compose.yaml` file:
 
 ```yaml
-version: '3.8'
-
 services:
   sharpai:
     image: jchristn/sharpai:v1.0.0
