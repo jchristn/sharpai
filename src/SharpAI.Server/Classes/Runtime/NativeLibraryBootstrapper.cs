@@ -89,7 +89,19 @@ namespace SharpAI.Server.Classes.Runtime
 
                             logging.Info($"[NativeLibraryBootstrapper] successfully configured {backend} backend");
 
-                            // Now safe to configure logging (after library is set)
+                            // Force NativeApi static constructor to run now (while we can catch errors)
+                            // This ensures the library actually loads successfully
+                            try
+                            {
+                                long deviceCount = NativeApi.llama_max_devices();
+                                logging.Debug($"[NativeLibraryBootstrapper] library loaded successfully, {deviceCount} device(s) reported");
+                            }
+                            catch (Exception initEx)
+                            {
+                                throw new Exception($"Library configured but failed to load: {initEx.Message}", initEx);
+                            }
+
+                            // Now safe to configure logging (after library is loaded)
                             ConfigureNativeLogging(settings, logging);
                         }
                         catch (Exception ex)
@@ -113,7 +125,18 @@ namespace SharpAI.Server.Classes.Runtime
                                         _SelectedBackend = "cpu";
                                         logging.Info("[NativeLibraryBootstrapper] successfully configured CPU backend as fallback");
 
-                                        // Configure logging after library is set
+                                        // Force library load
+                                        try
+                                        {
+                                            long deviceCount = NativeApi.llama_max_devices();
+                                            logging.Debug($"[NativeLibraryBootstrapper] fallback library loaded successfully, {deviceCount} device(s) reported");
+                                        }
+                                        catch (Exception initEx)
+                                        {
+                                            throw new Exception($"Fallback library configured but failed to load: {initEx.Message}", initEx);
+                                        }
+
+                                        // Configure logging after library is loaded
                                         ConfigureNativeLogging(settings, logging);
                                     }
                                     catch (Exception fallbackEx)
@@ -148,10 +171,15 @@ namespace SharpAI.Server.Classes.Runtime
 
             if (!enableLogging)
             {
-                // Disable native logging by setting a null callback
+                // Disable native logging by setting a no-op callback that discards all messages
                 try
                 {
-                    NativeLogConfig.llama_log_set((NativeLogConfig.LLamaLogCallback)null);
+                    NativeLogConfig.LLamaLogCallback noOpCallback = (LLamaLogLevel level, string message) =>
+                    {
+                        // Discard all log messages by doing nothing
+                    };
+
+                    NativeLogConfig.llama_log_set(noOpCallback);
                     logging.Debug("[NativeLibraryBootstrapper] native library logging disabled");
                 }
                 catch (Exception ex)
