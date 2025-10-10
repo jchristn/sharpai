@@ -72,9 +72,6 @@ namespace SharpAI.Server.Classes.Runtime
                 string backend = DetermineBackend(settings, logging);
                 _SelectedBackend = backend;
 
-                // Configure native library logging
-                ConfigureNativeLogging(settings, logging);
-
                 string libraryPath = GetLibraryPath(backend, settings, logging);
 
                 if (!String.IsNullOrEmpty(libraryPath))
@@ -85,11 +82,15 @@ namespace SharpAI.Server.Classes.Runtime
 
                         try
                         {
+                            // CRITICAL: Configure library path BEFORE any LlamaSharp types are referenced
                             NativeLibraryConfig
                                 .All
                                 .WithLibrary(libraryPath, "llama");
 
                             logging.Info($"[NativeLibraryBootstrapper] successfully configured {backend} backend");
+
+                            // Now safe to configure logging (after library is set)
+                            ConfigureNativeLogging(settings, logging);
                         }
                         catch (Exception ex)
                         {
@@ -111,6 +112,9 @@ namespace SharpAI.Server.Classes.Runtime
 
                                         _SelectedBackend = "cpu";
                                         logging.Info("[NativeLibraryBootstrapper] successfully configured CPU backend as fallback");
+
+                                        // Configure logging after library is set
+                                        ConfigureNativeLogging(settings, logging);
                                     }
                                     catch (Exception fallbackEx)
                                     {
@@ -339,34 +343,56 @@ namespace SharpAI.Server.Classes.Runtime
         private static string GetNuGetRuntimePath(string backend, OSPlatform platform, string baseDirectory, string libraryName, LoggingModule logging)
         {
             string rid = GetRuntimeIdentifier(platform);
-            string backendSubfolder = backend.Equals("cuda", StringComparison.OrdinalIgnoreCase) ? "cuda12" : "avx2";
+            Architecture arch = RuntimeInformation.ProcessArchitecture;
 
-            // Standard NuGet runtime path: runtimes/{rid}/native/{backend}/libname
-            string nugetPath = Path.Combine(baseDirectory, "runtimes", rid, "native", backendSubfolder, libraryName);
-
-            if (File.Exists(nugetPath))
+            if (backend.Equals("cuda", StringComparison.OrdinalIgnoreCase))
             {
-                return nugetPath;
-            }
-
-            // Try without subfolder (some backends don't use avx2/cuda12 subdirectory)
-            nugetPath = Path.Combine(baseDirectory, "runtimes", rid, "native", libraryName);
-            if (File.Exists(nugetPath))
-            {
-                return nugetPath;
-            }
-
-            // For CPU, try other AVX variants in order of preference: avx512, avx, noavx
-            if (backend.Equals("cpu", StringComparison.OrdinalIgnoreCase))
-            {
-                string[] avxVariants = new string[] { "avx512", "avx", "noavx" };
-                foreach (string variant in avxVariants)
+                // CUDA backend: try cuda12 subdirectory first
+                string cudaPath = Path.Combine(baseDirectory, "runtimes", rid, "native", "cuda12", libraryName);
+                if (File.Exists(cudaPath))
                 {
-                    nugetPath = Path.Combine(baseDirectory, "runtimes", rid, "native", variant, libraryName);
-                    if (File.Exists(nugetPath))
+                    return cudaPath;
+                }
+
+                // Try without subdirectory
+                cudaPath = Path.Combine(baseDirectory, "runtimes", rid, "native", libraryName);
+                if (File.Exists(cudaPath))
+                {
+                    return cudaPath;
+                }
+            }
+            else if (backend.Equals("cpu", StringComparison.OrdinalIgnoreCase))
+            {
+                // For ARM64 (Apple Silicon, ARM Linux), no AVX variants exist
+                if (arch == Architecture.Arm64)
+                {
+                    // Try direct path first
+                    string armPath = Path.Combine(baseDirectory, "runtimes", rid, "native", libraryName);
+                    if (File.Exists(armPath))
                     {
-                        logging.Debug($"[NativeLibraryBootstrapper] using {variant} CPU variant");
-                        return nugetPath;
+                        logging.Debug("[NativeLibraryBootstrapper] using ARM64 CPU backend");
+                        return armPath;
+                    }
+                }
+                else
+                {
+                    // For x64, try AVX variants in order of preference: avx2, avx512, avx, noavx
+                    string[] avxVariants = new string[] { "avx2", "avx512", "avx", "noavx" };
+                    foreach (string variant in avxVariants)
+                    {
+                        string avxPath = Path.Combine(baseDirectory, "runtimes", rid, "native", variant, libraryName);
+                        if (File.Exists(avxPath))
+                        {
+                            logging.Debug($"[NativeLibraryBootstrapper] using {variant} CPU variant");
+                            return avxPath;
+                        }
+                    }
+
+                    // Try without subdirectory as fallback
+                    string fallbackPath = Path.Combine(baseDirectory, "runtimes", rid, "native", libraryName);
+                    if (File.Exists(fallbackPath))
+                    {
+                        return fallbackPath;
                     }
                 }
             }
