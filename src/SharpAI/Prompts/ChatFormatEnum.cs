@@ -4,7 +4,7 @@
     /// Defines common chat/prompt formats used by different language models.
     /// Each format has specific tokens and structure that the model was trained to recognize.
     /// </summary>
-    public enum ChatFormat
+    public enum ChatFormatEnum
     {
         /// <summary>
         /// Simple role-based format using "role: content" structure.
@@ -149,6 +149,60 @@
         /// 
         /// Assistant:
         /// </example>
-        DeepSeek
+        DeepSeek,
+
+        /// <summary>
+        /// Gemma format used by Google's Gemma models.
+        /// Uses &lt;start_of_turn&gt; and &lt;end_of_turn&gt; tokens.
+        /// </summary>
+        /// <example>
+        /// &lt;start_of_turn&gt;user
+        /// What is 2+2?&lt;end_of_turn&gt;
+        /// &lt;start_of_turn&gt;model
+        /// 4&lt;end_of_turn&gt;
+        /// &lt;start_of_turn&gt;user
+        /// Why?&lt;end_of_turn&gt;
+        /// &lt;start_of_turn&gt;model
+        /// </example>
+        Gemma,
+
+        /// <summary>
+        /// Command-R format used by Cohere's Command-R models.
+        /// Uses BOS/EOS tokens with special role markers.
+        /// </summary>
+        /// <example>
+        /// &lt;BOS_TOKEN&gt;&lt;|START_OF_TURN_TOKEN|&gt;&lt;|SYSTEM_TOKEN|&gt;You are helpful&lt;|END_OF_TURN_TOKEN|&gt;
+        /// &lt;|START_OF_TURN_TOKEN|&gt;&lt;|USER_TOKEN|&gt;What is 2+2?&lt;|END_OF_TURN_TOKEN|&gt;
+        /// &lt;|START_OF_TURN_TOKEN|&gt;&lt;|CHATBOT_TOKEN|&gt;4&lt;|END_OF_TURN_TOKEN|&gt;
+        /// </example>
+        CommandR,
+
+        /// <summary>
+        /// Vicuna v1.1 format (different from Alpaca).
+        /// Uses USER/ASSISTANT markers in conversational style.
+        /// </summary>
+        /// <example>
+        /// A chat between a user and an assistant.
+        /// 
+        /// USER: What is 2+2?
+        /// ASSISTANT: 4
+        /// 
+        /// USER: Why?
+        /// ASSISTANT:
+        /// </example>
+        Vicuna,
+
+        /// <summary>
+        /// StableLM format used by Stability AI's language models.
+        /// Uses &lt;|SYSTEM|&gt;, &lt;|USER|&gt;, &lt;|ASSISTANT|&gt; tokens.
+        /// </summary>
+        /// <example>
+        /// &lt;|SYSTEM|&gt;You are a helpful assistant.
+        /// &lt;|USER|&gt;What is 2+2?
+        /// &lt;|ASSISTANT|&gt;4
+        /// &lt;|USER|&gt;Why?
+        /// &lt;|ASSISTANT|&gt;
+        /// </example>
+        StableLM
     }
 }

@@ -3,7 +3,7 @@
     /// <summary>
     /// Defines common text generation prompt patterns.
     /// </summary>
-    public enum TextGenerationFormat
+    public enum TextGenerationFormatEnum
     {
         /// <summary>
         /// Raw text with no formatting. The prompt is used as-is.

@@ -5714,13 +5714,13 @@
             OpenAI usage.
             </summary>
         </member>
-        <member name="T:SharpAI.Prompts.ChatFormat">
+        <member name="T:SharpAI.Prompts.ChatFormatEnum">
             <summary>
             Defines common chat/prompt formats used by different language models.
             Each format has specific tokens and structure that the model was trained to recognize.
             </summary>
         </member>
-        <member name="F:SharpAI.Prompts.ChatFormat.Simple">
+        <member name="F:SharpAI.Prompts.ChatFormatEnum.Simple">
             <summary>
             Simple role-based format using "role: content" structure.
             Compatible with many base models and general-purpose LLMs.
@@ -5733,7 +5733,7 @@
             assistant:
             </example>
         </member>
-        <member name="F:SharpAI.Prompts.ChatFormat.ChatML">
+        <member name="F:SharpAI.Prompts.ChatFormatEnum.ChatML">
             <summary>
             ChatML (Chat Markup Language) format used by OpenAI models and many modern LLMs.
             Uses special tokens: &lt;|im_start|&gt;, &lt;|im_end|&gt;
@@ -5750,7 +5750,7 @@
             &lt;|im_start|&gt;assistant
             </example>
         </member>
-        <member name="F:SharpAI.Prompts.ChatFormat.Llama2">
+        <member name="F:SharpAI.Prompts.ChatFormatEnum.Llama2">
             <summary>
             Llama 2 Chat format with instruction tags.
             Uses [INST], [/INST] tags and &lt;&lt;SYS&gt;&gt; for system prompts.
@@ -5763,7 +5763,7 @@
             What is 2+2? [/INST] 4 &lt;/s&gt;&lt;s&gt;[INST] Why? [/INST]
             </example>
         </member>
-        <member name="F:SharpAI.Prompts.ChatFormat.Llama3">
+        <member name="F:SharpAI.Prompts.ChatFormatEnum.Llama3">
             <summary>
             Llama 3 format with header-based structure.
             Uses header IDs and special tokens for role demarcation.
@@ -5776,7 +5776,7 @@
             What is 2+2?&lt;|eot_id|&gt;&lt;|start_header_id|&gt;assistant&lt;|end_header_id|&gt;
             </example>
         </member>
-        <member name="F:SharpAI.Prompts.ChatFormat.Alpaca">
+        <member name="F:SharpAI.Prompts.ChatFormatEnum.Alpaca">
             <summary>
             Alpaca instruction format using ### markers.
             Commonly used by instruction-tuned models based on LLaMA.
@@ -5797,7 +5797,7 @@
             ### Response:
             </example>
         </member>
-        <member name="F:SharpAI.Prompts.ChatFormat.Mistral">
+        <member name="F:SharpAI.Prompts.ChatFormatEnum.Mistral">
             <summary>
             Mistral/Mixtral instruction format.
             Uses [INST] tags similar to Llama 2 but with simpler structure.
@@ -5806,7 +5806,7 @@
             &lt;s&gt;[INST] What is 2+2? [/INST] 4&lt;/s&gt;[INST] Why? [/INST]
             </example>
         </member>
-        <member name="F:SharpAI.Prompts.ChatFormat.HumanAssistant">
+        <member name="F:SharpAI.Prompts.ChatFormatEnum.HumanAssistant">
             <summary>
             Human/Assistant conversational format.
             Used by Anthropic's Claude and some other conversational models.
@@ -5821,7 +5821,7 @@
             Assistant:
             </example>
         </member>
-        <member name="F:SharpAI.Prompts.ChatFormat.Zephyr">
+        <member name="F:SharpAI.Prompts.ChatFormatEnum.Zephyr">
             <summary>
             Zephyr model format with role tags.
             Uses &lt;|role|&gt; tags with &lt;/s&gt; as separators.
@@ -5838,7 +5838,7 @@
             &lt;|assistant|&gt;
             </example>
         </member>
-        <member name="F:SharpAI.Prompts.ChatFormat.Phi">
+        <member name="F:SharpAI.Prompts.ChatFormatEnum.Phi">
             <summary>
             Phi model format used by Microsoft's Phi series.
             Uses specific instruction and response markers.
@@ -5850,7 +5850,7 @@
             Output:
             </example>
         </member>
-        <member name="F:SharpAI.Prompts.ChatFormat.DeepSeek">
+        <member name="F:SharpAI.Prompts.ChatFormatEnum.DeepSeek">
             <summary>
             DeepSeek model format.
             Similar to simple format but with specific markers.
@@ -5864,6 +5864,99 @@
             
             Assistant:
             </example>
+        </member>
+        <member name="F:SharpAI.Prompts.ChatFormatEnum.Gemma">
+            <summary>
+            Gemma format used by Google's Gemma models.
+            Uses &lt;start_of_turn&gt; and &lt;end_of_turn&gt; tokens.
+            </summary>
+            <example>
+            &lt;start_of_turn&gt;user
+            What is 2+2?&lt;end_of_turn&gt;
+            &lt;start_of_turn&gt;model
+            4&lt;end_of_turn&gt;
+            &lt;start_of_turn&gt;user
+            Why?&lt;end_of_turn&gt;
+            &lt;start_of_turn&gt;model
+            </example>
+        </member>
+        <member name="F:SharpAI.Prompts.ChatFormatEnum.CommandR">
+            <summary>
+            Command-R format used by Cohere's Command-R models.
+            Uses BOS/EOS tokens with special role markers.
+            </summary>
+            <example>
+            &lt;BOS_TOKEN&gt;&lt;|START_OF_TURN_TOKEN|&gt;&lt;|SYSTEM_TOKEN|&gt;You are helpful&lt;|END_OF_TURN_TOKEN|&gt;
+            &lt;|START_OF_TURN_TOKEN|&gt;&lt;|USER_TOKEN|&gt;What is 2+2?&lt;|END_OF_TURN_TOKEN|&gt;
+            &lt;|START_OF_TURN_TOKEN|&gt;&lt;|CHATBOT_TOKEN|&gt;4&lt;|END_OF_TURN_TOKEN|&gt;
+            </example>
+        </member>
+        <member name="F:SharpAI.Prompts.ChatFormatEnum.Vicuna">
+            <summary>
+            Vicuna v1.1 format (different from Alpaca).
+            Uses USER/ASSISTANT markers in conversational style.
+            </summary>
+            <example>
+            A chat between a user and an assistant.
+            
+            USER: What is 2+2?
+            ASSISTANT: 4
+            
+            USER: Why?
+            ASSISTANT:
+            </example>
+        </member>
+        <member name="F:SharpAI.Prompts.ChatFormatEnum.StableLM">
+            <summary>
+            StableLM format used by Stability AI's language models.
+            Uses &lt;|SYSTEM|&gt;, &lt;|USER|&gt;, &lt;|ASSISTANT|&gt; tokens.
+            </summary>
+            <example>
+            &lt;|SYSTEM|&gt;You are a helpful assistant.
+            &lt;|USER|&gt;What is 2+2?
+            &lt;|ASSISTANT|&gt;4
+            &lt;|USER|&gt;Why?
+            &lt;|ASSISTANT|&gt;
+            </example>
+        </member>
+        <member name="T:SharpAI.Prompts.ChatFormatHelper">
+            <summary>
+            Chat format helper.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Prompts.ChatFormatHelper.ModelFamilyToChatFormat(System.String)">
+            <summary>
+            Maps a model family name to its corresponding ChatFormat.
+            </summary>
+            <param name="modelFamily">The model family name (case-insensitive)</param>
+            <returns>The appropriate ChatFormatEnum for the model family</returns>
+        </member>
+        <member name="M:SharpAI.Prompts.ChatFormatHelper.ModelFamilyToChatFormat(System.String,SharpAI.Prompts.ChatFormatEnum)">
+            <summary>
+            Gets the ChatFormat for a model family with a fallback option.
+            </summary>
+            <param name="modelFamily">The model family name</param>
+            <param name="fallback">The fallback format to use if model family is not recognized</param>
+            <returns>The appropriate ChatFormatEnum or the fallback</returns>
+        </member>
+        <member name="M:SharpAI.Prompts.ChatFormatHelper.IsExplicitlySimpleFormat(System.String)">
+            <summary>
+            Checks if a model family explicitly uses the Simple format.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Prompts.ChatFormatHelper.GetFormatDescription(SharpAI.Prompts.ChatFormatEnum)">
+            <summary>
+            Gets a description of the chat format.
+            </summary>
+            <param name="format">The chat format to describe</param>
+            <returns>A human-readable description of the format</returns>
+        </member>
+        <member name="M:SharpAI.Prompts.ChatFormatHelper.SupportsSystemMessage(SharpAI.Prompts.ChatFormatEnum)">
+            <summary>
+            Determines if a format supports system messages.
+            </summary>
+            <param name="format">The chat format to check</param>
+            <returns>True if the format supports system messages, false otherwise</returns>
         </member>
         <member name="T:SharpAI.Prompts.ChatMessage">
             <summary>
@@ -5895,12 +5988,12 @@
             Used for building conversation histories in chat completion scenarios.
             </summary>
         </member>
-        <member name="T:SharpAI.Prompts.PromptBuilder">
+        <member name="T:SharpAI.Prompts.ChatPromptBuilder">
             <summary>
             Provides methods for building prompts in various chat formats used by different language models.
             </summary>
         </member>
-        <member name="M:SharpAI.Prompts.PromptBuilder.Build(SharpAI.Prompts.ChatFormat,System.Collections.Generic.List{SharpAI.Prompts.ChatMessage})">
+        <member name="M:SharpAI.Prompts.ChatPromptBuilder.Build(SharpAI.Prompts.ChatFormatEnum,System.Collections.Generic.List{SharpAI.Prompts.ChatMessage})">
             <summary>
             Builds a formatted prompt string based on the specified chat format and messages.
             </summary>
@@ -5910,12 +6003,12 @@
             <exception cref="T:System.ArgumentNullException">Thrown when messages is null.</exception>
             <exception cref="T:System.ArgumentException">Thrown when messages is empty.</exception>
         </member>
-        <member name="T:SharpAI.Prompts.TextGenerationFormat">
+        <member name="T:SharpAI.Prompts.TextGenerationFormatEnum">
             <summary>
             Defines common text generation prompt patterns.
             </summary>
         </member>
-        <member name="F:SharpAI.Prompts.TextGenerationFormat.Raw">
+        <member name="F:SharpAI.Prompts.TextGenerationFormatEnum.Raw">
             <summary>
             Raw text with no formatting. The prompt is used as-is.
             </summary>
@@ -5923,7 +6016,7 @@
             Write a story about a robot learning to paint.
             </example>
         </member>
-        <member name="F:SharpAI.Prompts.TextGenerationFormat.Completion">
+        <member name="F:SharpAI.Prompts.TextGenerationFormatEnum.Completion">
             <summary>
             Completion format where the model continues from the prompt.
             </summary>
@@ -5931,7 +6024,7 @@
             Once upon a time, in a small village by the sea,
             </example>
         </member>
-        <member name="F:SharpAI.Prompts.TextGenerationFormat.Instruction">
+        <member name="F:SharpAI.Prompts.TextGenerationFormatEnum.Instruction">
             <summary>
             Instruction following format with clear directive.
             </summary>
@@ -5942,7 +6035,7 @@
             ### Response:
             </example>
         </member>
-        <member name="F:SharpAI.Prompts.TextGenerationFormat.QuestionAnswer">
+        <member name="F:SharpAI.Prompts.TextGenerationFormatEnum.QuestionAnswer">
             <summary>
             Question-answer format for knowledge queries.
             </summary>
@@ -5952,7 +6045,7 @@
             Answer:
             </example>
         </member>
-        <member name="F:SharpAI.Prompts.TextGenerationFormat.CreativeWriting">
+        <member name="F:SharpAI.Prompts.TextGenerationFormatEnum.CreativeWriting">
             <summary>
             Creative writing format with genre and style hints.
             </summary>
@@ -5964,7 +6057,7 @@
             Story:
             </example>
         </member>
-        <member name="F:SharpAI.Prompts.TextGenerationFormat.CodeGeneration">
+        <member name="F:SharpAI.Prompts.TextGenerationFormatEnum.CodeGeneration">
             <summary>
             Code generation format with language specification.
             </summary>
@@ -5975,7 +6068,7 @@
             ```python
             </example>
         </member>
-        <member name="F:SharpAI.Prompts.TextGenerationFormat.Academic">
+        <member name="F:SharpAI.Prompts.TextGenerationFormatEnum.Academic">
             <summary>
             Academic/formal writing format.
             </summary>
@@ -5986,7 +6079,7 @@
             Abstract:
             </example>
         </member>
-        <member name="F:SharpAI.Prompts.TextGenerationFormat.ListGeneration">
+        <member name="F:SharpAI.Prompts.TextGenerationFormatEnum.ListGeneration">
             <summary>
             List generation format for structured output.
             </summary>
@@ -5996,7 +6089,7 @@
             1.
             </example>
         </member>
-        <member name="F:SharpAI.Prompts.TextGenerationFormat.TemplateFilling">
+        <member name="F:SharpAI.Prompts.TextGenerationFormatEnum.TemplateFilling">
             <summary>
             Template filling format with placeholders.
             </summary>
@@ -6009,7 +6102,7 @@
             I am writing to inform you about
             </example>
         </member>
-        <member name="F:SharpAI.Prompts.TextGenerationFormat.Dialogue">
+        <member name="F:SharpAI.Prompts.TextGenerationFormatEnum.Dialogue">
             <summary>
             Dialogue generation format for conversational content.
             </summary>
@@ -6021,12 +6114,12 @@
             Alice:
             </example>
         </member>
-        <member name="T:SharpAI.Prompts.TextPromptBuilder">
+        <member name="T:SharpAI.Prompts.TextGenerationPromptBuilder">
             <summary>
             Provides methods for building text generation prompts in various formats.
             </summary>
         </member>
-        <member name="M:SharpAI.Prompts.TextPromptBuilder.Build(SharpAI.Prompts.TextGenerationFormat,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
+        <member name="M:SharpAI.Prompts.TextGenerationPromptBuilder.Build(SharpAI.Prompts.TextGenerationFormatEnum,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
             <summary>
             Builds a formatted prompt for text generation based on the specified format.
             </summary>
@@ -6037,7 +6130,7 @@
             <exception cref="T:System.ArgumentNullException">Thrown when input is null.</exception>
             <exception cref="T:System.ArgumentException">Thrown when input is empty or whitespace.</exception>
         </member>
-        <member name="M:SharpAI.Prompts.TextPromptBuilder.BuildWithExamples(SharpAI.Prompts.TextGenerationFormat,System.String,System.Collections.Generic.List{System.ValueTuple{System.String,System.String}},System.Collections.Generic.Dictionary{System.String,System.String})">
+        <member name="M:SharpAI.Prompts.TextGenerationPromptBuilder.BuildWithExamples(SharpAI.Prompts.TextGenerationFormatEnum,System.String,System.Collections.Generic.List{System.ValueTuple{System.String,System.String}},System.Collections.Generic.Dictionary{System.String,System.String})">
             <summary>
             Builds a prompt with additional context for few-shot learning.
             </summary>
@@ -6047,14 +6140,14 @@
             <param name="context">Optional context parameters.</param>
             <returns>A formatted prompt with examples.</returns>
         </member>
-        <member name="M:SharpAI.Prompts.TextPromptBuilder.CreateContinuation(System.String)">
+        <member name="M:SharpAI.Prompts.TextGenerationPromptBuilder.CreateContinuation(System.String)">
             <summary>
             Creates a simple continuation prompt from the given text.
             </summary>
             <param name="text">The text to continue from.</param>
             <returns>The text formatted for continuation.</returns>
         </member>
-        <member name="M:SharpAI.Prompts.TextPromptBuilder.CreateInstruction(System.String,System.String)">
+        <member name="M:SharpAI.Prompts.TextGenerationPromptBuilder.CreateInstruction(System.String,System.String)">
             <summary>
             Creates an instruction prompt with optional system context.
             </summary>

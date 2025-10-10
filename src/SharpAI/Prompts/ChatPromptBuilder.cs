@@ -8,7 +8,7 @@
     /// <summary>
     /// Provides methods for building prompts in various chat formats used by different language models.
     /// </summary>
-    public static class PromptBuilder
+    public static class ChatPromptBuilder
     {
         /// <summary>
         /// Builds a formatted prompt string based on the specified chat format and messages.
@@ -18,7 +18,7 @@
         /// <returns>A formatted prompt string ready for model inference.</returns>
         /// <exception cref="ArgumentNullException">Thrown when messages is null.</exception>
         /// <exception cref="ArgumentException">Thrown when messages is empty.</exception>
-        public static string Build(ChatFormat chatFormat, List<ChatMessage> messages)
+        public static string Build(ChatFormatEnum chatFormat, List<ChatMessage> messages)
         {
             if (messages == null)
                 throw new ArgumentNullException(nameof(messages));
@@ -28,16 +28,20 @@
 
             return chatFormat switch
             {
-                ChatFormat.Simple => BuildSimple(messages),
-                ChatFormat.ChatML => BuildChatML(messages),
-                ChatFormat.Llama2 => BuildLlama2(messages),
-                ChatFormat.Llama3 => BuildLlama3(messages),
-                ChatFormat.Alpaca => BuildAlpaca(messages),
-                ChatFormat.Mistral => BuildMistral(messages),
-                ChatFormat.HumanAssistant => BuildHumanAssistant(messages),
-                ChatFormat.Zephyr => BuildZephyr(messages),
-                ChatFormat.Phi => BuildPhi(messages),
-                ChatFormat.DeepSeek => BuildDeepSeek(messages),
+                ChatFormatEnum.Simple => BuildSimple(messages),
+                ChatFormatEnum.ChatML => BuildChatML(messages),
+                ChatFormatEnum.Llama2 => BuildLlama2(messages),
+                ChatFormatEnum.Llama3 => BuildLlama3(messages),
+                ChatFormatEnum.Alpaca => BuildAlpaca(messages),
+                ChatFormatEnum.Mistral => BuildMistral(messages),
+                ChatFormatEnum.HumanAssistant => BuildHumanAssistant(messages),
+                ChatFormatEnum.Zephyr => BuildZephyr(messages),
+                ChatFormatEnum.Phi => BuildPhi(messages),
+                ChatFormatEnum.DeepSeek => BuildDeepSeek(messages),
+                ChatFormatEnum.Gemma => BuildGemma(messages),
+                ChatFormatEnum.CommandR => BuildCommandR(messages),
+                ChatFormatEnum.Vicuna => BuildVicuna(messages),
+                ChatFormatEnum.StableLM => BuildStableLM(messages),
                 _ => BuildSimple(messages) // Default fallback
             };
         }
@@ -292,6 +296,133 @@
             }
 
             sb.Append("Assistant: ");
+            return sb.ToString();
+        }
+
+        private static string BuildGemma(List<ChatMessage> messages)
+        {
+            var sb = new StringBuilder();
+
+            foreach (var message in messages)
+            {
+                if (message.Role.Equals("system", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Gemma typically includes system message as first user turn
+                    sb.AppendLine("<start_of_turn>user");
+                    sb.Append($"System: {message.Content}");
+                    sb.AppendLine("<end_of_turn>");
+                    sb.AppendLine("<start_of_turn>model");
+                    sb.Append("Understood.");
+                    sb.AppendLine("<end_of_turn>");
+                }
+                else if (message.Role.Equals("user", StringComparison.OrdinalIgnoreCase))
+                {
+                    sb.AppendLine("<start_of_turn>user");
+                    sb.Append(message.Content);
+                    sb.AppendLine("<end_of_turn>");
+                }
+                else if (message.Role.Equals("assistant", StringComparison.OrdinalIgnoreCase))
+                {
+                    sb.AppendLine("<start_of_turn>model");
+                    sb.Append(message.Content);
+                    sb.AppendLine("<end_of_turn>");
+                }
+            }
+
+            sb.AppendLine("<start_of_turn>model");
+            return sb.ToString();
+        }
+
+        private static string BuildCommandR(List<ChatMessage> messages)
+        {
+            var sb = new StringBuilder();
+            var systemMessage = messages.FirstOrDefault(m => m.Role.Equals("system", StringComparison.OrdinalIgnoreCase));
+
+            sb.Append("<BOS_TOKEN>");
+
+            if (systemMessage != null)
+            {
+                sb.Append("<|START_OF_TURN_TOKEN|><|SYSTEM_TOKEN|>");
+                sb.Append(systemMessage.Content);
+                sb.Append("<|END_OF_TURN_TOKEN|>");
+            }
+
+            foreach (var message in messages.Where(m => !m.Role.Equals("system", StringComparison.OrdinalIgnoreCase)))
+            {
+                if (message.Role.Equals("user", StringComparison.OrdinalIgnoreCase))
+                {
+                    sb.Append("<|START_OF_TURN_TOKEN|><|USER_TOKEN|>");
+                    sb.Append(message.Content);
+                    sb.Append("<|END_OF_TURN_TOKEN|>");
+                }
+                else if (message.Role.Equals("assistant", StringComparison.OrdinalIgnoreCase))
+                {
+                    sb.Append("<|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|>");
+                    sb.Append(message.Content);
+                    sb.Append("<|END_OF_TURN_TOKEN|>");
+                }
+            }
+
+            sb.Append("<|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|>");
+            return sb.ToString();
+        }
+
+        private static string BuildVicuna(List<ChatMessage> messages)
+        {
+            var sb = new StringBuilder();
+            var systemMessage = messages.FirstOrDefault(m => m.Role.Equals("system", StringComparison.OrdinalIgnoreCase));
+
+            // Vicuna v1.1 format starts with a preamble
+            if (systemMessage != null)
+            {
+                sb.AppendLine(systemMessage.Content);
+            }
+            else
+            {
+                sb.AppendLine("A chat between a user and an assistant.");
+            }
+            sb.AppendLine();
+
+            foreach (var message in messages.Where(m => !m.Role.Equals("system", StringComparison.OrdinalIgnoreCase)))
+            {
+                if (message.Role.Equals("user", StringComparison.OrdinalIgnoreCase))
+                {
+                    sb.AppendLine($"USER: {message.Content}");
+                }
+                else if (message.Role.Equals("assistant", StringComparison.OrdinalIgnoreCase))
+                {
+                    sb.AppendLine($"ASSISTANT: {message.Content}");
+                }
+            }
+
+            sb.Append("ASSISTANT:");
+            return sb.ToString();
+        }
+
+        private static string BuildStableLM(List<ChatMessage> messages)
+        {
+            var sb = new StringBuilder();
+
+            foreach (var message in messages)
+            {
+                if (message.Role.Equals("system", StringComparison.OrdinalIgnoreCase))
+                {
+                    sb.Append("<|SYSTEM|>");
+                    sb.AppendLine(message.Content);
+                }
+                else if (message.Role.Equals("user", StringComparison.OrdinalIgnoreCase))
+                {
+                    sb.Append("<|USER|>");
+                    sb.AppendLine(message.Content);
+                }
+                else if (message.Role.Equals("assistant", StringComparison.OrdinalIgnoreCase))
+                {
+                    sb.Append("<|ASSISTANT|>");
+                    sb.AppendLine(message.Content);
+                }
+            }
+
+            sb.Append("<|ASSISTANT|>");
             return sb.ToString();
         }
     }

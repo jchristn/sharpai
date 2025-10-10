@@ -7,7 +7,9 @@
     using SharpAI.Hosting;
     using SharpAI.Hosting.HuggingFace;
     using SharpAI.Models;
+    using SharpAI.Models.Ollama;
     using SharpAI.Models.OpenAI;
+    using SharpAI.Prompts;
     using SharpAI.Serialization;
     using SharpAI.Server.Classes.Settings;
     using SharpAI.Services;
@@ -566,17 +568,6 @@
 
             LlamaSharpEngine engine = _ModelEngineService.GetByModelFile(Path.Combine(_Settings.Storage.ModelsDirectory, modelFile.GUID.ToString()));
 
-            StringBuilder promptBuilder = new StringBuilder();
-            if (gcr.Messages != null && gcr.Messages.Count > 0)
-            {
-                int added = 0;
-                foreach (OpenAIChatMessage msg in gcr.Messages)
-                {
-                    if (added > 0) promptBuilder.Append("\n");
-                    promptBuilder.Append($"{msg.Role}: {msg.Content}");
-                }
-            }
-
             if (!engine.SupportsGeneration)
             {
                 _Logging.Warn(_Header + "model '" + gcr.Model + "' does not support completions");
@@ -595,6 +586,21 @@
                 };
             }
 
+            List<ChatMessage> messages = new List<ChatMessage>();
+            foreach (OpenAIChatMessage msg in gcr.Messages)
+            {
+                messages.Add(new ChatMessage
+                {
+                    Role = msg.Role,
+                    Content = msg.Content.ToString(),
+                    Timestamp = DateTime.UtcNow
+                });
+            }
+
+            string prompt = ChatPromptBuilder.Build(
+                ChatFormatHelper.ModelFamilyToChatFormat(modelFile.Family, ChatFormatEnum.Simple),
+                messages);
+
             OpenAIGenerateChatCompletionResult ret = new OpenAIGenerateChatCompletionResult
             {
                 Id = req.Http.Response.Headers.Get(Constants.RequestIdHeader),
@@ -610,7 +616,7 @@
                 #region Non-Streaming
 
                 string response = await engine.GenerateChatCompletionAsync(
-                    promptBuilder.ToString(),
+                    prompt,
                     gcr.MaxTokens != null ? gcr.MaxTokens.Value : 128,
                     gcr.Temperature != null ? gcr.Temperature.Value : 0.6f,
                     null,
@@ -640,7 +646,7 @@
                 req.Http.Response.ServerSentEvents = true;
 
                 await foreach (string curr in engine.GenerateChatCompletionStreamAsync(
-                    promptBuilder.ToString(),
+                    prompt,
                     gcr.MaxTokens != null ? gcr.MaxTokens.Value : 128,
                     gcr.Temperature != null ? gcr.Temperature.Value : 0.6f,
                     null,

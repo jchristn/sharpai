@@ -9,8 +9,6 @@
     {
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 
-        #region Public-Members
-
         /// <summary>
         /// Gets or sets the file path within the repository.
         /// </summary>
@@ -46,24 +44,12 @@
         /// </summary>
         public string SecurityStatus { get; set; } = null;
 
-        #endregion
-
-        #region Private-Members
-
-        #endregion
-
-        #region Constructors-and-Factories
-
         /// <summary>
         /// Initializes a new instance of the HuggingFaceModelFile class.
         /// </summary>
         public HuggingFaceModelFile()
         {
         }
-
-        #endregion
-
-        #region Public-Methods
 
         /// <summary>
         /// Returns a string representation of the HuggingFace model file.
@@ -73,12 +59,6 @@
         {
             return $"Path: {Path}, Type: {Type}, Size: {Size} bytes";
         }
-
-        #endregion
-
-        #region Private-Methods
-
-        #endregion
 
 #pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
     }

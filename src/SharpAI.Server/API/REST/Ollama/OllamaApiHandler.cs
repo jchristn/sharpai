@@ -15,6 +15,7 @@
     using SharpAI.Hosting.HuggingFace;
     using SharpAI.Models;
     using SharpAI.Models.Ollama;
+    using SharpAI.Prompts;
     using SharpAI.Serialization;
     using SharpAI.Server.Classes.Settings;
     using SharpAI.Services;
@@ -598,18 +599,6 @@
 
             LlamaSharpEngine engine = _ModelEngineService.GetByModelFile(Path.Combine(_Settings.Storage.ModelsDirectory, modelFile.GUID.ToString()));
 
-            string json = null;
-            StringBuilder promptBuilder = new StringBuilder();
-            if (gcr.Messages != null && gcr.Messages.Count > 0)
-            {
-                int added = 0;
-                foreach (OllamaChatMessage msg in gcr.Messages)
-                {
-                    if (added > 0) promptBuilder.Append("\n");
-                    promptBuilder.Append($"{msg.Role}: {msg.Content}");
-                }
-            }
-
             if (!engine.SupportsGeneration)
             {
                 _Logging.Warn(_Header + "'" + gcr.Model + "' does not support generate");
@@ -622,10 +611,25 @@
                 };
             }
 
+            List<ChatMessage> messages = new List<ChatMessage>();
+            foreach (OllamaChatMessage msg in gcr.Messages)
+            {
+                messages.Add(new ChatMessage
+                {
+                    Role = msg.Role,
+                    Content = msg.Content,
+                    Timestamp = DateTime.UtcNow
+                });
+            }
+
+            string prompt = ChatPromptBuilder.Build(
+                ChatFormatHelper.ModelFamilyToChatFormat(modelFile.Family, ChatFormatEnum.Simple),
+                messages);
+
             if (gcr.Stream == null || !gcr.Stream.Value)
             {
                 string response = await engine.GenerateChatCompletionAsync(
-                    promptBuilder.ToString(),
+                    prompt,
                     gcr.Options.NumPredict != null ? gcr.Options.NumPredict.Value : 128,
                     gcr.Options.Temperature != null ? gcr.Options.Temperature.Value : 0.6f,
                     null,
@@ -643,12 +647,13 @@
             else
             {
                 string nextToken = null;
+                string json = null;
 
                 req.Http.Response.ContentType = Constants.NdJsonContentType;
                 req.Http.Response.ChunkedTransfer = true;
 
                 await foreach (string curr in engine.GenerateChatCompletionStreamAsync(
-                    promptBuilder.ToString(),
+                    prompt,
                     gcr.Options.NumPredict != null ? gcr.Options.NumPredict.Value : 128,
                     gcr.Options.Temperature != null ? gcr.Options.Temperature.Value : 0.6f,
                     null,

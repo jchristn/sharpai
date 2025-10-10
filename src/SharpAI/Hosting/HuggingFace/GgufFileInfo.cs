@@ -9,8 +9,6 @@
     {
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 
-        #region Public-Members
-
         /// <summary>
         /// Gets or sets the human-readable formatted file size.
         /// </summary>
@@ -26,24 +24,12 @@
         /// </summary>
         public bool IsMainModel { get; set; } = false;
 
-        #endregion
-
-        #region Private-Members
-
-        #endregion
-
-        #region Constructors-and-Factories
-
         /// <summary>
         /// Initializes a new instance of the GgufFileInfo class.
         /// </summary>
         public GgufFileInfo()
         {
         }
-
-        #endregion
-
-        #region Public-Methods
 
         /// <summary>
         /// Returns a string representation of the GGUF file information.
@@ -53,12 +39,6 @@
         {
             return $"GGUF: {Path} ({SizeFormatted}) - {QuantizationType}";
         }
-
-        #endregion
-
-        #region Private-Methods
-
-        #endregion
 
 #pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
     }

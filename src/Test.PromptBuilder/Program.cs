@@ -11,8 +11,8 @@
     {
         static bool _RunForever = true;
         static bool _Debug = false;
-        static ChatFormat _CurrentChatFormat = ChatFormat.ChatML;
-        static TextGenerationFormat _CurrentTextFormat = TextGenerationFormat.Instruction;
+        static ChatFormatEnum _CurrentChatFormat = ChatFormatEnum.ChatML;
+        static TextGenerationFormatEnum _CurrentTextFormat = TextGenerationFormatEnum.Instruction;
 
         public static void Main(string[] args)
         {
@@ -107,14 +107,14 @@
         {
             Console.WriteLine("");
             Console.WriteLine("Available chat formats:");
-            foreach (ChatFormat format in Enum.GetValues(typeof(ChatFormat)))
+            foreach (ChatFormatEnum format in Enum.GetValues(typeof(ChatFormatEnum)))
             {
                 Console.WriteLine("  " + format);
             }
             Console.WriteLine("");
 
             string input = Inputty.GetString("Chat format [" + _CurrentChatFormat + "]:", _CurrentChatFormat.ToString(), false);
-            if (Enum.TryParse<ChatFormat>(input, out ChatFormat newFormat))
+            if (Enum.TryParse<ChatFormatEnum>(input, out ChatFormatEnum newFormat))
             {
                 _CurrentChatFormat = newFormat;
                 Console.WriteLine("Chat format set to: " + _CurrentChatFormat);
@@ -129,14 +129,14 @@
         {
             Console.WriteLine("");
             Console.WriteLine("Available text generation formats:");
-            foreach (TextGenerationFormat format in Enum.GetValues(typeof(TextGenerationFormat)))
+            foreach (TextGenerationFormatEnum format in Enum.GetValues(typeof(TextGenerationFormatEnum)))
             {
                 Console.WriteLine("  " + format);
             }
             Console.WriteLine("");
 
             string input = Inputty.GetString("Text format [" + _CurrentTextFormat + "]:", _CurrentTextFormat.ToString(), false);
-            if (Enum.TryParse<TextGenerationFormat>(input, out TextGenerationFormat newFormat))
+            if (Enum.TryParse<TextGenerationFormatEnum>(input, out TextGenerationFormatEnum newFormat))
             {
                 _CurrentTextFormat = newFormat;
                 Console.WriteLine("Text format set to: " + _CurrentTextFormat);
@@ -162,7 +162,7 @@
                 new ChatMessage { Role = "user", Content = "Why?" }
             };
 
-            string prompt = PromptBuilder.Build(ChatFormat.Simple, messages);
+            string prompt = ChatPromptBuilder.Build(ChatFormatEnum.Simple, messages);
             Console.WriteLine(prompt);
             Console.WriteLine("=== End of Simple Format ===");
             Console.WriteLine("");
@@ -181,7 +181,7 @@
                 new ChatMessage { Role = "user", Content = "Now in JavaScript" }
             };
 
-            string prompt = PromptBuilder.Build(ChatFormat.ChatML, messages);
+            string prompt = ChatPromptBuilder.Build(ChatFormatEnum.ChatML, messages);
             Console.WriteLine(prompt);
             Console.WriteLine("=== End of ChatML Format ===");
             Console.WriteLine("");
@@ -200,13 +200,13 @@
                 new ChatMessage { Role = "user", Content = "Give an example" }
             };
 
-            string prompt = PromptBuilder.Build(ChatFormat.Llama2, messages);
+            string prompt = ChatPromptBuilder.Build(ChatFormatEnum.Llama2, messages);
             Console.WriteLine(prompt);
             Console.WriteLine("=== End of Llama 2 Format ===");
             Console.WriteLine("");
 
             Console.WriteLine("=== Testing Llama 3 Format ===");
-            prompt = PromptBuilder.Build(ChatFormat.Llama3, messages);
+            prompt = ChatPromptBuilder.Build(ChatFormatEnum.Llama3, messages);
             Console.WriteLine(prompt);
             Console.WriteLine("=== End of Llama 3 Format ===");
             Console.WriteLine("");
@@ -222,27 +222,27 @@
             };
 
             Console.WriteLine("=== Testing Alpaca Format ===");
-            Console.WriteLine(PromptBuilder.Build(ChatFormat.Alpaca, messages));
+            Console.WriteLine(ChatPromptBuilder.Build(ChatFormatEnum.Alpaca, messages));
             Console.WriteLine("");
 
             Console.WriteLine("=== Testing Mistral Format ===");
-            Console.WriteLine(PromptBuilder.Build(ChatFormat.Mistral, messages));
+            Console.WriteLine(ChatPromptBuilder.Build(ChatFormatEnum.Mistral, messages));
             Console.WriteLine("");
 
             Console.WriteLine("=== Testing HumanAssistant Format ===");
-            Console.WriteLine(PromptBuilder.Build(ChatFormat.HumanAssistant, messages));
+            Console.WriteLine(ChatPromptBuilder.Build(ChatFormatEnum.HumanAssistant, messages));
             Console.WriteLine("");
 
             Console.WriteLine("=== Testing Zephyr Format ===");
-            Console.WriteLine(PromptBuilder.Build(ChatFormat.Zephyr, messages));
+            Console.WriteLine(ChatPromptBuilder.Build(ChatFormatEnum.Zephyr, messages));
             Console.WriteLine("");
 
             Console.WriteLine("=== Testing Phi Format ===");
-            Console.WriteLine(PromptBuilder.Build(ChatFormat.Phi, messages));
+            Console.WriteLine(ChatPromptBuilder.Build(ChatFormatEnum.Phi, messages));
             Console.WriteLine("");
 
             Console.WriteLine("=== Testing DeepSeek Format ===");
-            Console.WriteLine(PromptBuilder.Build(ChatFormat.DeepSeek, messages));
+            Console.WriteLine(ChatPromptBuilder.Build(ChatFormatEnum.DeepSeek, messages));
             Console.WriteLine("");
         }
 
@@ -258,19 +258,19 @@
             string input = "Write a story about a robot learning to paint";
 
             Console.WriteLine("--- Raw Format ---");
-            Console.WriteLine(TextPromptBuilder.Build(TextGenerationFormat.Raw, input));
+            Console.WriteLine(TextGenerationPromptBuilder.Build(TextGenerationFormatEnum.Raw, input));
             Console.WriteLine("");
 
             Console.WriteLine("--- Completion Format ---");
-            Console.WriteLine(TextPromptBuilder.Build(TextGenerationFormat.Completion, "Once upon a time, in a small village by the sea,"));
+            Console.WriteLine(TextGenerationPromptBuilder.Build(TextGenerationFormatEnum.Completion, "Once upon a time, in a small village by the sea,"));
             Console.WriteLine("");
 
             Console.WriteLine("--- Instruction Format ---");
-            Console.WriteLine(TextPromptBuilder.Build(TextGenerationFormat.Instruction, input));
+            Console.WriteLine(TextGenerationPromptBuilder.Build(TextGenerationFormatEnum.Instruction, input));
             Console.WriteLine("");
 
             Console.WriteLine("--- Question Answer Format ---");
-            Console.WriteLine(TextPromptBuilder.Build(TextGenerationFormat.QuestionAnswer, "What are the main causes of climate change?"));
+            Console.WriteLine(TextGenerationPromptBuilder.Build(TextGenerationFormatEnum.QuestionAnswer, "What are the main causes of climate change?"));
             Console.WriteLine("");
         }
 
@@ -285,7 +285,7 @@
             context["genre"] = "Science Fiction";
             context["style"] = "Descriptive, atmospheric";
             context["length"] = "500 words";
-            Console.WriteLine(TextPromptBuilder.Build(TextGenerationFormat.CreativeWriting, "First contact with aliens", context));
+            Console.WriteLine(TextGenerationPromptBuilder.Build(TextGenerationFormatEnum.CreativeWriting, "First contact with aliens", context));
             Console.WriteLine("");
 
             Console.WriteLine("--- Code Generation Format ---");
@@ -293,7 +293,7 @@
             context["language"] = "Python";
             context["requirements"] = "Handle edge cases";
             context["constraints"] = "O(log n) time complexity";
-            Console.WriteLine(TextPromptBuilder.Build(TextGenerationFormat.CodeGeneration, "Implement a binary search algorithm", context));
+            Console.WriteLine(TextGenerationPromptBuilder.Build(TextGenerationFormatEnum.CodeGeneration, "Implement a binary search algorithm", context));
             Console.WriteLine("");
 
             Console.WriteLine("--- Academic Format ---");
@@ -301,7 +301,7 @@
             context["type"] = "Research Summary";
             context["field"] = "Computer Science";
             context["audience"] = "Graduate students";
-            Console.WriteLine(TextPromptBuilder.Build(TextGenerationFormat.Academic, "The Impact of AI on Healthcare", context));
+            Console.WriteLine(TextGenerationPromptBuilder.Build(TextGenerationFormatEnum.Academic, "The Impact of AI on Healthcare", context));
             Console.WriteLine("");
         }
 
@@ -317,8 +317,8 @@
                 ("mouse", "mice")
             };
 
-            string prompt = TextPromptBuilder.BuildWithExamples(
-                TextGenerationFormat.Instruction,
+            string prompt = TextGenerationPromptBuilder.BuildWithExamples(
+                TextGenerationFormatEnum.Instruction,
                 "goose",
                 examples
             );
@@ -333,15 +333,15 @@
             Console.WriteLine("=== Testing Helper Methods ===");
 
             Console.WriteLine("--- Create Continuation ---");
-            Console.WriteLine(TextPromptBuilder.CreateContinuation("The future of technology is"));
+            Console.WriteLine(TextGenerationPromptBuilder.CreateContinuation("The future of technology is"));
             Console.WriteLine("");
 
             Console.WriteLine("--- Create Instruction (no context) ---");
-            Console.WriteLine(TextPromptBuilder.CreateInstruction("Explain quantum computing in simple terms"));
+            Console.WriteLine(TextGenerationPromptBuilder.CreateInstruction("Explain quantum computing in simple terms"));
             Console.WriteLine("");
 
             Console.WriteLine("--- Create Instruction (with context) ---");
-            Console.WriteLine(TextPromptBuilder.CreateInstruction(
+            Console.WriteLine(TextGenerationPromptBuilder.CreateInstruction(
                 "Summarize the main points",
                 "You are an expert summarizer. Focus on key insights and actionable items."
             ));
@@ -367,10 +367,10 @@
                 new ChatMessage { Role = "user", Content = "Moderator: Please summarize both positions." }
             };
 
-            foreach (ChatFormat format in new[] { ChatFormat.ChatML, ChatFormat.Llama3, ChatFormat.HumanAssistant })
+            foreach (ChatFormatEnum format in new[] { ChatFormatEnum.ChatML, ChatFormatEnum.Llama3, ChatFormatEnum.HumanAssistant })
             {
                 Console.WriteLine($"--- Format: {format} ---");
-                Console.WriteLine(PromptBuilder.Build(format, messages));
+                Console.WriteLine(ChatPromptBuilder.Build(format, messages));
                 Console.WriteLine("");
             }
         }
@@ -388,14 +388,14 @@
             };
 
             Console.WriteLine("--- Dialogue Format ---");
-            Console.WriteLine(TextPromptBuilder.Build(TextGenerationFormat.Dialogue, "New discovery about quantum entanglement", context));
+            Console.WriteLine(TextGenerationPromptBuilder.Build(TextGenerationFormatEnum.Dialogue, "New discovery about quantum entanglement", context));
             Console.WriteLine("");
 
             Console.WriteLine("--- List Generation Format ---");
             context.Clear();
             context["count"] = "5";
             context["format"] = "bullet";
-            Console.WriteLine(TextPromptBuilder.Build(TextGenerationFormat.ListGeneration, "innovative uses for blockchain technology", context));
+            Console.WriteLine(TextGenerationPromptBuilder.Build(TextGenerationFormatEnum.ListGeneration, "innovative uses for blockchain technology", context));
             Console.WriteLine("");
 
             Console.WriteLine("--- Template Filling Format ---");
@@ -413,7 +413,7 @@ Next steps:
 
 Best regards,
 [YOUR_NAME]";
-            Console.WriteLine(TextPromptBuilder.Build(TextGenerationFormat.TemplateFilling, template));
+            Console.WriteLine(TextGenerationPromptBuilder.Build(TextGenerationFormatEnum.TemplateFilling, template));
             Console.WriteLine("");
         }
 
@@ -454,7 +454,7 @@ Best regards,
             {
                 Console.WriteLine("");
                 Console.WriteLine($"=== Generated {_CurrentChatFormat} Prompt ===");
-                Console.WriteLine(PromptBuilder.Build(_CurrentChatFormat, messages));
+                Console.WriteLine(ChatPromptBuilder.Build(_CurrentChatFormat, messages));
                 Console.WriteLine("=== End of Prompt ===");
             }
         }
@@ -485,7 +485,7 @@ Best regards,
                 {
                     Console.WriteLine("");
                     Console.WriteLine("=== Current Prompt ===");
-                    Console.WriteLine(PromptBuilder.Build(_CurrentChatFormat, messages));
+                    Console.WriteLine(ChatPromptBuilder.Build(_CurrentChatFormat, messages));
                     Console.WriteLine("=== End ===");
                     Console.WriteLine("");
                 }
@@ -496,7 +496,7 @@ Best regards,
 
             Console.WriteLine("");
             Console.WriteLine("=== Final Chat Transcript ===");
-            Console.WriteLine(PromptBuilder.Build(_CurrentChatFormat, messages));
+            Console.WriteLine(ChatPromptBuilder.Build(_CurrentChatFormat, messages));
             Console.WriteLine("=== End of Transcript ===");
         }
 
@@ -511,10 +511,10 @@ Best regards,
                 new ChatMessage { Role = "user", Content = "What's the weather?" }
             };
 
-            foreach (ChatFormat format in Enum.GetValues(typeof(ChatFormat)))
+            foreach (ChatFormatEnum format in Enum.GetValues(typeof(ChatFormatEnum)))
             {
                 Console.WriteLine($"=== {format} Format ===");
-                Console.WriteLine(PromptBuilder.Build(format, messages));
+                Console.WriteLine(ChatPromptBuilder.Build(format, messages));
                 Console.WriteLine("");
             }
         }
@@ -540,7 +540,7 @@ Best regards,
 
             Console.WriteLine("");
             Console.WriteLine($"=== Generated {_CurrentTextFormat} Prompt ===");
-            Console.WriteLine(TextPromptBuilder.Build(_CurrentTextFormat, input, context.Count > 0 ? context : null));
+            Console.WriteLine(TextGenerationPromptBuilder.Build(_CurrentTextFormat, input, context.Count > 0 ? context : null));
             Console.WriteLine("=== End of Prompt ===");
         }
 
@@ -565,7 +565,7 @@ Best regards,
 
             Console.WriteLine("");
             Console.WriteLine($"=== Generated {_CurrentTextFormat} Prompt with Examples ===");
-            Console.WriteLine(TextPromptBuilder.BuildWithExamples(_CurrentTextFormat, input, examples));
+            Console.WriteLine(TextGenerationPromptBuilder.BuildWithExamples(_CurrentTextFormat, input, examples));
             Console.WriteLine("=== End of Prompt ===");
         }
 
@@ -582,10 +582,10 @@ Best regards,
                 ["type"] = "Tutorial"
             };
 
-            foreach (TextGenerationFormat format in Enum.GetValues(typeof(TextGenerationFormat)))
+            foreach (TextGenerationFormatEnum format in Enum.GetValues(typeof(TextGenerationFormatEnum)))
             {
                 Console.WriteLine($"=== {format} Format ===");
-                Console.WriteLine(TextPromptBuilder.Build(format, input, context));
+                Console.WriteLine(TextGenerationPromptBuilder.Build(format, input, context));
                 Console.WriteLine("");
             }
         }
@@ -653,7 +653,7 @@ Best regards,
             }
 
             // Generate prompts for each format
-            foreach (ChatFormat format in Enum.GetValues(typeof(ChatFormat)))
+            foreach (ChatFormatEnum format in Enum.GetValues(typeof(ChatFormatEnum)))
             {
                 Console.WriteLine($"════════════════════════════════════════");
                 Console.WriteLine($"Format: {format}");
@@ -661,7 +661,7 @@ Best regards,
 
                 try
                 {
-                    string prompt = PromptBuilder.Build(format, messages);
+                    string prompt = ChatPromptBuilder.Build(format, messages);
                     Console.WriteLine(prompt);
                 }
                 catch (Exception ex)
@@ -705,8 +705,8 @@ Best regards,
                 ["constraints"] = "Use built-in functions where possible"
             };
 
-            string codePrompt = TextPromptBuilder.BuildWithExamples(
-                TextGenerationFormat.CodeGeneration,
+            string codePrompt = TextGenerationPromptBuilder.BuildWithExamples(
+                TextGenerationFormatEnum.CodeGeneration,
                 "merge two sorted lists",
                 codeExamples,
                 codeContext
@@ -730,8 +730,8 @@ Best regards,
                 ["theme"] = "What defines humanity in a digital age?"
             };
 
-            Console.WriteLine(TextPromptBuilder.Build(
-                TextGenerationFormat.CreativeWriting,
+            Console.WriteLine(TextGenerationPromptBuilder.Build(
+                TextGenerationFormatEnum.CreativeWriting,
                 "A detective investigates murders in virtual reality",
                 storyContext
             ));
@@ -752,8 +752,8 @@ Best regards,
                 ["keywords"] = "transformer models, attention mechanisms, NLP"
             };
 
-            Console.WriteLine(TextPromptBuilder.Build(
-                TextGenerationFormat.Academic,
+            Console.WriteLine(TextGenerationPromptBuilder.Build(
+                TextGenerationFormatEnum.Academic,
                 "Improving Transformer Efficiency Through Selective Attention",
                 academicContext
             ));
@@ -774,8 +774,8 @@ Best regards,
                 ["firstCharacter"] = "Marcus Webb"
             };
 
-            Console.WriteLine(TextPromptBuilder.Build(
-                TextGenerationFormat.Dialogue,
+            Console.WriteLine(TextGenerationPromptBuilder.Build(
+                TextGenerationFormatEnum.Dialogue,
                 "The announcement of the first allegedly conscious AI",
                 dialogueContext
             ));
@@ -795,8 +795,8 @@ Best regards,
                 ["target_audience"] = "Startup founders"
             };
 
-            Console.WriteLine(TextPromptBuilder.Build(
-                TextGenerationFormat.ListGeneration,
+            Console.WriteLine(TextGenerationPromptBuilder.Build(
+                TextGenerationFormatEnum.ListGeneration,
                 "innovative AI business models for 2025",
                 listContext
             ));
@@ -841,8 +841,8 @@ Success Metrics:
 Team:
 [TEAM_COMPOSITION]";
 
-            Console.WriteLine(TextPromptBuilder.Build(
-                TextGenerationFormat.TemplateFilling,
+            Console.WriteLine(TextGenerationPromptBuilder.Build(
+                TextGenerationFormatEnum.TemplateFilling,
                 complexTemplate
             ));
 

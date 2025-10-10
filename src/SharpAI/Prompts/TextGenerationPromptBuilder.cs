@@ -7,7 +7,7 @@
     /// <summary>
     /// Provides methods for building text generation prompts in various formats.
     /// </summary>
-    public static class TextPromptBuilder
+    public static class TextGenerationPromptBuilder
     {
         /// <summary>
         /// Builds a formatted prompt for text generation based on the specified format.
@@ -18,7 +18,7 @@
         /// <returns>A formatted prompt string ready for text generation.</returns>
         /// <exception cref="ArgumentNullException">Thrown when input is null.</exception>
         /// <exception cref="ArgumentException">Thrown when input is empty or whitespace.</exception>
-        public static string Build(TextGenerationFormat format, string input, Dictionary<string, string> context = null)
+        public static string Build(TextGenerationFormatEnum format, string input, Dictionary<string, string> context = null)
         {
             if (input == null)
                 throw new ArgumentNullException(nameof(input));
@@ -28,16 +28,16 @@
 
             return format switch
             {
-                TextGenerationFormat.Raw => input,
-                TextGenerationFormat.Completion => BuildCompletion(input),
-                TextGenerationFormat.Instruction => BuildInstruction(input),
-                TextGenerationFormat.QuestionAnswer => BuildQuestionAnswer(input),
-                TextGenerationFormat.CreativeWriting => BuildCreativeWriting(input, context),
-                TextGenerationFormat.CodeGeneration => BuildCodeGeneration(input, context),
-                TextGenerationFormat.Academic => BuildAcademic(input, context),
-                TextGenerationFormat.ListGeneration => BuildListGeneration(input, context),
-                TextGenerationFormat.TemplateFilling => BuildTemplateFilling(input),
-                TextGenerationFormat.Dialogue => BuildDialogue(input, context),
+                TextGenerationFormatEnum.Raw => input,
+                TextGenerationFormatEnum.Completion => BuildCompletion(input),
+                TextGenerationFormatEnum.Instruction => BuildInstruction(input),
+                TextGenerationFormatEnum.QuestionAnswer => BuildQuestionAnswer(input),
+                TextGenerationFormatEnum.CreativeWriting => BuildCreativeWriting(input, context),
+                TextGenerationFormatEnum.CodeGeneration => BuildCodeGeneration(input, context),
+                TextGenerationFormatEnum.Academic => BuildAcademic(input, context),
+                TextGenerationFormatEnum.ListGeneration => BuildListGeneration(input, context),
+                TextGenerationFormatEnum.TemplateFilling => BuildTemplateFilling(input),
+                TextGenerationFormatEnum.Dialogue => BuildDialogue(input, context),
                 _ => input // Default fallback
             };
         }
@@ -51,7 +51,7 @@
         /// <param name="context">Optional context parameters.</param>
         /// <returns>A formatted prompt with examples.</returns>
         public static string BuildWithExamples(
-            TextGenerationFormat format,
+            TextGenerationFormatEnum format,
             string input,
             List<(string input, string output)> examples,
             Dictionary<string, string> context = null)
@@ -245,7 +245,7 @@
         /// <returns>The text formatted for continuation.</returns>
         public static string CreateContinuation(string text)
         {
-            return Build(TextGenerationFormat.Completion, text);
+            return Build(TextGenerationFormatEnum.Completion, text);
         }
 
         /// <summary>
@@ -257,12 +257,12 @@
         public static string CreateInstruction(string instruction, string systemContext = null)
         {
             if (string.IsNullOrWhiteSpace(systemContext))
-                return Build(TextGenerationFormat.Instruction, instruction);
+                return Build(TextGenerationFormatEnum.Instruction, instruction);
 
             var sb = new StringBuilder();
             sb.AppendLine($"Context: {systemContext}");
             sb.AppendLine();
-            sb.Append(Build(TextGenerationFormat.Instruction, instruction));
+            sb.Append(Build(TextGenerationFormatEnum.Instruction, instruction));
 
             return sb.ToString();
         }
