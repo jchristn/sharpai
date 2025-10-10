@@ -47,5 +47,8 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 COPY --from=build /app/publish .
 
+# Make startup script executable
+RUN chmod +x start-linux.sh
+
 EXPOSE 8000
-ENTRYPOINT ["dotnet", "SharpAI.Server.dll"]
+ENTRYPOINT ["./start-linux.sh"]
