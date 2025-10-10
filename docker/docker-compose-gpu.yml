@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  sharpai:
+    image: sharpai:latest
+    container_name: sharpai-gpu
+    ports:
+      - "8000:8000"
+    volumes:
+      - sharpai-models:/app/models
+      - sharpai-data:/app
+    environment:
+      - ASPNETCORE_URLS=http://+:8000
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+
+volumes:
+  sharpai-models:
+  sharpai-data:

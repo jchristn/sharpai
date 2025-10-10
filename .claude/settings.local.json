@@ -6,7 +6,8 @@
       "Bash(dir /s/b srcSharpAI*.cs)",
       "Bash(chmod:*)",
       "Bash(dotnet build)",
-      "Bash(dotnet build:*)"
+      "Bash(dotnet build:*)",
+      "Bash(mv:*)"
     ],
     "deny": [],
     "ask": []
