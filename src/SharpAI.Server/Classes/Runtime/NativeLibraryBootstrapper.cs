@@ -98,7 +98,7 @@ namespace SharpAI.Server.Classes.Runtime
                             }
                             catch (Exception initEx)
                             {
-                                throw new Exception($"Library configured but failed to load: {initEx.Message}", initEx);
+                                throw new Exception($"Library configured but failed to load: {initEx.Message}" + Environment.NewLine + initEx.ToString(), initEx);
                             }
 
                             // Now safe to configure logging (after library is loaded)
@@ -106,7 +106,7 @@ namespace SharpAI.Server.Classes.Runtime
                         }
                         catch (Exception ex)
                         {
-                            logging.Warn($"[NativeLibraryBootstrapper] failed to configure {backend} backend, will attempt fallback: {ex.Message}");
+                            logging.Warn($"[NativeLibraryBootstrapper] failed to configure {backend} backend, will attempt fallback: {ex.Message}" + Environment.NewLine + ex.ToString());
 
                             // Try CPU fallback
                             if (!backend.Equals("cpu", StringComparison.OrdinalIgnoreCase))
@@ -133,7 +133,7 @@ namespace SharpAI.Server.Classes.Runtime
                                         }
                                         catch (Exception initEx)
                                         {
-                                            throw new Exception($"Fallback library configured but failed to load: {initEx.Message}", initEx);
+                                            throw new Exception($"Fallback library configured but failed to load: {initEx.Message}" + Environment.NewLine + initEx.ToString(), initEx);
                                         }
 
                                         // Configure logging after library is loaded
@@ -141,7 +141,7 @@ namespace SharpAI.Server.Classes.Runtime
                                     }
                                     catch (Exception fallbackEx)
                                     {
-                                        logging.Warn($"[NativeLibraryBootstrapper] CPU fallback also failed: {fallbackEx.Message}");
+                                        logging.Warn($"[NativeLibraryBootstrapper] CPU fallback also failed: {fallbackEx.Message}" + Environment.NewLine + fallbackEx.ToString());
                                     }
                                 }
                             }
