@@ -5,6 +5,11 @@
 ###
 *.gguf
 
+# Specific model download directories (lowercase "models" only, not "Models")
+src/Docker/models/
+src/SharpAI.Server/bin/Debug/net8.0/models/
+src/SharpAI.Server/bin/Release/net8.0/models/
+
 ###
 ###
 ### Node

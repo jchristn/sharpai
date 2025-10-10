@@ -1,701 +1,149 @@
 # SharpAI Deployment Guide
 
-Complete step-by-step guide for deploying SharpAI on Windows, macOS, Linux, Docker, and Docker Compose - with or without GPU acceleration.
+Complete guide for deploying, configuring, and testing SharpAI across all platforms.
 
 ---
 
 ## Table of Contents
 
-1. [Prerequisites](#prerequisites)
-2. [Windows Deployment](#windows-deployment)
-3. [macOS Deployment](#macos-deployment)
-4. [Linux Deployment](#linux-deployment)
-5. [Docker Deployment](#docker-deployment)
-6. [Docker Compose Deployment](#docker-compose-deployment)
-7. [Verification](#verification)
-8. [Troubleshooting](#troubleshooting)
+1. [Quick Start](#quick-start)
+2. [System Requirements](#system-requirements)
+3. [Installation](#installation)
+   - [Docker (Recommended)](#docker-recommended)
+   - [Docker Compose](#docker-compose)
+   - [Windows](#windows)
+   - [macOS](#macos)
+   - [Linux/Ubuntu](#linuxubuntu)
+4. [Configuration](#configuration)
+5. [Using SharpAI](#using-sharpai)
+6. [Testing & Verification](#testing--verification)
+7. [Troubleshooting](#troubleshooting)
+8. [Production Deployment](#production-deployment)
 
 ---
 
-## Prerequisites
+## Quick Start
 
-### All Platforms
-- .NET 8 SDK or Runtime
-- 8GB+ RAM (16GB+ recommended for larger models)
-- 10GB+ free disk space (for models)
-- Internet connection (for downloading models)
-
-### GPU Requirements (Optional)
-- **NVIDIA GPU only** (AMD/Intel not supported)
-- NVIDIA drivers installed
-- CUDA Toolkit 12.x (for bare-metal GPU)
-- For Docker: NVIDIA Container Toolkit
-
-### Download .NET
-
-**Windows:**
-```powershell
-# Download from: https://dotnet.microsoft.com/download/dotnet/8.0
-# Or use winget:
-winget install Microsoft.DotNet.SDK.8
-```
-
-**macOS:**
-```bash
-# Download from: https://dotnet.microsoft.com/download/dotnet/8.0
-# Or use Homebrew:
-brew install dotnet@8
-```
-
-**Linux (Ubuntu/Debian):**
-```bash
-wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh
-chmod +x dotnet-install.sh
-./dotnet-install.sh --channel 8.0
-
-# Or use package manager:
-sudo apt-get update
-sudo apt-get install -y dotnet-sdk-8.0
-```
-
----
-
-## Windows Deployment
-
-### Windows CPU-Only Deployment
-
-**Step 1: Clone the repository**
-```powershell
-cd C:\
-git clone https://github.com/jchristn/sharpai.git
-cd sharpai
-```
-
-**Step 2: Build the application**
-```powershell
-cd src
-dotnet build SharpAI.sln
-```
-
-**Step 3: Configure for CPU mode**
-```powershell
-cd SharpAI.Server
-@"
-{
-  "Runtime": {
-    "ForceBackend": "cpu",
-    "EnableNativeLogging": false
-  }
-}
-"@ | Out-File -FilePath "sharpai.json" -Encoding UTF8
-```
-
-**Step 4: Run the server**
-```powershell
-dotnet run
-```
-
-**Step 5: Verify it's running**
-```powershell
-# In a new PowerShell window:
-curl http://localhost:8000/
-```
-
-**Expected output:**
-```
-[NativeLibraryBootstrapper] detected platform: WINDOWS, architecture: X64
-[NativeLibraryBootstrapper] backend forced to: cpu
-[NativeLibraryBootstrapper] found library at NuGet path: ...\runtimes\win-x64\native\avx2\llama.dll
-[NativeLibraryBootstrapper] successfully configured cpu backend
-[SharpAI] starting SharpAI server
-```
-
----
-
-### Windows GPU Deployment (NVIDIA)
-
-**Step 1: Verify GPU and drivers**
-```powershell
-nvidia-smi
-```
-Should display your GPU. If not, install NVIDIA drivers from: https://www.nvidia.com/Download/index.aspx
-
-**Step 2: Install CUDA Toolkit 12.x** (if not already installed)
-Download from: https://developer.nvidia.com/cuda-downloads
-
-**Step 3: Clone and build** (same as CPU steps 1-2)
-
-**Step 4: Configure for GPU mode**
-```powershell
-cd src\SharpAI.Server
-@"
-{
-  "Runtime": {
-    "ForceBackend": "cuda",
-    "EnableNativeLogging": false
-  }
-}
-"@ | Out-File -FilePath "sharpai.json" -Encoding UTF8
-```
-
-**Step 5: Run the server**
-```powershell
-dotnet run
-```
-
-**Step 6: Verify GPU is being used**
-```powershell
-# In another window - monitor GPU usage:
-while($true) { nvidia-smi; sleep 2; clear }
-
-# Test inference:
-curl -X POST http://localhost:8000/api/pull -H "Content-Type: application/json" -d '{\"name\":\"qwen2.5:0.5b\"}'
-```
-
-**Expected output:**
-```
-[NativeLibraryBootstrapper] detected platform: WINDOWS, architecture: X64
-[NativeLibraryBootstrapper] backend forced to: cuda
-[NativeLibraryBootstrapper] found library at NuGet path: ...\runtimes\win-x64\native\cuda12\llama.dll
-[NativeLibraryBootstrapper] successfully configured cuda backend
-[LlamaSharpEngine] CUDA detected, 1 GPU device(s) available
-```
-
----
-
-### Windows Auto-Detection
-
-**Configure for auto-detection:**
-```powershell
-@"
-{
-  "Runtime": {
-    "ForceBackend": null,
-    "EnableNativeLogging": false
-  }
-}
-"@ | Out-File -FilePath "sharpai.json" -Encoding UTF8
-
-dotnet run
-```
-
-Will automatically use GPU if available, otherwise CPU.
-
----
-
-## macOS Deployment
-
-### macOS CPU Deployment (Intel & Apple Silicon)
-
-**Step 1: Clone the repository**
-```bash
-cd ~/
-git clone https://github.com/jchristn/sharpai.git
-cd sharpai
-```
-
-**Step 2: Build the application**
-```bash
-cd src
-dotnet build SharpAI.sln
-```
-
-**Step 3: Configure settings**
-```bash
-cd SharpAI.Server
-cat > sharpai.json << 'EOF'
-{
-  "Runtime": {
-    "ForceBackend": "cpu",
-    "EnableNativeLogging": false
-  }
-}
-EOF
-```
-
-**Step 4: Run the server**
-```bash
-dotnet run
-```
-
-**Step 5: Verify it's running**
-```bash
-# In a new terminal:
-curl http://localhost:8000/
-```
-
-**Expected output (Intel Mac):**
-```
-[NativeLibraryBootstrapper] detected platform: OSX, architecture: X64
-[NativeLibraryBootstrapper] backend forced to: cpu
-[NativeLibraryBootstrapper] found library at NuGet path: .../runtimes/osx-x64/native/avx2/libllama.dylib
-```
-
-**Expected output (Apple Silicon):**
-```
-[NativeLibraryBootstrapper] detected platform: OSX, architecture: Arm64
-[NativeLibraryBootstrapper] Apple Silicon detected, GPU backend not supported, using CPU
-[NativeLibraryBootstrapper] found library at NuGet path: .../runtimes/osx-arm64/native/libllama.dylib
-```
-
----
-
-### macOS GPU Deployment (Legacy Intel with NVIDIA - Rare)
-
-**Note:** Only applicable to older Intel Macs with NVIDIA GPUs. Apple Silicon does NOT support CUDA.
-
-**Step 1: Verify GPU**
-```bash
-system_profiler SPDisplaysDataType | grep NVIDIA
-```
-
-**Step 2: If NVIDIA GPU present, configure for GPU**
-```bash
-cat > sharpai.json << 'EOF'
-{
-  "Runtime": {
-    "ForceBackend": "cuda",
-    "EnableNativeLogging": false
-  }
-}
-EOF
-
-dotnet run
-```
-
-**If no CUDA support:** Will automatically fallback to CPU with a warning.
-
----
-
-## Linux Deployment
-
-### Linux CPU Deployment
-
-**Step 1: Clone the repository**
-```bash
-cd ~/
-git clone https://github.com/jchristn/sharpai.git
-cd sharpai
-```
-
-**Step 2: Install dependencies**
-```bash
-sudo apt-get update
-sudo apt-get install -y libgomp1 libstdc++6 libc6
-```
-
-**Step 3: Build the application**
-```bash
-cd src
-dotnet build SharpAI.sln
-```
-
-**Step 4: Configure for CPU**
-```bash
-cd SharpAI.Server
-cat > sharpai.json << 'EOF'
-{
-  "Runtime": {
-    "ForceBackend": "cpu",
-    "EnableNativeLogging": false
-  }
-}
-EOF
-```
-
-**Step 5: Run the server**
-```bash
-dotnet run
-```
-
-**Step 6: Verify it's running**
-```bash
-# In a new terminal:
-curl http://localhost:8000/
-```
-
-**Expected output:**
-```
-[NativeLibraryBootstrapper] detected platform: LINUX, architecture: X64
-[NativeLibraryBootstrapper] backend forced to: cpu
-[NativeLibraryBootstrapper] found library at NuGet path: .../runtimes/linux-x64/native/avx2/libllama.so
-[NativeLibraryBootstrapper] successfully configured cpu backend
-```
-
----
-
-### Linux GPU Deployment (NVIDIA)
-
-**Step 1: Verify GPU and drivers**
-```bash
-nvidia-smi
-```
-Should show your GPU. If not, install NVIDIA drivers:
+**Fastest way to get running:**
 
 ```bash
-# Ubuntu/Debian
-sudo apt-get update
-sudo apt-get install -y nvidia-driver-535  # Or latest version
+# CPU mode
+docker run -d -p 8000:8000 --name sharpai jchristn/sharpai:latest
 
-# Reboot after installation
-sudo reboot
-```
-
-**Step 2: Install CUDA Toolkit 12.x**
-```bash
-# Ubuntu 22.04 example:
-wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
-sudo dpkg -i cuda-keyring_1.1-1_all.deb
-sudo apt-get update
-sudo apt-get install -y cuda-toolkit-12-0
-
-# Add to PATH
-echo 'export PATH=/usr/local/cuda/bin:$PATH' >> ~/.bashrc
-echo 'export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH' >> ~/.bashrc
-source ~/.bashrc
+# GPU mode (NVIDIA GPU required)
+docker run -d --gpus all -p 8000:8000 --name sharpai jchristn/sharpai:latest
 
 # Verify
-nvcc --version
-```
-
-**Step 3: Clone and build** (same as CPU steps 1-3)
-
-**Step 4: Install runtime dependencies**
-```bash
-sudo apt-get install -y libgomp1 libstdc++6 libc6 libcublas-12-0 libcudart-12-0
-```
-
-**Step 5: Configure for GPU**
-```bash
-cd src/SharpAI.Server
-cat > sharpai.json << 'EOF'
-{
-  "Runtime": {
-    "ForceBackend": "cuda",
-    "EnableNativeLogging": false
-  }
-}
-EOF
-```
-
-**Step 6: Run the server**
-```bash
-dotnet run
-```
-
-**Step 7: Verify GPU usage**
-```bash
-# In another terminal:
-watch -n 1 nvidia-smi
-
-# Test inference:
-curl -X POST http://localhost:8000/api/pull \
-  -H "Content-Type: application/json" \
-  -d '{"name":"qwen2.5:0.5b"}'
-```
-
-**Expected output:**
-```
-[NativeLibraryBootstrapper] detected platform: LINUX, architecture: X64
-[NativeLibraryBootstrapper] backend forced to: cuda
-[NativeLibraryBootstrapper] found library at NuGet path: .../runtimes/linux-x64/native/cuda12/libllama.so
-[NativeLibraryBootstrapper] successfully configured cuda backend
-[LlamaSharpEngine] CUDA detected, 1 GPU device(s) available
-```
-
----
-
-## Docker Deployment
-
-### Prerequisites for Docker
-
-**Install Docker:**
-
-**Ubuntu/Debian:**
-```bash
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
-sudo usermod -aG docker $USER
-# Log out and back in for group changes to take effect
-```
-
-**Windows:** Download Docker Desktop from https://www.docker.com/products/docker-desktop
-
-**macOS:** Download Docker Desktop from https://www.docker.com/products/docker-desktop
-
----
-
-### Docker CPU Deployment
-
-**Step 1: Clone the repository**
-```bash
-git clone https://github.com/jchristn/sharpai.git
-cd sharpai
-```
-
-**Step 2: Build the Docker image**
-```bash
-# Linux/macOS:
-./docker-build.sh latest
-
-# Windows:
-docker-build.bat latest
-
-# Or manually:
-docker build -f src/SharpAI.Server/Dockerfile -t sharpai:latest src/
-```
-
-**Step 3: Verify build output**
-Look for these messages during build:
-```
-Found CPU backend: /root/.nuget/packages/llamasharp.backend.cpu/.../libllama.so
-Found CUDA backend: /root/.nuget/packages/llamasharp.backend.cuda12/.../libllama.so
-Native libraries organized:
-total 340M
--rw-r--r-- 1 root root 170M ... libllama.so  (cpu)
-total 340M
--rw-r--r-- 1 root root 170M ... libllama.so  (cuda)
-```
-
-**Step 4: Run the container (CPU mode)**
-```bash
-# Using helper script:
-./docker-run.sh cpu
-
-# Or manually:
-docker run --rm -it -p 8000:8000 sharpai:latest
-```
-
-**Step 5: Verify it's running**
-```bash
 curl http://localhost:8000/
 ```
 
-**Expected logs:**
-```
-[NativeLibraryBootstrapper] detected platform: LINUX, architecture: X64
-[NativeLibraryBootstrapper] no GPU detected via any method
-[NativeLibraryBootstrapper] no GPU detected, selecting CPU backend
-[NativeLibraryBootstrapper] found library at custom path: /app/runtimes/cpu/libllama.so
-[NativeLibraryBootstrapper] successfully configured cpu backend
-```
-
-**Step 6: Test model operations**
-```bash
-# Pull a model
-curl -X POST http://localhost:8000/api/pull \
-  -H "Content-Type: application/json" \
-  -d '{"name":"qwen2.5:0.5b"}'
-
-# Generate embeddings
-curl -X POST http://localhost:8000/api/embed \
-  -H "Content-Type: application/json" \
-  -d '{"model":"qwen2.5:0.5b","input":"hello world"}'
-```
-
-**Step 7: Stop the container**
-Press `Ctrl+C`
+**That's it!** Skip to [Using SharpAI](#using-sharpai).
 
 ---
 
-### Docker GPU Deployment (NVIDIA)
+## System Requirements
 
-**Step 1: Install NVIDIA Container Toolkit**
+### Hardware
 
-**Ubuntu/Debian:**
-```bash
-# Add NVIDIA package repository
-distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
-curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
-curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.list | \
-  sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
-  sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+**Minimum:**
+- CPU: x86_64 (64-bit) or ARM64
+- RAM: Minimum 8GB of RAM recommended, have enough RAM for running models if using CPU
+- Disk: 20GB+ of disk space recommended, have enough capacity for downloaded models
 
-# Install
-sudo apt-get update
-sudo apt-get install -y nvidia-container-toolkit
+**For GPU Acceleration (Optional):**
+- NVIDIA GPU with Compute Capability 6.0+ (Pascal or newer)
+- 8GB+ VRAM (16GB+ for larger models)
+- NVIDIA proprietary drivers
+- CUDA Toolkit 12.x (bare-metal only)
+- NVIDIA Container Toolkit (Docker only)
 
-# Configure Docker
-sudo nvidia-ctk runtime configure --runtime=docker
-sudo systemctl restart docker
-```
+**Note:** AMD/Intel GPUs are not supported. Apple Silicon (M1/M2/M3/M4) does not support GPU acceleration.
 
-**Step 2: Verify NVIDIA Docker works**
-```bash
-docker run --rm --gpus all nvidia/cuda:12.0-base-ubuntu22.04 nvidia-smi
-```
-Should show your GPU. If error, check NVIDIA drivers are installed on host.
+### Software
 
-**Step 3: Build Docker image** (same as CPU deployment step 2)
+- **.NET 8 SDK** (bare-metal) or **.NET 8 Runtime** (Docker)
+- **Docker** (for container deployments)
+- **Git** (for building from source)
+- **HuggingFace API Key** (required for downloading models)
+  - Get free key: https://huggingface.co/settings/tokens
 
-**Step 4: Run with GPU support**
-```bash
-# Using helper script:
-./docker-run.sh gpu
+### Supported Platforms
 
-# Or manually:
-docker run --rm -it --gpus all -p 8000:8000 sharpai:latest
-```
+| Platform | CPU | GPU (CUDA) |
+|----------|-----|------------|
+| Windows x64 | ✅ | ✅ |
+| Linux x64 | ✅ | ✅ |
+| macOS Intel (x64) | ✅ | ✅* |
+| macOS Apple Silicon (ARM64) | ✅ | ❌ |
 
-**Step 5: Verify GPU is detected**
-
-**Expected logs:**
-```
-[NativeLibraryBootstrapper] detected platform: LINUX, architecture: X64
-[NativeLibraryBootstrapper] NVIDIA_VISIBLE_DEVICES detected: 0
-[NativeLibraryBootstrapper] GPU detected, selecting CUDA backend
-[NativeLibraryBootstrapper] found library at custom path: /app/runtimes/cuda/libllama.so
-[NativeLibraryBootstrapper] successfully configured cuda backend
-[LlamaSharpEngine] CUDA detected, 1 GPU device(s) available
-```
-
-**Step 6: Monitor GPU usage**
-```bash
-# In another terminal:
-watch -n 1 nvidia-smi
-```
-
-**Step 7: Test model operations** (same as CPU step 6)
+*Legacy Intel Macs with NVIDIA GPUs only
 
 ---
 
-### Docker Auto-Detection
+## Installation
 
-**Run with automatic backend detection:**
+### Docker (Recommended)
+
+**Why Docker?**
+- No platform-specific dependencies
+- Automatic backend detection (CPU/GPU)
+- Clean, isolated environment
+- Easy updates
+
+**Prerequisites:** Docker installed
+- Windows/Mac: [Docker Desktop](https://www.docker.com/products/docker-desktop)
+- Linux: `sudo apt install docker.io`
+
+**CPU Mode:**
 ```bash
-# Using helper script (auto-detects GPU on host):
-./docker-run.sh auto
-
-# This will:
-# - Check if nvidia-smi works on host
-# - If yes: starts with --gpus all (GPU mode)
-# - If no: starts without GPU (CPU mode)
+docker run -d -p 8000:8000 --name sharpai jchristn/sharpai:latest
 ```
 
----
-
-### Docker Persistence (Data & Models)
-
-**Create volume for persistent storage:**
+**GPU Mode:**
 ```bash
-# Create volume
-docker volume create sharpai-data
+docker run -d --gpus all -p 8000:8000 --name sharpai jchristn/sharpai:latest
+```
 
-# Run with volume
-docker run --rm -it \
+**With persistent storage:**
+```bash
+docker run -d \
   -p 8000:8000 \
-  -v sharpai-data:/app/models \
-  -v sharpai-data:/app \
-  sharpai:latest
-
-# For GPU:
-docker run --rm -it \
-  --gpus all \
-  -p 8000:8000 \
-  -v sharpai-data:/app/models \
-  -v sharpai-data:/app \
-  sharpai:latest
+  -v $(pwd)/models:/app/models \
+  -v $(pwd)/sharpai.json:/app/sharpai.json \
+  --name sharpai \
+  jchristn/sharpai:latest
 ```
 
-**Or use bind mount:**
-```bash
-mkdir -p ~/sharpai-data/models
+### Docker Compose
 
-docker run --rm -it \
-  -p 8000:8000 \
-  -v ~/sharpai-data:/app/models \
-  sharpai:latest
-```
+Create `docker-compose.yml`:
 
----
-
-## Docker Compose Deployment
-
-### Docker Compose CPU Deployment
-
-**Step 1: Create docker-compose.yml**
-```bash
-cd ~/sharpai
-cat > docker-compose.yml << 'EOF'
+**CPU Mode:**
+```yaml
 version: '3.8'
-
 services:
   sharpai:
-    image: sharpai:latest
-    container_name: sharpai-cpu
+    image: jchristn/sharpai:latest
     ports:
       - "8000:8000"
     volumes:
-      - sharpai-models:/app/models
-      - sharpai-data:/app
-    environment:
-      - ASPNETCORE_URLS=http://+:8000
+      - ./models:/app/models
+      - ./sharpai.json:/app/sharpai.json
     restart: unless-stopped
-
-volumes:
-  sharpai-models:
-  sharpai-data:
-EOF
 ```
 
-**Step 2: Build the image** (if not already built)
-```bash
-./docker-build.sh latest
-```
-
-**Step 3: Start the service**
-```bash
-docker-compose up -d
-```
-
-**Step 4: View logs**
-```bash
-docker-compose logs -f sharpai
-```
-
-**Expected logs:**
-```
-[NativeLibraryBootstrapper] no GPU detected, selecting CPU backend
-[NativeLibraryBootstrapper] found library at custom path: /app/runtimes/cpu/libllama.so
-```
-
-**Step 5: Test the service**
-```bash
-curl http://localhost:8000/
-```
-
-**Step 6: Stop the service**
-```bash
-docker-compose down
-```
-
-**Step 7: Stop and remove volumes**
-```bash
-docker-compose down -v
-```
-
----
-
-### Docker Compose GPU Deployment
-
-**Step 1: Create docker-compose-gpu.yml**
-```bash
-cat > docker-compose-gpu.yml << 'EOF'
+**GPU Mode:**
+```yaml
 version: '3.8'
-
 services:
   sharpai:
-    image: sharpai:latest
-    container_name: sharpai-gpu
+    image: jchristn/sharpai:latest
     ports:
       - "8000:8000"
     volumes:
-      - sharpai-models:/app/models
-      - sharpai-data:/app
-    environment:
-      - ASPNETCORE_URLS=http://+:8000
-      - NVIDIA_VISIBLE_DEVICES=all
-      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - ./models:/app/models
+      - ./sharpai.json:/app/sharpai.json
+    restart: unless-stopped
     deploy:
       resources:
         reservations:
@@ -703,456 +151,701 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
-    restart: unless-stopped
-
-volumes:
-  sharpai-models:
-  sharpai-data:
-EOF
 ```
 
-**Step 2: Ensure NVIDIA Container Toolkit is installed** (see Docker GPU step 1)
-
-**Step 3: Start the service**
+**Start:**
 ```bash
-docker-compose -f docker-compose-gpu.yml up -d
+docker-compose up -d
 ```
 
-**Step 4: View logs**
+**View logs:**
 ```bash
-docker-compose -f docker-compose-gpu.yml logs -f sharpai
+docker-compose logs -f
 ```
 
-**Expected logs:**
-```
-[NativeLibraryBootstrapper] NVIDIA_VISIBLE_DEVICES detected: all
-[NativeLibraryBootstrapper] GPU detected, selecting CUDA backend
-[NativeLibraryBootstrapper] found library at custom path: /app/runtimes/cuda/libllama.so
-[LlamaSharpEngine] CUDA detected, 1 GPU device(s) available
-```
-
-**Step 5: Verify GPU usage**
+**Stop:**
 ```bash
-# On host:
-nvidia-smi
-
-# Should show container using GPU memory
+docker-compose down
 ```
 
-**Step 6: Stop the service**
+### Windows
+
+1. **Install .NET 8 SDK**
+   ```powershell
+   # Download: https://dotnet.microsoft.com/download/dotnet/8.0
+   # Or use winget:
+   winget install Microsoft.DotNet.SDK.8
+   ```
+
+2. **Clone and build**
+   ```powershell
+   git clone https://github.com/jchristn/sharpai.git
+   cd sharpai\src
+   dotnet build SharpAI.sln
+   ```
+
+3. **Configure HuggingFace API key**
+   ```powershell
+   cd SharpAI.Server
+   @"
+   {
+     "HuggingFace": {
+       "ApiKey": "hf_YOUR_API_KEY_HERE"
+     }
+   }
+   "@ | Out-File -FilePath "sharpai.json" -Encoding UTF8
+   ```
+
+4. **Run**
+   ```powershell
+   cd bin\Debug\net8.0
+   .\start-windows.bat
+   ```
+
+**Startup script automatically:**
+- Detects CPU/GPU
+- Loads correct native libraries
+- Configures backend
+
+**GPU Support on Windows:**
+- Requires NVIDIA GPU with latest drivers
+- Install CUDA Toolkit 12.x from: https://developer.nvidia.com/cuda-downloads
+- Server auto-detects GPU
+
+### macOS
+
+**Prerequisites:**
+
+1. **Xcode Command Line Tools**
+   ```bash
+   xcode-select --install
+   ```
+
+2. **Install .NET 8 SDK (ARM64 for Apple Silicon)**
+   - Download: https://dotnet.microsoft.com/download/dotnet/8.0
+   - Choose: **macOS ARM64 Installer** (M1/M2/M3/M4)
+   - Or: `brew install dotnet@8`
+
+   **Verify ARM64:**
+   ```bash
+   dotnet --info | grep RID
+   # Should show: osx-arm64
+   ```
+
+**Installation:**
+
+1. **Clone and build**
+   ```bash
+   git clone https://github.com/jchristn/sharpai.git
+   cd sharpai/src
+   dotnet build SharpAI.sln
+   ```
+
+2. **Configure HuggingFace API key**
+   ```bash
+   cd SharpAI.Server
+   cat > sharpai.json << 'EOF'
+   {
+     "HuggingFace": {
+       "ApiKey": "hf_YOUR_API_KEY_HERE"
+     }
+   }
+   EOF
+   ```
+
+3. **Run**
+   ```bash
+   cd bin/Debug/net8.0
+   chmod +x start-mac.sh
+   ./start-mac.sh
+   ```
+
+**The startup script automatically:**
+- Detects architecture (Intel/Apple Silicon)
+- Validates dependencies exist
+- Fixes library path references (macOS-specific issue)
+- Starts the server
+
+**Apple Silicon Note:**
+- GPU acceleration not supported (no Metal support)
+- CPU performance is still good for models <7B parameters
+
+**Troubleshooting macOS:**
+
+If you get library loading errors:
+
+1. **Run diagnostics:**
+   ```bash
+   ./diagnose-mac.sh
+   ```
+
+2. **Fix dependencies:**
+   ```bash
+   ./fix-mac-dependencies.sh
+   ```
+
+3. **Restart server:**
+   ```bash
+   ./start-mac.sh
+   ```
+
+### Linux/Ubuntu
+
+**Prerequisites:**
+
+1. **System updates**
+   ```bash
+   sudo apt update && sudo apt upgrade -y
+   ```
+
+2. **Install .NET 8 SDK**
+   ```bash
+   wget https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+   sudo dpkg -i packages-microsoft-prod.deb
+   rm packages-microsoft-prod.deb
+
+   sudo apt update
+   sudo apt install -y dotnet-sdk-8.0
+   ```
+
+3. **Install build essentials**
+   ```bash
+   sudo apt install -y build-essential libgomp1
+   ```
+
+4. **GPU Support (Optional)**
+
+   **NVIDIA Drivers:**
+   ```bash
+   # Check for GPU
+   lspci | grep -i nvidia
+
+   # Install drivers
+   sudo apt install -y nvidia-driver-535
+   sudo reboot
+
+   # Verify
+   nvidia-smi
+   ```
+
+   **CUDA Toolkit:**
+   ```bash
+   # Install CUDA 12.x
+   wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
+   sudo dpkg -i cuda-keyring_1.1-1_all.deb
+   sudo apt update
+   sudo apt install -y cuda-toolkit-12-4
+   ```
+
+**Installation:**
+
+1. **Clone and build**
+   ```bash
+   git clone https://github.com/jchristn/sharpai.git
+   cd sharpai/src
+   dotnet build SharpAI.sln
+   ```
+
+2. **Configure HuggingFace API key**
+   ```bash
+   cd SharpAI.Server
+   cat > sharpai.json << 'EOF'
+   {
+     "HuggingFace": {
+       "ApiKey": "hf_YOUR_API_KEY_HERE"
+     }
+   }
+   EOF
+   ```
+
+3. **Run**
+   ```bash
+   cd bin/Debug/net8.0
+   chmod +x start-linux.sh
+   ./start-linux.sh
+   ```
+
+**The startup script automatically:**
+- Detects architecture (x64/ARM64)
+- Detects CPU features (AVX2/AVX)
+- Pre-loads library dependencies
+- Validates all dependencies exist
+- Starts the server
+
+**Run as systemd service:**
+
 ```bash
-docker-compose -f docker-compose-gpu.yml down
+sudo nano /etc/systemd/system/sharpai.service
+```
+
+Add (adjust paths for your username):
+```ini
+[Unit]
+Description=SharpAI Server
+After=network.target
+
+[Service]
+Type=simple
+User=yourusername
+WorkingDirectory=/home/yourusername/sharpai/src/SharpAI.Server/bin/Debug/net8.0
+ExecStart=/home/yourusername/sharpai/src/SharpAI.Server/bin/Debug/net8.0/start-linux.sh
+Restart=on-failure
+RestartSec=10
+KillSignal=SIGINT
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable and start:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable sharpai
+sudo systemctl start sharpai
+sudo systemctl status sharpai
 ```
 
 ---
 
-### Docker Compose with Custom Configuration
+## Configuration
 
-**Step 1: Create configuration file**
-```bash
-mkdir -p config
-cat > config/sharpai.json << 'EOF'
+### Configuration File
+
+All settings are in `sharpai.json` (auto-created on first run if missing).
+
+**Minimal configuration:**
+```json
 {
+  "HuggingFace": {
+    "ApiKey": "hf_YOUR_API_KEY_HERE"
+  }
+}
+```
+
+**Complete configuration:**
+```json
+{
+  "HuggingFace": {
+    "ApiKey": "hf_YOUR_API_KEY_HERE"
+  },
   "Runtime": {
     "ForceBackend": null,
+    "CpuBackendPath": null,
+    "GpuBackendPath": null,
     "EnableNativeLogging": false
   },
   "Storage": {
     "ModelsDirectory": "./models/"
   },
+  "Rest": {
+    "Port": 8000,
+    "Host": "localhost"
+  },
   "Logging": {
     "ConsoleLogging": true,
-    "LogDirectory": "./logs/",
-    "LogFilename": "sharpai.log"
+    "LogDirectory": "./logs/"
   }
 }
-EOF
 ```
 
-**Step 2: Create docker-compose with config mount**
-```bash
-cat > docker-compose-config.yml << 'EOF'
-version: '3.8'
+### Runtime Backend Options
 
-services:
-  sharpai:
-    image: sharpai:latest
-    container_name: sharpai-custom
-    ports:
-      - "8000:8000"
-    volumes:
-      - sharpai-models:/app/models
-      - ./config/sharpai.json:/app/sharpai.json:ro
-      - sharpai-logs:/app/logs
-    environment:
-      - ASPNETCORE_URLS=http://+:8000
-    restart: unless-stopped
+**ForceBackend** - Override automatic detection
+- `null` (default) - Auto-detect CPU/GPU
+- `"cpu"` - Force CPU mode
+- `"cuda"` - Force GPU mode
 
-volumes:
-  sharpai-models:
-  sharpai-logs:
-EOF
-```
+**CpuBackendPath** - Custom CPU library path
+- Default: Auto-detected from NuGet packages
+- Supports environment variables: `$HOME`, `%USERPROFILE%`
 
-**Step 3: Start with custom config**
-```bash
-docker-compose -f docker-compose-config.yml up -d
-```
+**GpuBackendPath** - Custom GPU library path
+- Default: Auto-detected from NuGet packages
+- Supports environment variables
+
+**EnableNativeLogging** - Show llama.cpp debug output
+- `false` (default) - Clean console
+- `true` - Verbose native library logs (debugging only)
+
+### How Auto-Detection Works
+
+At startup, SharpAI:
+
+1. **Detects platform** - Windows/Linux/macOS
+2. **Detects architecture** - x64/ARM64
+3. **Checks for GPU**:
+   - NVIDIA driver files
+   - Environment variables (`NVIDIA_VISIBLE_DEVICES`)
+   - `nvidia-smi` command
+   - CUDA libraries
+4. **Selects backend**:
+   - GPU: If NVIDIA GPU detected (Windows/Linux only)
+   - CPU: If no GPU or on Apple Silicon
+
+**Platform Support:**
+
+| Platform | Architecture | CPU | GPU |
+|----------|--------------|-----|-----|
+| Windows | x64 | ✅ | ✅ |
+| Linux | x64 | ✅ | ✅ |
+| macOS | x64 (Intel) | ✅ | ✅* |
+| macOS | ARM64 (Apple Silicon) | ✅ | ❌ |
+
+*Legacy Intel Macs with NVIDIA GPUs only
 
 ---
 
-### Docker Compose Multi-Instance Deployment
+## Using SharpAI
 
-**Run multiple instances (e.g., CPU for embeddings, GPU for inference):**
+Once running, SharpAI is accessible at `http://localhost:8000`
 
-```bash
-cat > docker-compose-multi.yml << 'EOF'
-version: '3.8'
+### Pull a Model
 
-services:
-  sharpai-cpu:
-    image: sharpai:latest
-    container_name: sharpai-cpu
-    ports:
-      - "8001:8000"
-    volumes:
-      - sharpai-models-cpu:/app/models
-    environment:
-      - ASPNETCORE_URLS=http://+:8000
-    restart: unless-stopped
+**Required first step** - Download a GGUF format model:
 
-  sharpai-gpu:
-    image: sharpai:latest
-    container_name: sharpai-gpu
-    ports:
-      - "8002:8000"
-    volumes:
-      - sharpai-models-gpu:/app/models
-    environment:
-      - ASPNETCORE_URLS=http://+:8000
-      - NVIDIA_VISIBLE_DEVICES=all
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
-    restart: unless-stopped
-
-volumes:
-  sharpai-models-cpu:
-  sharpai-models-gpu:
-EOF
-```
-
-**Start both instances:**
-```bash
-docker-compose -f docker-compose-multi.yml up -d
-```
-
-**Access:**
-- CPU instance: http://localhost:8001
-- GPU instance: http://localhost:8002
-
----
-
-## Verification
-
-### Basic Verification
-
-**1. Check server is running:**
-```bash
-curl http://localhost:8000/
-```
-Should return HTML homepage.
-
-**2. Pull a test model:**
+**Embeddings:**
 ```bash
 curl -X POST http://localhost:8000/api/pull \
   -H "Content-Type: application/json" \
-  -d '{"name":"qwen2.5:0.5b"}'
+  -d '{"model":"leliuga/all-MiniLM-L6-v2-GGUF"}'
 ```
 
-**3. List models:**
+**Completions:**
+```bash
+curl -X POST http://localhost:8000/api/pull \
+  -H "Content-Type: application/json" \
+  -d '{"model":"QuantFactory/Qwen2.5-3B-GGUF"}'
+```
+
+**Note:** Only GGUF format models are supported. Search HuggingFace: https://huggingface.co/models?search=gguf
+
+### Generate Embeddings
+
+```bash
+curl -X POST http://localhost:8000/api/embed \
+  -H "Content-Type: application/json" \
+  -d '{"model":"leliuga/all-MiniLM-L6-v2-GGUF","input":"Hello, World!"}'
+```
+
+### Generate Text
+
+```bash
+curl -X POST http://localhost:8000/api/generate \
+  -H "Content-Type: application/json" \
+  -d '{"model":"QuantFactory/Qwen2.5-3B-GGUF","prompt":"Once upon a time","stream":false}'
+```
+
+### Chat Completion
+
+```bash
+curl -X POST http://localhost:8000/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model":"QuantFactory/Qwen2.5-3B-GGUF",
+    "messages":[
+      {"role":"user","content":"What is the capital of France?"}
+    ],
+    "stream":false
+  }'
+```
+
+### List Models
+
 ```bash
 curl http://localhost:8000/api/tags
 ```
 
-**4. Test embeddings:**
-```bash
-curl -X POST http://localhost:8000/api/embed \
-  -H "Content-Type: application/json" \
-  -d '{"model":"qwen2.5:0.5b","input":"test"}'
-```
+### Delete a Model
 
-**5. Test completion:**
 ```bash
-curl -X POST http://localhost:8000/api/generate \
+curl -X DELETE http://localhost:8000/api/delete \
   -H "Content-Type: application/json" \
-  -d '{"model":"qwen2.5:0.5b","prompt":"Hello"}'
+  -d '{"name":"leliuga/all-MiniLM-L6-v2-GGUF"}'
 ```
 
 ---
 
-### GPU Verification
+## Testing & Verification
 
-**Check backend selection in logs:**
-```
-CPU mode: "[NativeLibraryBootstrapper] no GPU detected, selecting CPU backend"
-GPU mode: "[NativeLibraryBootstrapper] GPU detected, selecting CUDA backend"
-         "[LlamaSharpEngine] CUDA detected, N GPU device(s) available"
-```
+### Quick Test Sequence
 
-**Monitor GPU usage:**
+After installation, verify everything works:
+
 ```bash
-# Bare-metal or Docker with --gpus flag:
-nvidia-smi
+# 1. Check server health
+curl http://localhost:8000/
 
-# Should show:
-# - GPU memory allocated
-# - GPU utilization >0% during inference
-```
-
-**Performance comparison (GPU should be faster):**
-```bash
-# CPU mode:
-time curl -X POST http://localhost:8000/api/embed \
+# 2. Pull test model
+curl -X POST http://localhost:8000/api/pull \
   -H "Content-Type: application/json" \
-  -d '{"model":"qwen2.5:0.5b","input":"performance test"}'
+  -d '{"model":"leliuga/all-MiniLM-L6-v2-GGUF"}'
 
-# GPU mode (same request):
-# Should complete 2-10x faster
+# 3. Test embeddings
+curl -X POST http://localhost:8000/api/embed \
+  -H "Content-Type: application/json" \
+  -d '{"model":"leliuga/all-MiniLM-L6-v2-GGUF","input":"test"}'
+
+# 4. Pull completion model
+curl -X POST http://localhost:8000/api/pull \
+  -H "Content-Type: application/json" \
+  -d '{"model":"QuantFactory/Qwen2.5-3B-GGUF"}'
+
+# 5. Test completions
+curl -X POST http://localhost:8000/api/generate \
+  -H "Content-Type: application/json" \
+  -d '{"model":"QuantFactory/Qwen2.5-3B-GGUF","prompt":"Hello","stream":false}'
 ```
+
+### Expected Startup Logs
+
+**CPU Mode:**
+```
+[NativeLibraryBootstrapper] detected platform: <PLATFORM>, architecture: X64
+[NativeLibraryBootstrapper] no GPU detected, selecting CPU backend
+[NativeLibraryBootstrapper] found library at <path>
+[NativeLibraryBootstrapper] successfully configured cpu backend
+[NativeLibraryBootstrapper] library loaded successfully, 0 device(s) reported
+```
+
+**GPU Mode:**
+```
+[NativeLibraryBootstrapper] detected platform: <PLATFORM>, architecture: X64
+[NativeLibraryBootstrapper] GPU detected, selecting CUDA backend
+[NativeLibraryBootstrapper] found library at <path>
+[NativeLibraryBootstrapper] successfully configured cuda backend
+[NativeLibraryBootstrapper] library loaded successfully, 1 device(s) reported
+[LlamaSharpEngine] CUDA backend selected, 1 GPU device(s) available
+```
+
+### Verify GPU Usage
+
+**Monitor GPU:**
+```bash
+watch -n 1 nvidia-smi
+```
+
+During inference, you should see:
+- GPU memory allocated
+- GPU utilization >0%
 
 ---
 
 ## Troubleshooting
 
-### Issue: "library file not found"
+### Docker: Container Won't Start
 
-**Bare-metal:**
+**Check logs:**
 ```bash
-# Rebuild to ensure NuGet packages are restored
-dotnet clean
-dotnet build
+docker logs sharpai
 ```
 
-**Docker:**
-```bash
-# Rebuild image without cache
-docker build --no-cache -f src/SharpAI.Server/Dockerfile -t sharpai:latest src/
+**Common issues:**
+- Missing HuggingFace API key
+- Port 8000 already in use
 
-# Verify libraries in image
-docker run --rm -it --entrypoint sh sharpai:latest
-ls -la /app/runtimes/cpu/
-ls -la /app/runtimes/cuda/
-exit
+**Fix:**
+```bash
+# Change port
+docker run -d -p 8080:8000 --name sharpai jchristn/sharpai:latest
+
+# Or stop conflicting process
+sudo lsof -i :8000
+kill <PID>
 ```
 
----
+### Docker: GPU Not Detected
 
-### Issue: GPU not detected
-
-**Bare-metal:**
+**Verify NVIDIA Docker:**
 ```bash
-# Check NVIDIA drivers
-nvidia-smi
-
-# Check CUDA toolkit
-nvcc --version
-
-# Check library files
-ls -la /usr/lib/x86_64-linux-gnu/libcuda.so.1
-```
-
-**Docker:**
-```bash
-# Test NVIDIA Docker
 docker run --rm --gpus all nvidia/cuda:12.0-base nvidia-smi
+```
 
-# If fails, reinstall NVIDIA Container Toolkit
-sudo apt-get purge nvidia-container-toolkit
+**If fails, install NVIDIA Container Toolkit:**
+```bash
+curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
+  sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+  sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+
+sudo apt-get update
 sudo apt-get install -y nvidia-container-toolkit
 sudo systemctl restart docker
 ```
 
----
+### Model Download Fails
 
-### Issue: Docker build warnings about missing libraries
+**Error: "Unauthorized"**
+- Missing/invalid HuggingFace API key
+- Add key to `sharpai.json`
+- Restart server
 
-**Check NuGet packages during build:**
+**Error: "Not Found"**
+- Model doesn't exist or wrong name
+- Only GGUF format supported
+- Search: https://huggingface.co/models?search=gguf
+
+### Library Loading Fails (Bare-Metal)
+
+**Windows:**
+- Usually works without issues
+- Ensure .NET 8 SDK installed
+- Rebuild: `dotnet build SharpAI.sln`
+
+**macOS:**
 ```bash
-# The Dockerfile should show:
-# "Found CPU backend: ..."
-# "Found CUDA backend: ..."
+# Run diagnostics
+cd bin/Debug/net8.0
+./diagnose-mac.sh
 
-# If missing, packages may not be in cache
-# Solution: Clear and rebuild
-docker system prune -a
-docker build -f src/SharpAI.Server/Dockerfile -t sharpai:latest src/
-```
-
----
-
-### Issue: Port already in use
-
-**Find process using port:**
-```bash
-# Linux/macOS:
-sudo lsof -i :8000
-
-# Windows:
-netstat -ano | findstr :8000
-
-# Kill process or use different port:
-docker run -p 8080:8000 sharpai:latest
-```
-
----
-
-### Issue: Container exits immediately
-
-**Check logs:**
-```bash
-docker logs <container-id>
-
-# Or for Docker Compose:
-docker-compose logs sharpai
-```
-
-**Common causes:**
-- Missing configuration file
-- Port conflict
-- Insufficient memory
-
----
-
-### Issue: Models not persisting
-
-**Ensure volumes are configured:**
-```bash
-# Check volumes
-docker volume ls
-
-# Inspect volume
-docker volume inspect sharpai-models
-
-# Or use bind mount to host directory
-docker run -v $(pwd)/models:/app/models sharpai:latest
-```
-
----
-
-### Issue: Native logging still appears
-
-**Verify configuration:**
-```bash
-# Check sharpai.json contains:
-cat sharpai.json
-# Should have: "EnableNativeLogging": false
-
-# Restart server after changing config
-```
-
----
-
-## Summary Checklist
-
-### Bare-Metal Deployment
-- [ ] .NET 8 SDK/Runtime installed
-- [ ] Repository cloned and built
-- [ ] Configuration file created (sharpai.json)
-- [ ] Server starts without errors
-- [ ] Backend selection confirmed in logs (CPU or GPU)
-- [ ] Model pull successful
-- [ ] Inference operations work
-- [ ] GPU utilization confirmed (if GPU mode)
-
-### Docker Deployment
-- [ ] Docker installed
-- [ ] NVIDIA Container Toolkit installed (if GPU)
-- [ ] Docker image builds successfully
-- [ ] Native libraries organized during build
-- [ ] Container starts without errors
-- [ ] Backend selection confirmed in logs
-- [ ] Model operations work in container
-- [ ] Volumes configured for persistence
-- [ ] GPU utilization in container (if GPU mode)
-
-### Docker Compose Deployment
-- [ ] docker-compose.yml created
-- [ ] Volumes configured
-- [ ] Service starts with `docker-compose up -d`
-- [ ] Logs accessible with `docker-compose logs`
-- [ ] API accessible on configured port
-- [ ] Service restarts on failure
-- [ ] GPU resources allocated (if GPU mode)
-
----
-
-## Quick Reference
-
-### Configuration Locations
-
-**Bare-metal:**
-- Windows: `C:\path\to\sharpai\src\SharpAI.Server\sharpai.json`
-- Linux/macOS: `~/sharpai/src/SharpAI.Server/sharpai.json`
-
-**Docker:**
-- In container: `/app/sharpai.json`
-- Via volume: Mount host file to `/app/sharpai.json`
-
-### Default Ports
-- HTTP: 8000
-- Can be changed in docker-compose.yml or with `-p` flag
-
-### Common Commands
-
-**Bare-metal:**
-```bash
-# Start
-dotnet run --project src/SharpAI.Server/SharpAI.Server.csproj
-
-# Build
-dotnet build src/SharpAI.sln
-```
-
-**Docker:**
-```bash
-# Build
-./docker-build.sh latest
-
-# Run CPU
-./docker-run.sh cpu
-
-# Run GPU
-./docker-run.sh gpu
-
-# Run auto
-./docker-run.sh auto
-```
-
-**Docker Compose:**
-```bash
-# Start
-docker-compose up -d
-
-# Stop
-docker-compose down
-
-# Logs
-docker-compose logs -f
+# Fix dependencies
+./fix-mac-dependencies.sh
 
 # Restart
-docker-compose restart
+./start-mac.sh
+```
+
+**Linux:**
+```bash
+# Check dependencies
+cd bin/Debug/net8.0/runtimes/linux-x64/native/avx2
+ldd libllama.so
+
+# Install missing libraries
+sudo apt install build-essential libgomp1
+
+# Restart
+cd ../../../..
+./start-linux.sh
+```
+
+### Port Already in Use
+
+**Change in config:**
+```json
+{
+  "Rest": {
+    "Port": 8080
+  }
+}
+```
+
+**Or kill process:**
+```bash
+# Linux/Mac
+lsof -i :8000
+kill <PID>
+
+# Windows
+netstat -ano | findstr :8000
+taskkill /PID <PID> /F
+```
+
+### Out of Memory
+
+**Symptoms:**
+- Server crashes during inference
+- "Out of memory" errors
+
+**Solutions:**
+
+1. **Use smaller model:**
+   - CPU: <3B parameters
+   - GPU (8GB): <7B parameters
+
+2. **Use more quantized model:**
+   - Q4_K_M instead of Q5_K_M
+   - Q3_K_M for smallest size
+
+3. **Close other applications**
+
+4. **Docker: Increase memory limit:**
+   ```bash
+   docker run --memory=8g ...
+   ```
+
+---
+
+## Production Deployment
+
+### Checklist
+
+- [ ] Use Docker Compose for easy management
+- [ ] Configure HuggingFace API key
+- [ ] Set resource limits (RAM/VRAM)
+- [ ] Enable persistent storage (volumes)
+- [ ] Configure logging directory
+- [ ] Set up monitoring (health check on `/`)
+- [ ] Configure reverse proxy (nginx/traefik) if public
+- [ ] Enable HTTPS if public
+- [ ] Set up backup for models directory
+- [ ] Document deployed models
+
+### Performance Recommendations
+
+**CPU Mode:**
+- Use Q4_K_M or Q5_K_M quantized models
+- Limit to models <7B parameters
+- Close unnecessary applications
+
+**GPU Mode:**
+- 2-10x faster than CPU
+- Ensure sufficient VRAM
+- Monitor with `nvidia-smi`
+- Q4_K_M works on 8GB VRAM
+- Larger models need 12GB+ VRAM
+
+### Model Recommendations by Hardware
+
+**CPU Only (8GB RAM):**
+- Embeddings: `leliuga/all-MiniLM-L6-v2-GGUF`
+- Completions: `QuantFactory/Qwen2.5-3B-GGUF`
+
+**GPU (8GB VRAM):**
+- Embeddings: `leliuga/all-MiniLM-L6-v2-GGUF`
+- Completions: `QuantFactory/Qwen2.5-7B-GGUF` (Q4_K_M)
+
+**GPU (16GB+ VRAM):**
+- Models up to 13B parameters (Q4/Q5 quantization)
+
+### Monitoring
+
+**Health check:**
+```bash
+curl http://localhost:8000/
+```
+
+**View logs:**
+```bash
+# Docker
+docker logs -f sharpai
+
+# Docker Compose
+docker-compose logs -f
+
+# Systemd
+sudo journalctl -u sharpai -f
+```
+
+### Backup
+
+**Models directory:**
+```bash
+tar -czf models-backup-$(date +%Y%m%d).tar.gz models/
+```
+
+**Configuration:**
+```bash
+cp sharpai.json sharpai.json.backup
 ```
 
 ---
 
-## Support
+## Getting Help
 
-For issues, questions, or contributions:
-- GitHub: https://github.com/jchristn/sharpai
-- Issues: https://github.com/jchristn/sharpai/issues
-- Documentation: See RUNTIME-BACKENDS.md and TESTING-GUIDE.md
+- **GitHub Issues:** https://github.com/jchristn/sharpai/issues
+- **Discussions:** https://github.com/jchristn/sharpai/discussions
+- **Documentation:** https://github.com/jchristn/sharpai
+
+---
+
+**Last Updated:** 2025-10-10

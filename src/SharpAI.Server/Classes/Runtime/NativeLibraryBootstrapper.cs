@@ -15,8 +15,6 @@ namespace SharpAI.Server.Classes.Runtime
     /// </summary>
     public static class NativeLibraryBootstrapper
     {
-        #region Public-Members
-
         /// <summary>
         /// Gets a value indicating whether the bootstrapper has been initialized.
         /// </summary>
@@ -39,17 +37,9 @@ namespace SharpAI.Server.Classes.Runtime
             }
         }
 
-        #endregion
-
-        #region Private-Members
-
         private static bool _IsInitialized = false;
         private static string _SelectedBackend = "unknown";
         private static readonly object _InitializationLock = new object();
-
-        #endregion
-
-        #region Public-Methods
 
         /// <summary>
         /// Initialize the native library configuration.
@@ -178,16 +168,9 @@ namespace SharpAI.Server.Classes.Runtime
             }
         }
 
-        #endregion
-
-        #region Private-Methods
-
         private static void PreLoadLinuxDependencies(string libraryDir, LoggingModule logging)
         {
-            if (GetCurrentPlatform() != OSPlatform.Linux)
-            {
-                return;
-            }
+            if (GetCurrentPlatform() != OSPlatform.Linux) return;
 
             logging.Debug($"[NativeLibraryBootstrapper] pre-loading Linux dependencies from: {libraryDir}");
 
@@ -211,7 +194,7 @@ namespace SharpAI.Server.Classes.Runtime
                     }
                     catch (Exception ex)
                     {
-                        logging.Warn($"[NativeLibraryBootstrapper] failed to pre-load {dep}: {ex.Message}" + Environment.NewLine + ex.ToString());
+                        logging.Warn($"[NativeLibraryBootstrapper] failed to pre-load {dep}:" + Environment.NewLine + ex.ToString());
                     }
                 }
                 else
@@ -240,7 +223,7 @@ namespace SharpAI.Server.Classes.Runtime
                 }
                 catch (Exception ex)
                 {
-                    logging.Debug($"[NativeLibraryBootstrapper] failed to disable native logging: {ex.Message}");
+                    logging.Debug($"[NativeLibraryBootstrapper] failed to disable native logging:{Environment.NewLine}{ex.ToString()}");
                 }
             }
             else
@@ -255,15 +238,14 @@ namespace SharpAI.Server.Classes.Runtime
             if (!String.IsNullOrEmpty(settings.Runtime?.ForceBackend))
             {
                 string forced = settings.Runtime.ForceBackend.ToLowerInvariant();
-                logging.Info($"[NativeLibraryBootstrapper] backend forced to: {forced}");
+                logging.Info($"[NativeLibraryBootstrapper] backend forced by settings to: {forced}");
                 return forced;
             }
 
-            // Detect platform
             OSPlatform platform = GetCurrentPlatform();
             Architecture architecture = RuntimeInformation.ProcessArchitecture;
 
-            logging.Debug($"[NativeLibraryBootstrapper] detected platform: {platform}, architecture: {architecture}");
+            logging.Debug($"[NativeLibraryBootstrapper] detected platform {platform} architecture {architecture}");
 
             // Apple Silicon cannot use CUDA
             if (platform == OSPlatform.OSX && architecture == Architecture.Arm64)
@@ -424,7 +406,12 @@ namespace SharpAI.Server.Classes.Runtime
             return customPath;
         }
 
-        private static string GetNuGetRuntimePath(string backend, OSPlatform platform, string baseDirectory, string libraryName, LoggingModule logging)
+        private static string GetNuGetRuntimePath(
+            string backend, 
+            OSPlatform platform, 
+            string baseDirectory, 
+            string libraryName, 
+            LoggingModule logging)
         {
             string rid = GetRuntimeIdentifier(platform);
             Architecture arch = RuntimeInformation.ProcessArchitecture;
@@ -543,7 +530,5 @@ namespace SharpAI.Server.Classes.Runtime
                 return OSPlatform.Linux; // fallback
             }
         }
-
-        #endregion
     }
 }

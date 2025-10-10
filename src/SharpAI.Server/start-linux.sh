@@ -9,9 +9,8 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-echo "================================================"
+echo ""
 echo "SharpAI.Server - Linux Startup"
-echo "================================================"
 echo ""
 
 # Detect architecture
@@ -88,10 +87,7 @@ fi
 
 echo ""
 echo "All dependencies verified successfully"
-echo ""
-echo "================================================"
-echo "Starting SharpAI.Server..."
-echo "================================================"
+echo "Starting SharpAI.Server"
 echo ""
 
 # Launch the server

@@ -6,13 +6,15 @@
 
 set -e
 
-TARGET_DIR="/Users/joelchristner/Code/SharpAI/src/SharpAI.Server/bin/Debug/net8.0/runtimes/osx-arm64/native"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TARGET_DIR="$SCRIPT_DIR/runtimes/osx-arm64/native"
 MISSING_LIBS=("libggml.dylib" "libggml-cpu.dylib" "libggml-blas.dylib" "libggml-metal.dylib" "libggml-base.dylib")
 
 echo "================================================"
 echo "Fixing macOS ARM64 Missing Dependencies"
 echo "================================================"
 echo ""
+echo "Script directory: $SCRIPT_DIR"
 echo "Target directory: $TARGET_DIR"
 echo ""
 
@@ -25,14 +27,18 @@ fi
 echo "1. Searching for missing libraries..."
 echo ""
 
-# Search in build output
-echo "   Searching in build output..."
-FOUND_IN_BUILD=$(find ~/Code/SharpAI/src/SharpAI.Server/bin -name "libggml*.dylib" -type f 2>/dev/null || true)
+# Search in current runtime directory
+echo "   Searching in current runtime directory..."
+FOUND_IN_BUILD=$(find "$SCRIPT_DIR/runtimes" -name "libggml*.dylib" -type f 2>/dev/null || true)
 
 # Search in NuGet cache
 echo "   Searching in NuGet cache..."
-NUGET_GLOBAL=$(dotnet nuget locals global-packages --list | cut -d ' ' -f 2)
-FOUND_IN_NUGET=$(find "$NUGET_GLOBAL/llamasharp.backend.cpu" -name "libggml*.dylib" -type f 2>/dev/null || true)
+NUGET_GLOBAL=$(dotnet nuget locals global-packages --list 2>/dev/null | cut -d ' ' -f 2)
+if [ -n "$NUGET_GLOBAL" ]; then
+    FOUND_IN_NUGET=$(find "$NUGET_GLOBAL/llamasharp.backend.cpu" -name "libggml*.dylib" -type f 2>/dev/null || true)
+else
+    FOUND_IN_NUGET=""
+fi
 
 # Combine results
 ALL_FOUND="$FOUND_IN_BUILD"$'\n'"$FOUND_IN_NUGET"
@@ -42,8 +48,10 @@ if [ -z "$ALL_FOUND" ] || [ "$ALL_FOUND" == $'\n' ]; then
     echo "ERROR: Could not find any libggml*.dylib files!"
     echo ""
     echo "Searched in:"
-    echo "  - ~/Code/SharpAI/src/SharpAI.Server/bin"
-    echo "  - $NUGET_GLOBAL/llamasharp.backend.cpu"
+    echo "  - $SCRIPT_DIR/runtimes"
+    if [ -n "$NUGET_GLOBAL" ]; then
+        echo "  - $NUGET_GLOBAL/llamasharp.backend.cpu"
+    fi
     echo ""
     echo "These files should be part of the LLamaSharp.Backend.Cpu NuGet package."
     echo ""

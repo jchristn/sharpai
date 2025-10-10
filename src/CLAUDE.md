@@ -39,9 +39,24 @@ dotnet run --project Test.PromptBuilder
 ```
 
 ### Run Server
+
+**Development (from source):**
 ```bash
 dotnet run --project SharpAI.Server
 ```
+
+**Production (from build output):**
+```bash
+# Navigate to build output
+cd SharpAI.Server/bin/Debug/net8.0  # or Release
+
+# Use platform-specific startup script
+./start-windows.bat  # Windows
+./start-linux.sh     # Linux
+./start-mac.sh       # macOS
+```
+
+The startup scripts automatically handle platform-specific library configuration.
 
 ### Docker Build
 Use the provided batch script:
@@ -62,6 +77,25 @@ build-docker.bat <tag>
 - Server settings are stored in `./sharpai.json` (auto-created on first run)
 - Models are stored in `./models/` directory by default
 - Database file: `./sharpai.db`
+- **HuggingFace API Key required** for model downloads (get from: https://huggingface.co/settings/tokens)
+
+### Required Configuration
+
+Add your HuggingFace API key to `sharpai.json` before pulling models:
+```json
+{
+  "HuggingFace": {
+    "ApiKey": "hf_YOUR_API_KEY_HERE"
+  }
+}
+```
+
+### Runtime Backend Configuration
+
+The server automatically detects CPU/GPU capabilities:
+- **Windows/Linux**: Auto-detects NVIDIA GPU for CUDA acceleration
+- **macOS**: Uses CPU (Metal GPU not supported)
+- Can be overridden with `"Runtime": {"ForceBackend": "cpu"}` or `"cuda"`
 
 ## API Compatibility
 

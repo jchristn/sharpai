@@ -3,12 +3,25 @@
 # macOS ARM64 Diagnostic Script for libllama.dylib
 #
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 echo "================================================"
 echo "SharpAI macOS ARM64 Diagnostics"
 echo "================================================"
 echo ""
+echo "Script directory: $SCRIPT_DIR"
+echo ""
 
-LIB_PATH="/Users/joelchristner/Code/SharpAI/src/SharpAI.Server/bin/Debug/net8.0/runtimes/osx-arm64/native/libllama.dylib"
+# Detect architecture
+ARCH=$(uname -m)
+if [ "$ARCH" = "arm64" ]; then
+    LIB_PATH="$SCRIPT_DIR/runtimes/osx-arm64/native/libllama.dylib"
+else
+    LIB_PATH="$SCRIPT_DIR/runtimes/osx-x64/native/avx2/libllama.dylib"
+fi
+
+echo "Detected architecture: $ARCH"
+echo ""
 
 echo "1. Checking if library exists..."
 if [ -f "$LIB_PATH" ]; then

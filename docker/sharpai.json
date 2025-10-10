@@ -76,6 +76,12 @@
       "Responses": false
     }
   },
+  "Runtime": {
+    "ForceBackend": null,
+    "CpuBackendPath": null,
+    "GpuBackendPath": null,
+    "EnableNativeLogging": false
+  },
   "Debug": {
     "RequestBody": false
   },
