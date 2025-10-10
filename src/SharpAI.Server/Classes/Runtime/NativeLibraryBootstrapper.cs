@@ -82,20 +82,17 @@ namespace SharpAI.Server.Classes.Runtime
 
                         try
                         {
+                            // On Linux, pre-load dependencies BEFORE configuring library
+                            if (GetCurrentPlatform() == OSPlatform.Linux)
+                            {
+                                string libraryDir = Path.GetDirectoryName(libraryPath);
+                                PreLoadLinuxDependencies(libraryDir, logging);
+                            }
+
                             // CRITICAL: Configure library path BEFORE any LlamaSharp types are referenced
                             NativeLibraryConfig
                                 .All
                                 .WithLibrary(libraryPath, "llama");
-
-                            // On Linux, also add the library directory to the search path for dependencies
-                            if (GetCurrentPlatform() == OSPlatform.Linux)
-                            {
-                                string libraryDir = Path.GetDirectoryName(libraryPath);
-                                NativeLibraryConfig
-                                    .All
-                                    .WithSearchDirectories(new string[] { libraryDir });
-                                logging.Debug($"[NativeLibraryBootstrapper] added search directory: {libraryDir}");
-                            }
 
                             logging.Info($"[NativeLibraryBootstrapper] successfully configured {backend} backend");
 
@@ -128,19 +125,16 @@ namespace SharpAI.Server.Classes.Runtime
 
                                     try
                                     {
-                                        NativeLibraryConfig
-                                            .All
-                                            .WithLibrary(cpuPath, "llama");
-
-                                        // On Linux, also add the library directory to the search path for dependencies
+                                        // On Linux, pre-load dependencies BEFORE configuring library
                                         if (GetCurrentPlatform() == OSPlatform.Linux)
                                         {
                                             string cpuDir = Path.GetDirectoryName(cpuPath);
-                                            NativeLibraryConfig
-                                                .All
-                                                .WithSearchDirectories(new string[] { cpuDir });
-                                            logging.Debug($"[NativeLibraryBootstrapper] added search directory for fallback: {cpuDir}");
+                                            PreLoadLinuxDependencies(cpuDir, logging);
                                         }
+
+                                        NativeLibraryConfig
+                                            .All
+                                            .WithLibrary(cpuPath, "llama");
 
                                         _SelectedBackend = "cpu";
                                         logging.Info("[NativeLibraryBootstrapper] successfully configured CPU backend as fallback");
@@ -184,6 +178,45 @@ namespace SharpAI.Server.Classes.Runtime
         #endregion
 
         #region Private-Methods
+
+        private static void PreLoadLinuxDependencies(string libraryDir, LoggingModule logging)
+        {
+            if (GetCurrentPlatform() != OSPlatform.Linux)
+            {
+                return;
+            }
+
+            logging.Debug($"[NativeLibraryBootstrapper] pre-loading Linux dependencies from: {libraryDir}");
+
+            // List of dependencies in load order (base libraries first)
+            string[] dependencies = new string[]
+            {
+                "libggml-base.so",
+                "libggml-cpu.so",
+                "libggml.so"
+            };
+
+            foreach (string dep in dependencies)
+            {
+                string depPath = Path.Combine(libraryDir, dep);
+                if (File.Exists(depPath))
+                {
+                    try
+                    {
+                        IntPtr handle = NativeLibrary.Load(depPath);
+                        logging.Debug($"[NativeLibraryBootstrapper] pre-loaded dependency: {dep}");
+                    }
+                    catch (Exception ex)
+                    {
+                        logging.Warn($"[NativeLibraryBootstrapper] failed to pre-load {dep}: {ex.Message}" + Environment.NewLine + ex.ToString());
+                    }
+                }
+                else
+                {
+                    logging.Debug($"[NativeLibraryBootstrapper] dependency not found: {depPath}");
+                }
+            }
+        }
 
         private static void ConfigureNativeLogging(Settings settings, LoggingModule logging)
         {
