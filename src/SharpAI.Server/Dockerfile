@@ -58,6 +58,37 @@ RUN if [ "$(dpkg --print-architecture)" = "amd64" ]; then \
 WORKDIR /app
 COPY --from=build /app/publish .
 
+# Create startup script dynamically (avoids Windows line ending issues)
+RUN printf '#!/bin/bash\n\
+set -e\n\
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"\n\
+cd "$SCRIPT_DIR"\n\
+\n\
+echo ""\n\
+echo "SharpAI.Server - Linux Startup"\n\
+echo ""\n\
+\n\
+ARCH=$(uname -m)\n\
+if [ "$ARCH" = "x86_64" ]; then\n\
+    RID="linux-x64"\n\
+elif [ "$ARCH" = "aarch64" ]; then\n\
+    RID="linux-arm64"\n\
+else\n\
+    echo "ERROR: Unsupported architecture: $ARCH"\n\
+    exit 1\n\
+fi\n\
+\n\
+echo "Detected architecture: $ARCH (RID: $RID)"\n\
+echo ""\n\
+\n\
+export LD_LIBRARY_PATH="$SCRIPT_DIR/runtimes/$RID/native/avx2:$SCRIPT_DIR/runtimes/$RID/native/cuda12:$SCRIPT_DIR/runtimes/$RID/native:${LD_LIBRARY_PATH}"\n\
+\n\
+if [ -f "./SharpAI.Server" ]; then\n\
+    exec ./SharpAI.Server "$@"\n\
+else\n\
+    exec dotnet SharpAI.Server.dll "$@"\n\
+fi\n' > start-linux.sh
+
 # Make startup script executable
 RUN chmod +x start-linux.sh
 
