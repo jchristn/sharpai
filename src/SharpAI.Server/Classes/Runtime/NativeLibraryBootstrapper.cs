@@ -87,6 +87,16 @@ namespace SharpAI.Server.Classes.Runtime
                                 .All
                                 .WithLibrary(libraryPath, "llama");
 
+                            // On Linux, also add the library directory to the search path for dependencies
+                            if (GetCurrentPlatform() == OSPlatform.Linux)
+                            {
+                                string libraryDir = Path.GetDirectoryName(libraryPath);
+                                NativeLibraryConfig
+                                    .All
+                                    .WithSearchDirectories(new string[] { libraryDir });
+                                logging.Debug($"[NativeLibraryBootstrapper] added search directory: {libraryDir}");
+                            }
+
                             logging.Info($"[NativeLibraryBootstrapper] successfully configured {backend} backend");
 
                             // Force NativeApi static constructor to run now (while we can catch errors)
@@ -121,6 +131,16 @@ namespace SharpAI.Server.Classes.Runtime
                                         NativeLibraryConfig
                                             .All
                                             .WithLibrary(cpuPath, "llama");
+
+                                        // On Linux, also add the library directory to the search path for dependencies
+                                        if (GetCurrentPlatform() == OSPlatform.Linux)
+                                        {
+                                            string cpuDir = Path.GetDirectoryName(cpuPath);
+                                            NativeLibraryConfig
+                                                .All
+                                                .WithSearchDirectories(new string[] { cpuDir });
+                                            logging.Debug($"[NativeLibraryBootstrapper] added search directory for fallback: {cpuDir}");
+                                        }
 
                                         _SelectedBackend = "cpu";
                                         logging.Info("[NativeLibraryBootstrapper] successfully configured CPU backend as fallback");
