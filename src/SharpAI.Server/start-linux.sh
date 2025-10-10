@@ -91,4 +91,9 @@ echo "Starting SharpAI.Server"
 echo ""
 
 # Launch the server
-exec ./SharpAI.Server "$@"
+# Check if we have a native executable (self-contained) or need to use dotnet
+if [ -f "./SharpAI.Server" ]; then
+    exec ./SharpAI.Server "$@"
+else
+    exec dotnet SharpAI.Server.dll "$@"
+fi

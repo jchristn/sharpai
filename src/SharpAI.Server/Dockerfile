@@ -18,7 +18,7 @@ RUN dotnet publish SharpAI.Server.csproj -c Release -o /app/publish \
     --no-self-contained \
     /p:UseAppHost=false \
     /p:GeneratePackageOnBuild=false
-
+    
 #
 # Runtime stage
 # Base image is Debian-based, works on any host (Debian/Ubuntu/etc.)

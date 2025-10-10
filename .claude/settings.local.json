@@ -9,7 +9,10 @@
       "Bash(dotnet build:*)",
       "Bash(mv:*)",
       "Bash(cat:*)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(docker build:*)",
+      "Bash(docker run:*)",
+      "Bash(dos2unix:*)"
     ],
     "deny": [],
     "ask": []

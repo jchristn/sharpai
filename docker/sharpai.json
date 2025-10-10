@@ -14,7 +14,7 @@
     "LogDirectory": "./logs/",
     "LogFilename": "./sharpai.log",
     "ConsoleLogging": true,
-    "EnableColors": true,
+    "EnableColors": false,
     "MinimumSeverity": 0
   },
   "Storage": {
