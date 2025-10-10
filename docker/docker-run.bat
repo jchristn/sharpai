@@ -26,8 +26,8 @@ echo Port: %PORT%
 echo Mode: %MODE%
 echo.
 
-REM Build docker run command
-set DOCKER_CMD=docker run --rm -it -p %PORT%:8000
+REM Build docker run command with volume mounts
+set DOCKER_CMD=docker run --rm -it -p %PORT%:8000 -v "%~dp0sharpai.json:/app/sharpai.json" -v "%~dp0sharpai.db:/app/sharpai.db" -v "%~dp0logs:/app/logs" -v "%~dp0models:/app/models"
 
 if /i "%MODE%"=="cpu" (
     echo Starting in CPU-only mode...

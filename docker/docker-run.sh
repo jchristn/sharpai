@@ -38,8 +38,9 @@ echo "Port: ${PORT}"
 echo "Mode: ${MODE}"
 echo ""
 
-# Build docker run command
-DOCKER_CMD="docker run --rm -it -p ${PORT}:8000"
+# Build docker run command with volume mounts
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DOCKER_CMD="docker run --rm -it -p ${PORT}:8000 -v ${SCRIPT_DIR}/sharpai.json:/app/sharpai.json -v ${SCRIPT_DIR}/sharpai.db:/app/sharpai.db -v ${SCRIPT_DIR}/logs:/app/logs -v ${SCRIPT_DIR}/models:/app/models"
 
 case "$MODE" in
     cpu)
