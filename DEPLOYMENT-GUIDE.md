@@ -99,6 +99,11 @@ curl http://localhost:8000/
 docker run -d -p 8000:8000 --name sharpai jchristn/sharpai:latest
 ```
 
+**Force CPU Mode (even with GPU available):**
+```bash
+docker run -d -e SHARPAI_FORCE_BACKEND=cpu -p 8000:8000 --name sharpai jchristn/sharpai:latest
+```
+
 **GPU Mode:**
 ```bash
 docker run -d --gpus all -p 8000:8000 --name sharpai jchristn/sharpai:latest
@@ -129,6 +134,8 @@ services:
     volumes:
       - ./models:/app/models
       - ./sharpai.json:/app/sharpai.json
+    environment:
+      - SHARPAI_FORCE_BACKEND=cpu  # Force CPU even if GPU is available
     restart: unless-stopped
 ```
 
@@ -450,10 +457,28 @@ All settings are in `sharpai.json` (auto-created on first run if missing).
 
 ### Runtime Backend Options
 
-**ForceBackend** - Override automatic detection
-- `null` (default) - Auto-detect CPU/GPU
-- `"cpu"` - Force CPU mode
-- `"cuda"` - Force GPU mode
+**Environment Variable: SHARPAI_FORCE_BACKEND** (Highest Priority)
+- Override backend selection via environment variable
+- Takes precedence over configuration file settings
+- Values: `cpu` or `cuda`
+- Usage examples:
+  ```bash
+  # Docker
+  docker run -e SHARPAI_FORCE_BACKEND=cpu -p 8000:8000 jchristn/sharpai:latest
+
+  # Bare metal (Linux/Mac)
+  export SHARPAI_FORCE_BACKEND=cpu
+  ./start-linux.sh
+
+  # Bare metal (Windows)
+  set SHARPAI_FORCE_BACKEND=cpu
+  start-windows.bat
+  ```
+
+**ForceBackend** (Configuration File)
+- Override automatic detection in `sharpai.json`
+- Values: `null` (default), `"cpu"`, or `"cuda"`
+- Note: Environment variable takes precedence over this setting
 
 **CpuBackendPath** - Custom CPU library path
 - Default: Auto-detected from NuGet packages
@@ -466,6 +491,11 @@ All settings are in `sharpai.json` (auto-created on first run if missing).
 **EnableNativeLogging** - Show llama.cpp debug output
 - `false` (default) - Clean console
 - `true` - Verbose native library logs (debugging only)
+
+**Backend Selection Priority:**
+1. `SHARPAI_FORCE_BACKEND` environment variable (highest)
+2. `Runtime.ForceBackend` in configuration file
+3. Automatic GPU detection (lowest)
 
 ### How Auto-Detection Works
 

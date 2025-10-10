@@ -234,6 +234,15 @@ namespace SharpAI.Server.Classes.Runtime
 
         private static string DetermineBackend(Settings settings, LoggingModule logging)
         {
+            // Check for environment variable override (highest priority)
+            string envBackend = Environment.GetEnvironmentVariable("SHARPAI_FORCE_BACKEND");
+            if (!String.IsNullOrEmpty(envBackend))
+            {
+                string forced = envBackend.ToLowerInvariant();
+                logging.Info($"[NativeLibraryBootstrapper] backend forced by environment variable to: {forced}");
+                return forced;
+            }
+
             // Check for forced backend setting
             if (!String.IsNullOrEmpty(settings.Runtime?.ForceBackend))
             {
