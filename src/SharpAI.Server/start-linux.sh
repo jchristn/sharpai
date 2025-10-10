@@ -90,6 +90,12 @@ echo "All dependencies verified successfully"
 echo "Starting SharpAI.Server"
 echo ""
 
+# Set LD_LIBRARY_PATH so native libraries can find their dependencies
+# Include both CPU and CUDA directories for runtime backend selection
+export LD_LIBRARY_PATH="$SCRIPT_DIR/runtimes/$RID/native/avx2:$SCRIPT_DIR/runtimes/$RID/native/cuda12:$SCRIPT_DIR/runtimes/$RID/native:${LD_LIBRARY_PATH}"
+echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
+echo ""
+
 # Launch the server
 # Check if we have a native executable (self-contained) or need to use dotnet
 if [ -f "./SharpAI.Server" ]; then

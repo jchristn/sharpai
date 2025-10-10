@@ -80,7 +80,7 @@
     "ForceBackend": null,
     "CpuBackendPath": null,
     "GpuBackendPath": null,
-    "EnableNativeLogging": false
+    "EnableNativeLogging": true
   },
   "Debug": {
     "RequestBody": false

@@ -12,7 +12,8 @@
       "Bash(git log:*)",
       "Bash(docker build:*)",
       "Bash(docker run:*)",
-      "Bash(dos2unix:*)"
+      "Bash(dos2unix:*)",
+      "WebSearch"
     ],
     "deny": [],
     "ask": []

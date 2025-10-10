@@ -71,6 +71,7 @@
             Welcome();
             ParseArguments(args);
             LoadSettings();
+            InitializeLogging();
             InitializeBootstrapper();
             InitializeGlobals();
             InitializeRestServer();
@@ -130,30 +131,8 @@
             }
         }
 
-        private static void InitializeBootstrapper()
+        private static void InitializeLogging()
         {
-            // Create a temporary logging instance for bootstrapper initialization
-            // This must happen before any LlamaSharp types are referenced
-            LoggingModule tempLogging = new LoggingModule();
-            tempLogging.Settings.EnableConsole = true;
-            tempLogging.Settings.EnableColors = true;
-
-            try
-            {
-                NativeLibraryBootstrapper.Initialize(_Settings, tempLogging);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("WARNING: Native library bootstrapper initialization failed:");
-                Console.WriteLine(ex.ToString());
-                Console.WriteLine("Continuing with default LlamaSharp library loading...");
-            }
-        }
-
-        private static void InitializeGlobals()
-        {
-            #region Logging
-
             List<SyslogLogging.SyslogServer> servers = new List<SyslogLogging.SyslogServer>();
 
             if (_Settings.Logging.Servers != null && _Settings.Logging.Servers.Count > 0)
@@ -169,8 +148,28 @@
             _Logging = new LoggingModule(servers, _Settings.Logging.ConsoleLogging);
             _Logging.Settings.FileLogging = FileLoggingMode.FileWithDate;
             _Logging.Settings.LogFilename = _Settings.Logging.LogDirectory + _Settings.Logging.LogFilename;
+            _Logging.Settings.EnableColors = _Settings.Logging.EnableColors;
+            _Logging.Settings.EnableConsole = _Settings.Logging.ConsoleLogging;
+            _Logging.Settings.MinimumSeverity = (Severity)_Settings.Logging.MinimumSeverity;
+        }
 
-            #endregion
+        private static void InitializeBootstrapper()
+        {
+            // This must happen before any LlamaSharp types are referenced
+            try
+            {
+                NativeLibraryBootstrapper.Initialize(_Settings, _Logging);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("WARNING: Native library bootstrapper initialization failed:");
+                Console.WriteLine(ex.ToString());
+                Console.WriteLine("Continuing with default LlamaSharp library loading...");
+            }
+        }
+
+        private static void InitializeGlobals()
+        {
 
             #region ORM
 
