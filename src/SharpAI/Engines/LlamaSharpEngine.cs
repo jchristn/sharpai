@@ -212,7 +212,7 @@
                 try
                 {
                     int gpuLayers = GetOptimalGpuLayers();
-                    _Logging.Debug(_Header + $"initializing LlamaSharp with {(gpuLayers != 0 ? "GPU" : "CPU")} acceleration{(gpuLayers != 0 ? $" ({gpuLayers} layers requested)" : "")}");
+                    _Logging.Debug(_Header + $"initializing LlamaSharp with {(gpuLayers != 0 ? "GPU" : "CPU")} {(gpuLayers != 0 ? $" ({gpuLayers} layers requested)" : "")}");
 
                     ModelParams parameters = new ModelParams(modelPath)
                     {

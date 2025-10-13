@@ -13,7 +13,8 @@
       "Bash(docker build:*)",
       "Bash(docker run:*)",
       "Bash(dos2unix:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []
