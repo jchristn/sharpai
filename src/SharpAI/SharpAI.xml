@@ -6000,8 +6000,6 @@
             <param name="chatFormat">The chat format to use for formatting the messages.</param>
             <param name="messages">List of chat messages to format into a prompt.</param>
             <returns>A formatted prompt string ready for model inference.</returns>
-            <exception cref="T:System.ArgumentNullException">Thrown when messages is null.</exception>
-            <exception cref="T:System.ArgumentException">Thrown when messages is empty.</exception>
         </member>
         <member name="T:SharpAI.Prompts.TextGenerationFormatEnum">
             <summary>

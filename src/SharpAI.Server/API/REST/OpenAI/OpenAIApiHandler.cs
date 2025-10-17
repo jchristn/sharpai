@@ -1,30 +1,21 @@
 ﻿namespace SharpAI.Server.API.REST.OpenAI
 {
-    using CommunityToolkit.HighPerformance;
-    using GetSomeInput;
     using SharpAI.Engines;
-    using SharpAI.Helpers;
     using SharpAI.Hosting;
-    using SharpAI.Hosting.HuggingFace;
     using SharpAI.Models;
-    using SharpAI.Models.Ollama;
     using SharpAI.Models.OpenAI;
     using SharpAI.Prompts;
     using SharpAI.Serialization;
     using SharpAI.Server.Classes.Settings;
     using SharpAI.Services;
-    using SwiftStack;
     using SwiftStack.Rest;
     using SyslogLogging;
     using System;
-    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.IO;
-    using System.Linq;
-    using System.Runtime.ConstrainedExecution;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Constants = SharpAI.Constants;
 
     internal class OpenAIApiHandler

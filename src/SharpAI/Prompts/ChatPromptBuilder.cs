@@ -16,15 +16,10 @@
         /// <param name="chatFormat">The chat format to use for formatting the messages.</param>
         /// <param name="messages">List of chat messages to format into a prompt.</param>
         /// <returns>A formatted prompt string ready for model inference.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when messages is null.</exception>
-        /// <exception cref="ArgumentException">Thrown when messages is empty.</exception>
         public static string Build(ChatFormatEnum chatFormat, List<ChatMessage> messages)
         {
-            if (messages == null)
-                throw new ArgumentNullException(nameof(messages));
-
-            if (messages.Count == 0)
-                throw new ArgumentException("Messages list cannot be empty.", nameof(messages));
+            if (messages == null) return "";
+            if (messages.Count == 0) return "";
 
             return chatFormat switch
             {

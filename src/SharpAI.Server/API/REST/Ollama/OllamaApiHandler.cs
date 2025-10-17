@@ -74,8 +74,8 @@
         #region Public-Methods
 
         internal async Task<object> PullModel(
-            AppRequest req, 
-            OllamaPullModelRequest pmr, 
+            AppRequest req,
+            OllamaPullModelRequest pmr,
             CancellationToken token = default)
         {
             string modelName = null;
@@ -339,8 +339,8 @@
         }
 
         internal async Task<object> DeleteModel(
-            AppRequest req, 
-            OllamaDeleteModelRequest dmr, 
+            AppRequest req,
+            OllamaDeleteModelRequest dmr,
             CancellationToken token = default)
         {
             if (String.IsNullOrEmpty(dmr.Model)) throw new ArgumentNullException(nameof(dmr.Model));
@@ -368,7 +368,7 @@
         }
 
         internal async Task<object> ListLocalModels(
-            AppRequest req, 
+            AppRequest req,
             CancellationToken token = default)
         {
             List<ModelFile> modelFiles = _ModelFileService.All();
@@ -393,8 +393,8 @@
         }
 
         internal async Task<object> GenerateEmbeddings(
-            AppRequest req, 
-            OllamaGenerateEmbeddingsRequest ger, 
+            AppRequest req,
+            OllamaGenerateEmbeddingsRequest ger,
             CancellationToken token = default)
         {
             if (String.IsNullOrEmpty(ger.Model)) throw new ArgumentNullException(nameof(ger.Model));
@@ -437,44 +437,50 @@
             {
                 string input = ger.GetInput();
 
-                float[][] embeddings = new float[1][];
-
-                ret.Embeddings = new float[1][];
-
                 if (!String.IsNullOrEmpty(input))
                 {
-                    embeddings[0] = await engine.GenerateEmbeddingsAsync(input, token).ConfigureAwait(false);
-                    ret.Embeddings = embeddings;
+                    float[][] embeddings = new float[1][];
+
+                    ret.Embeddings = new float[1][];
+
+                    if (!String.IsNullOrEmpty(input))
+                    {
+                        embeddings[0] = await engine.GenerateEmbeddingsAsync(input, token).ConfigureAwait(false);
+                        ret.Embeddings = embeddings;
+                    }
                 }
             }
             else
             {
                 string[] inputs = ger.GetInputs();
 
-                foreach (string input in inputs)
+                if (inputs.Length > 0)
                 {
-                    if (String.IsNullOrEmpty(input))
+                    foreach (string input in inputs)
                     {
-                        _Logging.Warn(_Header + "input contains null or invalid entries");
-
-                        req.Http.Response.StatusCode = 400;
-
-                        return new
+                        if (String.IsNullOrEmpty(input))
                         {
-                            error = $"invalid input type"
-                        };
-                    }
-                }
+                            _Logging.Warn(_Header + "input contains null or invalid entries");
 
-                ret.Embeddings = await engine.GenerateEmbeddingsAsync(inputs.ToArray(), token).ConfigureAwait(false);
+                            req.Http.Response.StatusCode = 400;
+
+                            return new
+                            {
+                                error = $"invalid input type"
+                            };
+                        }
+                    }
+
+                    ret.Embeddings = await engine.GenerateEmbeddingsAsync(inputs.ToArray(), token).ConfigureAwait(false);
+                }
             }
 
             return ret;
         }
 
         internal async Task<object> GenerateCompletion(
-            AppRequest req, 
-            OllamaGenerateCompletionRequest gcr, 
+            AppRequest req,
+            OllamaGenerateCompletionRequest gcr,
             CancellationToken token = default)
         {
             if (String.IsNullOrEmpty(gcr.Model)) throw new ArgumentNullException(nameof(gcr.Model));
@@ -512,12 +518,17 @@
 
             if (gcr.Stream == null || !gcr.Stream.Value)
             {
-                string response = await engine.GenerateTextAsync(
-                    gcr.Prompt,
-                    gcr.Options.NumPredict != null ? gcr.Options.NumPredict.Value : 128,
-                    gcr.Options.Temperature != null ? gcr.Options.Temperature.Value : 0.6f,
-                    null,
-                    token).ConfigureAwait(false);
+                string response = "";
+
+                if (!String.IsNullOrEmpty(gcr.Prompt))
+                {
+                    response = await engine.GenerateTextAsync(
+                        gcr.Prompt,
+                        gcr.Options.NumPredict != null ? gcr.Options.NumPredict.Value : 128,
+                        gcr.Options.Temperature != null ? gcr.Options.Temperature.Value : 0.6f,
+                        null,
+                        token).ConfigureAwait(false);
+                }
 
                 return new
                 {
@@ -530,33 +541,36 @@
             }
             else
             {
-                string nextToken = null;
+                string nextToken = "";
 
                 req.Http.Response.ContentType = Constants.NdJsonContentType;
                 req.Http.Response.ChunkedTransfer = true;
 
-                await foreach (string curr in engine.GenerateTextStreamAsync(
-                    gcr.Prompt,
-                    gcr.Options.NumPredict != null ? gcr.Options.NumPredict.Value : 128,
-                    gcr.Options.Temperature != null ? gcr.Options.Temperature.Value : 0.6f,
-                    null,
-                    token).ConfigureAwait(false))
+                if (!String.IsNullOrEmpty(gcr.Prompt))
                 {
-                    if (nextToken != null)
+                    await foreach (string curr in engine.GenerateTextStreamAsync(
+                        gcr.Prompt,
+                        gcr.Options.NumPredict != null ? gcr.Options.NumPredict.Value : 128,
+                        gcr.Options.Temperature != null ? gcr.Options.Temperature.Value : 0.6f,
+                        null,
+                        token).ConfigureAwait(false))
                     {
-                        json = _Serializer.SerializeJson(new
+                        if (nextToken != null)
                         {
-                            model = gcr.Model,
-                            created_at = DateTime.UtcNow.ToString(_TimestampFormat),
-                            response = nextToken,
-                            done = false
+                            json = _Serializer.SerializeJson(new
+                            {
+                                model = gcr.Model,
+                                created_at = DateTime.UtcNow.ToString(_TimestampFormat),
+                                response = nextToken,
+                                done = false
 
-                        }, false) + Environment.NewLine;
+                            }, false) + Environment.NewLine;
 
-                        await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(json), false, token).ConfigureAwait(false);
+                            await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(json), false, token).ConfigureAwait(false);
+                        }
+
+                        nextToken = curr;
                     }
-
-                    nextToken = curr;
                 }
 
                 json = _Serializer.SerializeJson(new
@@ -576,8 +590,8 @@
         }
 
         internal async Task<object> GenerateChatCompletion(
-            AppRequest req, 
-            OllamaGenerateChatCompletionRequest gcr, 
+            AppRequest req,
+            OllamaGenerateChatCompletionRequest gcr,
             CancellationToken token = default)
         {
             if (String.IsNullOrEmpty(gcr.Model)) throw new ArgumentNullException(nameof(gcr.Model));
@@ -628,12 +642,17 @@
 
             if (gcr.Stream == null || !gcr.Stream.Value)
             {
-                string response = await engine.GenerateChatCompletionAsync(
-                    prompt,
-                    gcr.Options.NumPredict != null ? gcr.Options.NumPredict.Value : 128,
-                    gcr.Options.Temperature != null ? gcr.Options.Temperature.Value : 0.6f,
-                    null,
-                    token).ConfigureAwait(false);
+                string response = "";
+
+                if (!String.IsNullOrEmpty(prompt))
+                {
+                    response = await engine.GenerateChatCompletionAsync(
+                        prompt,
+                        gcr.Options.NumPredict != null ? gcr.Options.NumPredict.Value : 128,
+                        gcr.Options.Temperature != null ? gcr.Options.Temperature.Value : 0.6f,
+                        null,
+                        token).ConfigureAwait(false);
+                }
 
                 return new
                 {
@@ -646,34 +665,37 @@
             }
             else
             {
-                string nextToken = null;
+                string nextToken = "";
                 string json = null;
 
                 req.Http.Response.ContentType = Constants.NdJsonContentType;
                 req.Http.Response.ChunkedTransfer = true;
 
-                await foreach (string curr in engine.GenerateChatCompletionStreamAsync(
-                    prompt,
-                    gcr.Options.NumPredict != null ? gcr.Options.NumPredict.Value : 128,
-                    gcr.Options.Temperature != null ? gcr.Options.Temperature.Value : 0.6f,
-                    null,
-                    token).ConfigureAwait(false))
+                if (!String.IsNullOrEmpty(prompt))
                 {
-                    if (nextToken != null)
+                    await foreach (string curr in engine.GenerateChatCompletionStreamAsync(
+                        prompt,
+                        gcr.Options.NumPredict != null ? gcr.Options.NumPredict.Value : 128,
+                        gcr.Options.Temperature != null ? gcr.Options.Temperature.Value : 0.6f,
+                        null,
+                        token).ConfigureAwait(false))
                     {
-                        json = _Serializer.SerializeJson(new
+                        if (nextToken != null)
                         {
-                            model = gcr.Model,
-                            created_at = DateTime.UtcNow.ToString(_TimestampFormat),
-                            response = nextToken,
-                            done = false
+                            json = _Serializer.SerializeJson(new
+                            {
+                                model = gcr.Model,
+                                created_at = DateTime.UtcNow.ToString(_TimestampFormat),
+                                response = nextToken,
+                                done = false
 
-                        }, false) + Environment.NewLine;
+                            }, false) + Environment.NewLine;
 
-                        await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(json), false, token).ConfigureAwait(false);
+                            await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(json), false, token).ConfigureAwait(false);
+                        }
+
+                        nextToken = curr;
                     }
-
-                    nextToken = curr;
                 }
 
                 json = _Serializer.SerializeJson(new
