@@ -595,6 +595,7 @@
             CancellationToken token = default)
         {
             if (String.IsNullOrEmpty(gcr.Model)) throw new ArgumentNullException(nameof(gcr.Model));
+            if (gcr.Messages == null) gcr.Messages = new List<OllamaChatMessage>();
 
             req.Http.Response.ContentType = Constants.JsonContentType;
 

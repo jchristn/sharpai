@@ -41,7 +41,7 @@
         #region Private-Members
 
         private static string _Header = "[SharpAI] ";
-        private static string _Version = "0.1.0";
+        private static string _Version = "1.0.0";
         private static Serializer _Serializer = new Serializer();
         private static Settings _Settings = null;
         private static LoggingModule _Logging = null;
