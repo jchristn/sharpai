@@ -1,5 +1,10 @@
 ﻿namespace SharpAI.Server.API.REST.OpenAI
 {
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Threading;
+    using System.Threading.Tasks;
     using SharpAI.Engines;
     using SharpAI.Hosting;
     using SharpAI.Models;
@@ -10,11 +15,7 @@
     using SharpAI.Services;
     using SwiftStack.Rest;
     using SyslogLogging;
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Threading;
-    using System.Threading.Tasks;
+    using WatsonWebserver.Core;
 
     using Constants = SharpAI.Constants;
 
@@ -406,7 +407,10 @@
                             };
 
                             string currEventJson = _Serializer.SerializeJson(currEvent, false);
-                            await req.Http.Response.SendEvent(currEventJson, false, token).ConfigureAwait(false);
+                            await req.Http.Response.SendEvent(new ServerSentEvent
+                            {
+                                Data = currEventJson
+                            }, false, token).ConfigureAwait(false);
                         }
 
                         nextToken = curr;
@@ -432,10 +436,16 @@
                         };
 
                         string currEventJson = _Serializer.SerializeJson(currEvent, false);
-                        await req.Http.Response.SendEvent(currEventJson, false, token).ConfigureAwait(false);
+                        await req.Http.Response.SendEvent(new ServerSentEvent
+                        {
+                            Data = currEventJson
+                        }, false, token).ConfigureAwait(false);
                     }
 
-                    await req.Http.Response.SendEvent("[DONE]", true, token).ConfigureAwait(false);
+                    await req.Http.Response.SendEvent(new ServerSentEvent
+                    {
+                        Data = "[DONE]"
+                    }, true, token).ConfigureAwait(false);
                     return null;
 
                     #endregion
@@ -475,7 +485,10 @@
                                 };
 
                                 string currEventJson = _Serializer.SerializeJson(currEvent, false);
-                                await req.Http.Response.SendEvent(currEventJson, false, token).ConfigureAwait(false);
+                                await req.Http.Response.SendEvent(new ServerSentEvent
+                                {
+                                    Data = currEventJson
+                                }, false, token).ConfigureAwait(false);
                             }
 
                             nextToken = curr;
@@ -502,10 +515,16 @@
                         };
 
                         string currEventJson = _Serializer.SerializeJson(currEvent, false);
-                        await req.Http.Response.SendEvent(currEventJson, false, token).ConfigureAwait(false);
+                        await req.Http.Response.SendEvent(new ServerSentEvent
+                        {
+                            Data = currEventJson
+                        }, false, token).ConfigureAwait(false);
                     }
 
-                    await req.Http.Response.SendEvent("[DONE]", true, token).ConfigureAwait(false);
+                    await req.Http.Response.SendEvent(new ServerSentEvent
+                    {
+                        Data = "[DONE]"
+                    }, true, token).ConfigureAwait(false);
                     return null;
 
                     #endregion
@@ -663,7 +682,10 @@
                         };
 
                         string currEventJson = _Serializer.SerializeJson(currEvent, false);
-                        await req.Http.Response.SendEvent(currEventJson, false, token).ConfigureAwait(false);
+                        await req.Http.Response.SendEvent(new ServerSentEvent
+                        {
+                            Data = currEventJson
+                        }, false, token).ConfigureAwait(false);
                     }
 
                     nextToken = curr;
@@ -689,10 +711,16 @@
                     };
 
                     string currEventJson = _Serializer.SerializeJson(currEvent, false);
-                    await req.Http.Response.SendEvent(currEventJson, false, token).ConfigureAwait(false);
+                    await req.Http.Response.SendEvent(new ServerSentEvent
+                    {
+                        Data = currEventJson
+                    }, false, token).ConfigureAwait(false);
                 }
 
-                await req.Http.Response.SendEvent("[DONE]", true, token).ConfigureAwait(false);
+                await req.Http.Response.SendEvent(new ServerSentEvent
+                {
+                    Data = "[DONE]"
+                }, true, token).ConfigureAwait(false);
                 return null;
 
                 #endregion
