@@ -1,6 +1,6 @@
 {
   "name": "@sharpai/sdk",
-  "version": "1.0.0",
+  "version": "5.0.0",
   "description": "TypeScript SDK for interacting with SharpAI server instances - providing Ollama and OpenAI compatible API wrappers for local AI inference",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -45,11 +45,11 @@
     "url": "https://github.com/jchristn/sharpai"
   },
   "devDependencies": {
-    "@types/node": "^20.10.0",
-    "eslint": "^8.55.0",
-    "tsup": "^8.0.1",
-    "typescript": "^5.3.0",
-    "vitest": "^1.0.0"
+    "@types/node": "^26.2.0",
+    "eslint": "^10.8.1",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.10"
   },
   "engines": {
     "node": ">=18.0.0"

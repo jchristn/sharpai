@@ -368,3 +368,16 @@ dashboard/.next/
 
 # SDK build output
 sdk/js/dist/
+
+###
+###
+### Docker runtime artifacts (seeded from docker/factory)
+###
+###
+
+# Runtime copies created from docker/factory on reset; not source.
+docker/logs/
+docker/models/
+docker/sharpai.db
+# Loki/Tempo/Prometheus keep no named volumes; nothing else to ignore for telemetry.
+test-models/

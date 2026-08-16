@@ -1,6 +1,7 @@
 ﻿namespace SharpAI.Engines
 {
     using System;
+    using System.Diagnostics;
     using System.IO;
     using System.Collections.Generic;
     using System.Linq;
@@ -13,13 +14,15 @@
     using LLama.Native;
     using LLama.Sampling;
     using SharpAI.Classes.Runtime;
+    using SharpAI.Prompts;
+    using SharpAI.Telemetry;
     using SyslogLogging;
 
     /// <summary>
     /// LlamaSharp implementation of the AI provider base class.
-    /// Provides text generation, embeddings, chat completion and vision capabilities using the LlamaSharp library.
+    /// Provides text generation, embeddings, and chat completion using the LlamaSharp library.
     /// </summary>
-    public class LlamaSharpEngine : EngineBase
+    public class LlamaSharpEngine : EngineBase, IChatTemplateSource
     {
         #region Public-Members
 
@@ -98,6 +101,103 @@
         public override bool IsInitialized => _IsInitialized;
 
         /// <summary>
+        /// Gets whether the loaded model carries a usable embedded chat template (GGUF
+        /// <c>tokenizer.chat_template</c>). The result is probed once and cached. Returns false before the
+        /// engine is initialized.
+        /// </summary>
+        public bool SupportsEmbeddedChatTemplate
+        {
+            get
+            {
+                if (_HasEmbeddedTemplate.HasValue) return _HasEmbeddedTemplate.Value;
+                if (!_IsInitialized || _Model == null) return false;
+
+                try
+                {
+                    LLamaTemplate probe = new LLamaTemplate(_Model, true);
+                    _HasEmbeddedTemplate = probe != null;
+                }
+                catch
+                {
+                    _HasEmbeddedTemplate = false;
+                }
+
+                return _HasEmbeddedTemplate ?? false;
+            }
+        }
+
+        /// <summary>
+        /// Number of tokens to generate when a caller does not specify a positive value.
+        /// Applied only when the requested maximum is zero or negative; a positive request is honored
+        /// exactly (including small values). Default 512, minimum 1.
+        /// </summary>
+        public int DefaultMaxTokens
+        {
+            get
+            {
+                return _DefaultMaxTokens;
+            }
+            set
+            {
+                if (value < 1) throw new ArgumentOutOfRangeException(nameof(DefaultMaxTokens), "DefaultMaxTokens must be at least 1.");
+                _DefaultMaxTokens = value;
+            }
+        }
+
+        /// <summary>
+        /// Whether inputs longer than the embedding context are split into chunks and averaged. Default
+        /// true. When false, an over-length embedding input throws instead of being silently chunked and
+        /// averaged, which changes the resulting vector's meaning.
+        /// </summary>
+        public bool EnableEmbeddingChunking
+        {
+            get
+            {
+                return _EnableEmbeddingChunking;
+            }
+            set
+            {
+                _EnableEmbeddingChunking = value;
+            }
+        }
+
+        /// <summary>
+        /// Maximum number of generations that may run concurrently against this model. Default 1 (strictly
+        /// serialized). Values above 1 allow parallel decode slots; this must be set before the engine is
+        /// initialized to take effect. Minimum 1.
+        /// </summary>
+        public int MaxConcurrentGenerations
+        {
+            get
+            {
+                return _MaxConcurrentGenerations;
+            }
+            set
+            {
+                if (value < 1) throw new ArgumentOutOfRangeException(nameof(MaxConcurrentGenerations), "MaxConcurrentGenerations must be at least 1.");
+                _MaxConcurrentGenerations = value;
+            }
+        }
+
+        /// <summary>
+        /// Milliseconds a generation request waits for a free slot before it is rejected with an
+        /// <see cref="SharpAI.Exceptions.EngineBusyException"/>. Default 0, which waits indefinitely.
+        /// Minimum 0.
+        /// </summary>
+        public int GenerationQueueTimeoutMs
+        {
+            get
+            {
+                return _GenerationQueueTimeoutMs;
+            }
+            set
+            {
+                if (value < 0) throw new ArgumentOutOfRangeException(nameof(GenerationQueueTimeoutMs), "GenerationQueueTimeoutMs may not be negative.");
+                _GenerationQueueTimeoutMs = value;
+            }
+        }
+
+        /// <summary>
         /// Gets the context window size (maximum number of tokens) for this model.
         /// </summary>
         /// <returns>The context window size in tokens, or -1 if not available.</returns>
@@ -148,8 +248,16 @@
         private bool _IsInitialized = false;
         private bool _Disposed = false;
         private int _EmbeddingDimensions = -1;
+        private int _DefaultMaxTokens = 512;
+        private bool _EnableEmbeddingChunking = true;
+        private int _GpuLayers = 0;
+        private bool _EmbedderLoadAttempted = false;
+        private bool? _HasEmbeddedTemplate = null;
+        private int _MaxConcurrentGenerations = 1;
+        private int _GenerationQueueTimeoutMs = 0;
         private readonly SemaphoreSlim _EmbedderSemaphore = new SemaphoreSlim(1, 1);
-        private readonly SemaphoreSlim _GenerationSemaphore = new SemaphoreSlim(1, 1);
+        private readonly SemaphoreSlim _EmbedderInitSemaphore = new SemaphoreSlim(1, 1);
+        private SemaphoreSlim _GenerationSemaphore = new SemaphoreSlim(1, 1);
         #endregion
 
         #region Constructors-and-Factories
@@ -189,6 +297,7 @@
                 _Model?.Dispose();
 
                 _EmbedderSemaphore?.Dispose();
+                _EmbedderInitSemaphore?.Dispose();
                 _GenerationSemaphore?.Dispose();
             }
             catch (Exception ex)
@@ -233,19 +342,20 @@
                     _StatelessExecutor = new StatelessExecutor(_Model, parameters); // text generation
                     _ChatSession = new ChatSession(_Executor);
 
-                    // For embeddings, try to create a separate instance
-                    try
-                    {
-                        ModelParams embeddingParams = CreateModelParams(modelPath, gpuLayers, true, false);
+                    // Embeddings load lazily on first use (see EnsureEmbedderAsync). A generation-only
+                    // model never allocates the second copy of the weights that a dedicated embedding
+                    // context requires.
+                    _GpuLayers = gpuLayers;
 
-                        _EmbeddingModel = LLamaWeights.LoadFromFile(embeddingParams);
-                        _Embedder = new LLamaEmbedder(_EmbeddingModel, embeddingParams);
-                    }
-                    catch (Exception ex)
+                    // Concurrency and admission configuration (env overrides the property defaults).
+                    _MaxConcurrentGenerations = SharpAIEnvironment.GetInt(SharpAIEnvironment.MaxConcurrentGenerations, _MaxConcurrentGenerations, 1);
+                    _GenerationQueueTimeoutMs = SharpAIEnvironment.GetInt(SharpAIEnvironment.GenerationQueueTimeoutMs, _GenerationQueueTimeoutMs, 0);
+                    if (_MaxConcurrentGenerations > 1)
                     {
-                        _Logging.Warn(_Header + "failed to initialize embeddings:" + Environment.NewLine + ex.ToString());
-                        _Embedder = null;
+                        _GenerationSemaphore.Dispose();
+                        _GenerationSemaphore = new SemaphoreSlim(_MaxConcurrentGenerations, _MaxConcurrentGenerations);
                     }
+                    _Logging.Debug(_Header + $"generation slots={_MaxConcurrentGenerations}, queueTimeoutMs={_GenerationQueueTimeoutMs}");
 
                     _IsInitialized = true;
 
@@ -375,7 +485,7 @@
         {
             ThrowIfNotInitialized();
 
-            if (_Embedder == null) throw new InvalidOperationException("Embeddings are not supported. The embedder failed to initialize.");
+            await EnsureEmbedderAsync(token).ConfigureAwait(false);
 
             IReadOnlyList<float[]> embeddings = await _Embedder.GetEmbeddings("test", token).ConfigureAwait(false);
             return embeddings[0].Length;
@@ -388,7 +498,7 @@
         {
             ThrowIfNotInitialized();
 
-            if (_Embedder == null) throw new InvalidOperationException("Embeddings are not supported. The embedder failed to initialize.");
+            await EnsureEmbedderAsync(token).ConfigureAwait(false);
 
             // Handle long texts by chunking and averaging
             return await ProcessTextWithChunking(text, token).ConfigureAwait(false);
@@ -398,10 +508,8 @@
         public override async Task<float[][]> GenerateEmbeddingsAsync(string[] texts, CancellationToken token = default(CancellationToken))
         {
             ThrowIfNotInitialized();
-            if (_Embedder == null)
-            {
-                throw new InvalidOperationException("Embeddings are not supported. The embedder failed to initialize.");
-            }
+
+            await EnsureEmbedderAsync(token).ConfigureAwait(false);
 
             float[][] embeddings = new float[texts.Length][];
             for (int i = 0; i < texts.Length; i++)
@@ -428,12 +536,16 @@
         {
             ThrowIfNotInitialized();
 
-            await _GenerationSemaphore.WaitAsync(token).ConfigureAwait(false);
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            bool success = false;
+            long tokenCount = 0;
+
+            await AcquireGenerationSlotAsync(token).ConfigureAwait(false);
             try
             {
                 InferenceParams inferenceParams = new InferenceParams
                 {
-                    MaxTokens = Math.Max(maxTokens, 100),
+                    MaxTokens = EffectiveMaxTokens(maxTokens),
                     AntiPrompts = stopSequences?.ToList() ?? new List<string>(),
                     SamplingPipeline = new DefaultSamplingPipeline
                     {
@@ -448,7 +560,10 @@
                     result.Append(curr);
                 }
 
-                return result.ToString().Trim();
+                string text = result.ToString().Trim();
+                success = true;
+                tokenCount = CountTokens(text, false, false);
+                return text;
             }
             catch (Exception ex)
             {
@@ -458,6 +573,8 @@
             finally
             {
                 _GenerationSemaphore.Release();
+                stopwatch.Stop();
+                SharpAITelemetry.RecordInference("completion", TelemetryModelLabel(), stopwatch.Elapsed.TotalSeconds, tokenCount, success);
             }
         }
 
@@ -471,12 +588,16 @@
         {
             ThrowIfNotInitialized();
 
-            await _GenerationSemaphore.WaitAsync(token).ConfigureAwait(false);
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            bool success = false;
+            long tokenCount = 0;
+
+            await AcquireGenerationSlotAsync(token).ConfigureAwait(false);
             try
             {
                 InferenceParams inferenceParams = new InferenceParams
                 {
-                    MaxTokens = Math.Max(maxTokens, 100),
+                    MaxTokens = EffectiveMaxTokens(maxTokens),
                     AntiPrompts = stopSequences?.ToList() ?? new List<string>(),
                     SamplingPipeline = new DefaultSamplingPipeline
                     {
@@ -486,12 +607,17 @@
 
                 await foreach (string curr in _StatelessExecutor.InferAsync(prompt, inferenceParams, token).ConfigureAwait(false))
                 {
+                    tokenCount++;
                     yield return curr;
                 }
+
+                success = true;
             }
             finally
             {
                 _GenerationSemaphore.Release();
+                stopwatch.Stop();
+                SharpAITelemetry.RecordInference("completion", TelemetryModelLabel(), stopwatch.Elapsed.TotalSeconds, tokenCount, success);
             }
         }
 
@@ -509,12 +635,16 @@
         {
             ThrowIfNotInitialized();
 
-            await _GenerationSemaphore.WaitAsync(token).ConfigureAwait(false);
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            bool success = false;
+            long tokenCount = 0;
+
+            await AcquireGenerationSlotAsync(token).ConfigureAwait(false);
             try
             {
                 InferenceParams inferenceParams = new InferenceParams
                 {
-                    MaxTokens = Math.Max(maxTokens, 100),
+                    MaxTokens = EffectiveMaxTokens(maxTokens),
                     AntiPrompts = stopSequences?.ToList() ?? new List<string> { "user:", "User:", "human:", "Human:" }, // Default anti-prompt for chat
                     SamplingPipeline = new DefaultSamplingPipeline
                     {
@@ -529,7 +659,10 @@
                     result.Append(curr);
                 }
 
-                return result.ToString().Trim();
+                string text = result.ToString().Trim();
+                success = true;
+                tokenCount = CountTokens(text, false, false);
+                return text;
             }
             catch (Exception ex)
             {
@@ -539,6 +672,8 @@
             finally
             {
                 _GenerationSemaphore.Release();
+                stopwatch.Stop();
+                SharpAITelemetry.RecordInference("chat", TelemetryModelLabel(), stopwatch.Elapsed.TotalSeconds, tokenCount, success);
             }
         }
 
@@ -552,12 +687,16 @@
         {
             ThrowIfNotInitialized();
 
-            await _GenerationSemaphore.WaitAsync(token).ConfigureAwait(false);
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            bool success = false;
+            long tokenCount = 0;
+
+            await AcquireGenerationSlotAsync(token).ConfigureAwait(false);
             try
             {
                 InferenceParams inferenceParams = new InferenceParams
                 {
-                    MaxTokens = Math.Max(maxTokens, 100),
+                    MaxTokens = EffectiveMaxTokens(maxTokens),
                     AntiPrompts = stopSequences?.ToList() ?? new List<string> { "user:", "User:", "human:", "Human:" }, // Default anti-prompt for chat
                     SamplingPipeline = new DefaultSamplingPipeline
                     {
@@ -567,13 +706,42 @@
 
                 await foreach (string curr in _StatelessExecutor!.InferAsync(prompt, inferenceParams, token).ConfigureAwait(false))
                 {
+                    tokenCount++;
                     yield return curr;
                 }
+
+                success = true;
             }
             finally
             {
                 _GenerationSemaphore.Release();
+                stopwatch.Stop();
+                SharpAITelemetry.RecordInference("chat", TelemetryModelLabel(), stopwatch.Elapsed.TotalSeconds, tokenCount, success);
             }
+        }
+
+        #endregion
+
+        #region Chat-Template
+
+        /// <inheritdoc />
+        public string RenderEmbeddedChatPrompt(IReadOnlyList<ChatMessage> messages, bool addGenerationPrompt)
+        {
+            if (messages == null) throw new ArgumentNullException(nameof(messages));
+            if (!_IsInitialized || _Model == null) throw new InvalidOperationException("Model is not initialized.");
+
+            LLamaTemplate template = new LLamaTemplate(_Model, true);
+            template.AddAssistant = addGenerationPrompt;
+
+            foreach (ChatMessage message in messages)
+            {
+                if (message == null) continue;
+                string role = String.IsNullOrEmpty(message.Role) ? "user" : message.Role;
+                template.Add(role, message.Content ?? String.Empty);
+            }
+
+            ReadOnlySpan<byte> rendered = template.Apply();
+            return Encoding.UTF8.GetString(rendered);
         }
 
         #endregion
@@ -641,6 +809,13 @@
                 if (text.Length <= charLimit)
                 {
                     return await TryEmbed(text).ConfigureAwait(false);
+                }
+
+                if (!_EnableEmbeddingChunking)
+                {
+                    throw new InvalidOperationException(
+                        $"Embedding input of {text.Length} characters exceeds the model's context (~{charLimit} chars) and chunking is disabled. " +
+                        "Shorten the input or enable EnableEmbeddingChunking to chunk and average.");
                 }
 
                 _Logging?.Debug(_Header + $"processing long text ({text.Length} chars) in chunks (limit: {charLimit})");
@@ -752,6 +927,76 @@
         {
             if (!_IsInitialized) throw new InvalidOperationException("Provider must be initialized before use. Call InitializeAsync() first.");
             if (_Disposed) throw new ObjectDisposedException(nameof(LlamaSharpEngine));
+        }
+
+        private string TelemetryModelLabel()
+        {
+            string arch = Architecture;
+            if (!String.IsNullOrEmpty(arch)) return arch;
+            if (!String.IsNullOrEmpty(ModelPath)) return Path.GetFileNameWithoutExtension(ModelPath);
+            return "unknown";
+        }
+
+        private int EffectiveMaxTokens(int requested)
+        {
+            // Honor any positive request exactly, including small values (e.g. max_tokens=8). Only fall
+            // back to the configured default when the caller did not specify a positive maximum.
+            if (requested > 0) return requested;
+            return _DefaultMaxTokens;
+        }
+
+        private async Task AcquireGenerationSlotAsync(CancellationToken token)
+        {
+            if (_GenerationQueueTimeoutMs <= 0)
+            {
+                await AcquireGenerationSlotAsync(token).ConfigureAwait(false);
+                return;
+            }
+
+            bool acquired = await _GenerationSemaphore.WaitAsync(_GenerationQueueTimeoutMs, token).ConfigureAwait(false);
+            if (!acquired)
+                throw new SharpAI.Exceptions.EngineBusyException(
+                    $"All {_MaxConcurrentGenerations} generation slot(s) are busy; timed out after {_GenerationQueueTimeoutMs} ms.");
+        }
+
+        private async Task EnsureEmbedderAsync(CancellationToken token)
+        {
+            if (_Embedder != null) return;
+
+            await _EmbedderInitSemaphore.WaitAsync(token).ConfigureAwait(false);
+            try
+            {
+                if (_Embedder != null) return;
+
+                if (_EmbedderLoadAttempted)
+                    throw new InvalidOperationException("Embeddings are not supported. The embedder failed to initialize.");
+
+                _EmbedderLoadAttempted = true;
+
+                await Task.Run(() =>
+                {
+                    ModelParams embeddingParams = CreateModelParams(ModelPath, _GpuLayers, true, false);
+                    _EmbeddingModel = LLamaWeights.LoadFromFile(embeddingParams);
+                    _Embedder = new LLamaEmbedder(_EmbeddingModel, embeddingParams);
+                }, token).ConfigureAwait(false);
+
+                _Logging.Debug(_Header + "embedding model loaded on demand");
+            }
+            catch (Exception ex)
+            {
+                _Logging.Warn(_Header + "failed to initialize embeddings:" + Environment.NewLine + ex.ToString());
+
+                try { _Embedder?.Dispose(); } catch { }
+                try { _EmbeddingModel?.Dispose(); } catch { }
+                _Embedder = null;
+                _EmbeddingModel = null;
+
+                throw new InvalidOperationException("Embeddings are not supported. The embedder failed to initialize.", ex);
+            }
+            finally
+            {
+                _EmbedderInitSemaphore.Release();
+            }
         }
 
         #endregion

@@ -4,6 +4,33 @@
         <name>SharpAI.Server</name>
     </assembly>
     <members>
+        <member name="T:SharpAI.Server.Classes.Runtime.AuthenticationService">
+            <summary>
+            Establishes the authenticated <see cref="T:SharpAI.Security.RequestContext"/> for each request and attaches it to the
+            HTTP context metadata. Registered on the Watson <c>AuthenticateRequest</c> hook. When authentication
+            is disabled this is a no-op that installs the system principal; when enabled it resolves the request
+            against the account store (admin API key, bearer session token, or access-key / secret-key) and
+            challenges (401) unauthenticated requests to non-anonymous endpoints, recording each denial to the
+            security audit log.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Server.Classes.Runtime.AuthenticationService.#ctor(SharpAI.Server.Classes.Settings.AuthSettings,SharpAI.Security.AuthenticationEngine,SharpAI.Database.DatabaseDriverBase,SyslogLogging.LoggingModule)">
+            <summary>
+            Instantiate.
+            </summary>
+            <param name="settings">Authentication settings.</param>
+            <param name="engine">Authentication engine.</param>
+            <param name="database">Database driver (for the audit log).</param>
+            <param name="logging">Logging module.</param>
+        </member>
+        <member name="M:SharpAI.Server.Classes.Runtime.AuthenticationService.AuthenticateRequestAsync(WatsonWebserver.Core.HttpContextBase)">
+            <summary>
+            Authenticate the request, attach a <see cref="T:SharpAI.Security.RequestContext"/> to <c>ctx.Metadata</c>, and
+            challenge (401) when required. Sending a 401 here stops routing.
+            </summary>
+            <param name="ctx">HTTP context.</param>
+            <returns>Task.</returns>
+        </member>
         <member name="T:SharpAI.Server.Classes.Runtime.NativeLibraryBootstrapper">
             <summary>
             Native library bootstrapper for LlamaSharp.
@@ -27,6 +54,96 @@
             </summary>
             <param name="settings">Server settings containing backend configuration.</param>
             <param name="logging">Logging module.</param>
+        </member>
+        <member name="T:SharpAI.Server.Classes.Runtime.RequestHistoryCaptureService">
+            <summary>
+            Captures a durable record of each HTTP request and its response. The entry is built synchronously
+            from the request context (so request state is not lost) and written on a background task so capture
+            never blocks the response. Secrets in headers are redacted and bodies are truncated to the
+            configured limits. Response bodies are not retained by the current routing layer, so only response
+            metadata and headers are captured.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Server.Classes.Runtime.RequestHistoryCaptureService.#ctor(SharpAI.Database.DatabaseDriverBase,SharpAI.Server.Classes.Settings.RequestHistorySettings,SyslogLogging.LoggingModule)">
+            <summary>
+            Instantiate.
+            </summary>
+            <param name="database">Database driver.</param>
+            <param name="settings">Request-history settings.</param>
+            <param name="logging">Logging module.</param>
+        </member>
+        <member name="M:SharpAI.Server.Classes.Runtime.RequestHistoryCaptureService.Capture(WatsonWebserver.Core.HttpContextBase)">
+            <summary>
+            Capture the given request context. Builds the entry synchronously and writes it on a background
+            task. Never throws.
+            </summary>
+            <param name="ctx">Request context.</param>
+        </member>
+        <member name="T:SharpAI.Server.Classes.Runtime.TelemetryHost">
+             <summary>
+             Hosts the in-process OpenTelemetry pipeline for the server using Radiant. Subscribes to the core
+             <see cref="T:SharpAI.Telemetry.SharpAITelemetry"/> meters and activity source (and to Watson's telemetry source when the
+             web server emits it) and exports over OTLP, optionally serving an in-process Prometheus endpoint.
+            
+             Startup failures never propagate: if the telemetry host cannot start, the error is logged and the
+             server continues without telemetry. Thread-safe for construction and disposal; the underlying host
+             is created once and disposed once.
+             </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Runtime.TelemetryHost.IsActive">
+            <summary>
+            Whether the telemetry host started successfully and is actively exporting.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Server.Classes.Runtime.TelemetryHost.#ctor(SharpAI.Server.Classes.Settings.TelemetrySettings,SyslogLogging.LoggingModule)">
+            <summary>
+            Instantiate and start the telemetry host from the provided settings. Environment variables of the
+            form <c>SHARPAI_TELEMETRY_*</c> override the settings values.
+            </summary>
+            <param name="settings">Telemetry settings. May not be null.</param>
+            <param name="logging">Logging module. May not be null.</param>
+        </member>
+        <member name="M:SharpAI.Server.Classes.Runtime.TelemetryHost.Dispose">
+            <summary>
+            Dispose the telemetry host, flushing exporters and releasing any Prometheus port. Safe to call
+            multiple times.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Server.Classes.Settings.AuthSettings">
+            <summary>
+            Authentication settings. Authentication is disabled by default, matching Ollama's open local-server
+            behavior; when disabled every request runs as an implicit, fully-authorized system principal. When
+            enabled, the OpenAPI document, Swagger UI, health, and readiness endpoints remain anonymous, and
+            other endpoints require a valid administrator API key (full user/credential/session/RBAC support is
+            layered on top of this foundation).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.AuthSettings.Enabled">
+            <summary>
+            Whether authentication is enabled. Default false (open server).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.AuthSettings.AdminApiKeys">
+            <summary>
+            Valid administrator API keys (checked against the x-api-key header). Never null.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.AuthSettings.TokenSigningKey">
+            <summary>
+            Key material used to encrypt session bearer tokens (AES-256, SHA-256-derived key). When null or
+            empty a random per-boot key is generated, which invalidates existing tokens on restart; set a
+            stable value to keep sessions valid across restarts. Never null after loading.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.AuthSettings.SessionTtlMinutes">
+            <summary>
+            Lifetime of a login session in minutes. Default 60; clamped to the range 1..43200 (30 days).
+            </summary>
+        </member>
+        <member name="M:SharpAI.Server.Classes.Settings.AuthSettings.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
         </member>
         <member name="T:SharpAI.Server.Classes.Settings.DebugSettings">
             <summary>
@@ -98,6 +215,37 @@
             Instantiate.
             </summary>
         </member>
+        <member name="T:SharpAI.Server.Classes.Settings.RequestHistorySettings">
+            <summary>
+            Request-history capture settings. Capture is enabled by default; bodies are truncated to the
+            configured byte limits and rows older than the retention window are pruned on a schedule.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.RequestHistorySettings.Enabled">
+            <summary>
+            Whether request capture is enabled. Default true.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.RequestHistorySettings.MaxRequestBodyBytes">
+            <summary>
+            Maximum request body bytes captured before truncation. Default 65536, range 0-1048576.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.RequestHistorySettings.MaxResponseBodyBytes">
+            <summary>
+            Maximum response body bytes captured before truncation. Default 65536, range 0-1048576.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.RequestHistorySettings.RetentionDays">
+            <summary>
+            Retention in days before a captured row is eligible for pruning. Default 30, range 1-3650.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Server.Classes.Settings.RequestHistorySettings.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
         <member name="T:SharpAI.Server.Classes.Settings.RuntimeSettings">
             <summary>
             Runtime settings for native library backend configuration.
@@ -154,6 +302,12 @@
             Timestamp from creation, in UTC time.
             </summary>
         </member>
+        <member name="P:SharpAI.Server.Classes.Settings.Settings.SchemaVersion">
+            <summary>
+            Configuration schema version, used to migrate settings across major releases. Defaults to the
+            current schema version when absent from a loaded file.
+            </summary>
+        </member>
         <member name="P:SharpAI.Server.Classes.Settings.Settings.SoftwareVersion">
             <summary>
             Software version.
@@ -197,6 +351,21 @@
         <member name="P:SharpAI.Server.Classes.Settings.Settings.Runtime">
             <summary>
             Runtime settings for native library backend configuration.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.Settings.Telemetry">
+            <summary>
+            Telemetry settings for OpenTelemetry metrics, traces, and logs.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.Settings.RequestHistory">
+            <summary>
+            Request-history capture settings.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.Settings.Auth">
+            <summary>
+            Authentication settings. Disabled by default (open server, Ollama parity).
             </summary>
         </member>
         <member name="M:SharpAI.Server.Classes.Settings.Settings.#ctor">
@@ -282,6 +451,77 @@
             <param name="minPort">Minimum port number.</param>
             <param name="maxPort">Maximum port number.</param>
         </member>
+        <member name="T:SharpAI.Server.Classes.Settings.TelemetrySettings">
+            <summary>
+            Telemetry settings controlling in-process OpenTelemetry export (metrics, traces, and optionally
+            logs) via Radiant, plus an optional in-process Prometheus scrape endpoint. All fields can be
+            overridden by <c>SHARPAI_TELEMETRY_*</c> environment variables at startup. Telemetry is a clean
+            no-op when <see cref="P:SharpAI.Server.Classes.Settings.TelemetrySettings.Enable"/> is false or when no collector is reachable.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.TelemetrySettings.Enable">
+            <summary>
+            Whether telemetry is enabled. Default true. When false, no meters or activity sources are
+            subscribed and no exporter is started.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.TelemetrySettings.ServiceName">
+            <summary>
+            Logical service name attached to all telemetry. Default "sharpai". May not be null or empty.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.TelemetrySettings.OtlpEndpoint">
+            <summary>
+            OTLP collector endpoint. Default "http://localhost:4317". May not be null or empty.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.TelemetrySettings.OtlpProtocol">
+            <summary>
+            OTLP protocol: "grpc" (default) or "httpprotobuf". Any other value falls back to "grpc".
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.TelemetrySettings.PrometheusEnable">
+            <summary>
+            Whether to serve an in-process Prometheus scrape endpoint (separate HttpListener). Default false;
+            in the bundled Docker stack, metrics reach Prometheus through the OTLP collector instead.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.TelemetrySettings.PrometheusHostname">
+            <summary>
+            Hostname for the in-process Prometheus endpoint. Default "localhost".
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.TelemetrySettings.PrometheusPort">
+            <summary>
+            Port for the in-process Prometheus endpoint. Default 9464. Clamped to the range 0-65535.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.TelemetrySettings.PrometheusPath">
+            <summary>
+            Path for the in-process Prometheus endpoint. Default "/metrics".
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.TelemetrySettings.EnableMetrics">
+            <summary>
+            Whether metrics are exported. Default true.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.TelemetrySettings.EnableTraces">
+            <summary>
+            Whether traces are exported. Default true.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.TelemetrySettings.EnableLogs">
+            <summary>
+            Whether logs are exported over OTLP. Default false; the bundled stack ships logs to Loki by
+            tailing the server's log files, so OTLP log export is off unless explicitly enabled.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Server.Classes.Settings.TelemetrySettings.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
         <member name="T:SharpAI.Server.Program">
             <summary>
             SharpAI Server.  We are happy to see you.
@@ -293,6 +533,14 @@
             </summary>
             <param name="args">Arguments.</param>
             <returns>Task.</returns>
+        </member>
+        <member name="M:SharpAI.Server.Program.Authorize(WatsonWebserver.Core.ApiRequest,System.String,SharpAI.Security.OperationTypeEnum,System.String)">
+            <summary>
+            Enforce RBAC for a route. When authentication is disabled the request runs as the implicit
+            system principal (<c>IsAdmin</c>) and this is a no-op — preserving Ollama-parity open access.
+            When enabled, administrators bypass; every other principal is evaluated against its effective
+            permissions, and a denial is audited and surfaced as HTTP 403.
+            </summary>
         </member>
     </members>
 </doc>

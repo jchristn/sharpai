@@ -1,0 +1,186 @@
+# SharpAI full stack with observability (Prometheus + Loki + Grafana + Tempo).
+#
+# This is the enterprise/observable compose file. It runs the SharpAI server and
+# dashboard alongside an OpenTelemetry Collector that fans metrics out to Prometheus,
+# traces to Tempo, and logs (tailed from ./logs) to Loki, all visualized in Grafana.
+#
+# Bring it up:   docker compose -f compose.yaml up -d
+# Grafana:       http://localhost:9400   (anonymous admin, dark theme)
+# Prometheus:    http://localhost:9090
+# SharpAI API:   http://localhost:8000
+# Dashboard:     http://localhost:3000
+#
+# For CPU-only without observability use compose-cpu.yaml; for NVIDIA CUDA use
+# compose-cuda.yaml. For Apple Metal, run SharpAI directly on macOS (Docker on Apple
+# Silicon runs Linux containers which cannot access Metal).
+#
+# Metrics and traces light up once the in-app telemetry (Radiant + Watson 7.1) is
+# enabled (plan workstream W17); logs flow immediately because the collector tails the
+# server's rolling log files under ./logs.
+
+services:
+
+  #
+  # SharpAI Server (CPU) — see https://hub.docker.com/r/jchristn77/sharpai
+  #
+  sharpai:
+    container_name: 'sharpai'
+    image: 'jchristn77/sharpai:v5.0.0'
+    ports:
+      - '8000:8000'
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./sharpai.json:/app/sharpai.json
+      - ./sharpai.db:/app/sharpai.db
+      - ./logs/:/app/logs/
+      - sharpai-models:/app/models/
+    environment:
+      DOTNET_GC_SERVER: "1"
+      SHARPAI_FORCE_BACKEND: "cpu"
+      SHARPAI_CPU_VARIANT: "auto"
+      SHARPAI_REQUIRE_BACKEND: "true"
+      SHARPAI_ENABLE_NATIVE_LOGGING: "false"
+      SHARPAI_NUM_THREADS: "0"
+      SHARPAI_BATCH_THREADS: "0"
+      SHARPAI_GPU_LAYERS: "auto"
+      SHARPAI_MAIN_GPU: "0"
+      SHARPAI_CONTEXT_SIZE: "0"
+      SHARPAI_BATCH_SIZE: "0"
+      SHARPAI_UBATCH_SIZE: "0"
+      SHARPAI_USE_MMAP: "true"
+      SHARPAI_USE_MLOCK: "false"
+      SHARPAI_FLASH_ATTENTION: "false"
+      # Concurrency & model lifecycle
+      SHARPAI_MAX_CONCURRENT_GENERATIONS: "1"   # parallel decode slots per model (>1 opt-in)
+      SHARPAI_GENERATION_QUEUE_TIMEOUT_MS: "0"  # reject with 503 after this wait; 0 = wait forever
+      SHARPAI_KEEP_ALIVE_SECONDS: "0"           # evict idle models after N seconds; 0 = never
+      SHARPAI_MAX_RESIDENT_MODELS: "0"          # cap resident models (LRU eviction); 0 = unlimited
+      SHARPAI_MODEL_MEMORY_BUDGET_MB: "0"       # total model-memory budget; 0 = unlimited
+      # Telemetry (consumed once W17 in-app telemetry is wired; harmless until then)
+      SHARPAI_TELEMETRY_ENABLE: "true"
+      SHARPAI_TELEMETRY_SERVICE_NAME: "sharpai"
+      SHARPAI_TELEMETRY_OTLP_ENDPOINT: "http://otel-collector:4317"
+      SHARPAI_TELEMETRY_OTLP_PROTOCOL: "grpc"
+      SHARPAI_TELEMETRY_PROMETHEUS_ENABLE: "true"
+      SHARPAI_TELEMETRY_PROMETHEUS_PATH: "/metrics"
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail http://localhost:8000/ready || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    depends_on:
+      otel-collector:
+        condition: service_started
+    restart: unless-stopped
+
+  #
+  # SharpAI Dashboard — see https://hub.docker.com/r/jchristn77/sharpai-ui
+  #
+  sharpai-ui:
+    container_name: 'sharpai-ui'
+    image: 'jchristn77/sharpai-ui:v5.0.0'
+    ports:
+      - '3000:3000'
+    depends_on:
+      sharpai:
+        condition: service_healthy
+    restart: unless-stopped
+
+  #
+  # OpenTelemetry Collector — receives OTLP metrics/traces from the app, tails log
+  # files into Loki, and exposes a Prometheus scrape surface on :8889.
+  #
+  otel-collector:
+    container_name: 'sharpai-otel-collector'
+    image: 'otel/opentelemetry-collector-contrib:0.109.0'
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    volumes:
+      - ./telemetry/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro
+      - ./logs/:/app/logs:ro
+    ports:
+      - '4317:4317'   # OTLP gRPC
+      - '4318:4318'   # OTLP HTTP
+      - '8889:8889'   # Prometheus exposition of collected metrics
+    depends_on:
+      - loki
+      - tempo
+    restart: unless-stopped
+
+  #
+  # Prometheus — scrapes the collector and the app's /metrics endpoint.
+  #
+  prometheus:
+    container_name: 'sharpai-prometheus'
+    image: 'prom/prometheus:v2.55.1'
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yaml'
+      - '--enable-feature=exemplar-storage'
+    volumes:
+      - ./telemetry/prometheus.yaml:/etc/prometheus/prometheus.yaml:ro
+    ports:
+      - '9090:9090'
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:9090/-/healthy || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  #
+  # Loki — log aggregation (filesystem, single-binary).
+  #
+  loki:
+    container_name: 'sharpai-loki'
+    image: 'grafana/loki:3.2.1'
+    command: ["-config.file=/etc/loki/local-config.yaml"]
+    volumes:
+      - ./telemetry/loki-config.yaml:/etc/loki/local-config.yaml:ro
+    ports:
+      - '3100:3100'
+    restart: unless-stopped
+
+  #
+  # Tempo — distributed tracing backend (local storage).
+  #
+  tempo:
+    container_name: 'sharpai-tempo'
+    image: 'grafana/tempo:2.6.1'
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ./telemetry/tempo.yaml:/etc/tempo.yaml:ro
+    ports:
+      - '3200:3200'
+    restart: unless-stopped
+
+  #
+  # Grafana — dashboards over Prometheus, Loki, and Tempo (provisioned).
+  #
+  grafana:
+    container_name: 'sharpai-grafana'
+    image: 'grafana/grafana:11.3.0'
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: "Admin"
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_SECURITY_ALLOW_EMBEDDING: "true"
+      GF_USERS_DEFAULT_THEME: "dark"
+    volumes:
+      - ./telemetry/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./telemetry/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - '9400:3000'
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:3000/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  sharpai-models:

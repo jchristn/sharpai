@@ -1,8 +1,127 @@
 # Changelog
 
-## Current Version
+## Unreleased — v5.0.0 (in progress)
 
-v4.0.1
+The 5.0.0 line is a unified, breaking, enterprise-focused release. The full scope and task-by-task
+status live in [IMPROVEMENTS.md](IMPROVEMENTS.md); entries here are added as slices land.
+
+### Added
+
+- **RBAC enforcement + inspection.** Control-plane and inference routes are now gated by a central
+  authorization check that maps each route to its `(ResourceType, Operation)` cost, evaluates it against the
+  caller's effective permissions, audits denials, and returns 403. Two effective-permissions inspection
+  endpoints (`GET /v1.0/tenants/{tenantGuid}/users/{userGuid}/permissions` and the credential equivalent)
+  let dashboards render permission gates. With authentication disabled these gates are no-ops (open server).
+- **RBAC authorization.** A tenant-scoped role/permission model — roles, permissions, role↔permission maps,
+  user role assignments, and credential scope assignments (migration v4 across all four providers) — plus a
+  framework-free `RbacEngine` that evaluates access with explicit-deny-wins, tenant vs resource scope,
+  `InheritsToChildren`, `Write`→Create/Update/Delete expansion, `All` wildcards, `IsAdmin`/`IsTenantAdmin`
+  bypass, and a credential owner-ceiling. Six immutable built-in roles (TenantAdmin, SecurityAdmin, Auditor,
+  Editor, Viewer, TenantMember) are seeded at startup and resolvable by GUID or name. Covered by 10 contract
+  tests.
+- **Authentication (functional, off by default).** Three credentialed schemes over the admin-key baseline:
+  header login (`POST /v1.0/token` with `x-email`/`x-password`/optional `x-tenant-guid`, minting a revocable
+  session token), bearer session tokens (`Authorization: Bearer` or `x-token`, with `GET`/`DELETE /v1.0/token`
+  to inspect and revoke), and access-key/secret-key (`x-access-key`/`x-secret-key`). Every authentication
+  denial is written to the security audit log, exposed (admin/tenant-admin only) at `GET /v1.0/api/audit`.
+  On first boot a protected `default` tenant and an `admin@sharpai.local` administrator are seeded, with the
+  one-time initial password logged. New settings: `Auth.TokenSigningKey`, `Auth.SessionTtlMinutes`. The
+  auth decision lives in a framework-free `AuthenticationEngine` covered by 12 contract tests.
+- **Authentication data layer.** Tenants, users, credentials, sessions, and a security audit log —
+  models, `ITenant/IUser/ICredential/IAuthSession/IAuditMethods` data-access, and handwritten-SQL
+  implementations added as migration v3 across all four providers. Passwords/secrets are stored only as
+  SHA-256 digests (constant-time verified); session bearer tokens are AES-256-CBC with a fresh random IV
+  per token; access/secret keys are high-entropy prefixed values.
+- **Authentication (off by default).** A new `Auth` settings block (`Enabled` default false) with an
+  `AuthenticationService` on Watson's `AuthenticateRequest` hook that establishes a typed `RequestContext`
+  in `ctx.Metadata`. Disabled (the default) runs every request as an implicit, fully-authorized system
+  principal — identical to Ollama's open server. Enabled requires an admin API key (`x-api-key`,
+  constant-time compared) for non-anonymous endpoints and returns 401 otherwise; `/openapi.json`,
+  `/swagger`, `/health`, and `/ready` stay anonymous. Full user/credential/session/RBAC support builds on
+  this foundation.
+- **Request capture & history.** Every HTTP request is captured (method, path, status, duration, source
+  IP, headers with secrets redacted, and a truncated request body) on a non-blocking background write,
+  persisted through a four-provider `request_history` table (migration v2). New endpoints under
+  `/v1.0/api/request-history` (paginated list, `/summary` time-bucketed for charts, `/{id}` detail,
+  single and bulk delete), an hourly retention prune (`RequestHistory.RetentionDays`), and a
+  `RequestHistory` settings block. Capture is enabled by default and can be turned off.
+- **`GET /v1/models`** (OpenAI-compatible model list), **`GET /api/version`**, and **`POST /api/show`**
+  (Ollama-compatible model metadata + capabilities) endpoints.
+- **Tool-call output parser** (`SharpAI.Tools.ToolCallParser`) that extracts tool/function calls from the
+  common model output formats — the model-independent foundation for full tool calling.
+- **Fixture-gated integration tests.** A `ModelFixture` locates a GGUF via `SHARPAI_TEST_MODEL_GGUF` or a
+  `test-models/` directory, and a `ModelInferenceSuite` runs real inference (init, chat-template
+  rendering, small-`max_tokens` generation, concurrent generation, embeddings) when a model is present,
+  skipping cleanly otherwise.
+- **`/api/ps` now reports `expires_at`** when keep-alive eviction is enabled.
+- **Capacity backpressure maps to HTTP 429**: generation requests rejected for busy slots or model-memory
+  budget return a "slow down" response instead of a 500.
+- **Configurable generation concurrency and admission:** `SHARPAI_MAX_CONCURRENT_GENERATIONS` (parallel
+  decode slots) and `SHARPAI_GENERATION_QUEUE_TIMEOUT_MS` (reject-when-busy backpressure).
+- **Model lifecycle controls:** `SHARPAI_KEEP_ALIVE_SECONDS` (idle eviction), `SHARPAI_MAX_RESIDENT_MODELS`
+  (LRU cap), and `SHARPAI_MODEL_MEMORY_BUDGET_MB` (memory-budget admission that evicts LRU models or
+  rejects with a structured error instead of risking an OOM).
+- **Configurable thinking-tag markers** on `ThinkingFilter`, so reasoning models that don't use
+  `<think>`/`</think>` are handled; unclosed thinking blocks are no longer leaked on flush.
+- **In-app telemetry.** The core library emits inference metrics and spans via `SharpAI.Telemetry`
+  (BCL `Meter`/`ActivitySource`, no host dependency): request counts, tokens generated, inference
+  latency, and a resident-models gauge. The server hosts the OpenTelemetry pipeline with
+  [Radiant](https://www.nuget.org/packages/Radiant) 0.1.2 through a new `Telemetry` settings section
+  (OTLP endpoint/protocol, optional in-process Prometheus endpoint, `SHARPAI_TELEMETRY_*` env
+  overrides), starting on boot and flushing on shutdown. Disabled cleanly via `Telemetry.Enable=false`.
+- **Turnkey observability stack** in `docker/compose.yaml`: OpenTelemetry Collector, Prometheus,
+  Loki, Tempo, and Grafana with provisioned datasources and Overview/Logs dashboards. Logs are
+  tailed from the server's rolling files; SharpAI metrics/traces flow over OTLP. See
+  `docker/telemetry/README.md`.
+- **Touchstone test suites.** New `Test.Shared` / `Test.Automated` / `Test.Xunit` / `Test.Nunit`
+  projects (Touchstone 0.1.12) covering the prompt-format, chat-template, thinking-filter, and
+  telemetry-safety surface (84 descriptors, green on all three runners).
+- `SchemaVersion` field in `sharpai.json` to support settings migration across major versions.
+
+### Changed
+
+- **No unbounded "get all" list APIs.** Model listing now flows exclusively through an
+  `EnumerationQuery` (page number/size, order, created-before/after, and name/family/quantization/format
+  filters) returning an `EnumerationResult<ModelFile>` (totals, records-remaining, continuation token).
+  The `All()` methods on the registry, `ModelFileService`, and `ModelDriver` were removed; the
+  Ollama `/api/tags` and OpenAI `/v1/models` contracts page through the enumeration internally.
+- **Database layer rewritten; WatsonORM removed.** SharpAI now ships a hand-rolled, provider-neutral data
+  layer (`DatabaseDriverBase`/`DatabaseDriverFactory` + `IModelRegistryMethods`) with handwritten,
+  dialect-aware SQL and versioned/tracked migrations over raw ADO.NET, supporting **SQLite, MySQL,
+  PostgreSQL, and SQL Server** — selectable via `Database.Type`. SQLite remains the zero-config local
+  default; server databases are configured with `Hostname`/`Port`/`DatabaseName`/`Username`/`Password`.
+- **OpenAPI/Swagger hardening.** Every REST route carries OpenAPI metadata; the generation routes now
+  document their 429 (busy/at-capacity) response. The OpenAPI document (`/openapi.json`) and Swagger UI
+  (`/swagger`) are explicitly enabled and served without authentication so tooling and the dashboard's
+  API Explorer can introspect the surface (and must remain anonymous when auth lands in W9).
+- **Chat prompts now use the model's embedded GGUF template.** `/api/chat` and `/v1/chat/completions`
+  render prompts with the model's own `tokenizer.chat_template` (via LlamaSharp `LLamaTemplate`), falling
+  back to the family-based template only when a model has none. Generation ends on the model's native
+  end-of-turn tokens instead of injected anti-prompts, fixing subtle mis-formatting and leaked/`runaway`
+  output for models whose real template differs from the family guess.
+- **`max_tokens` is honored exactly.** Small values such as `max_tokens: 8` are no longer silently
+  raised to 100; a configurable `DefaultMaxTokens` applies only when no positive value is requested.
+- **Concurrent model loading.** Loading one model no longer blocks requests to other loaded models: the
+  engine cache uses per-model gating (`ConcurrentDictionary<…, Lazy<Task<…>>>`) instead of a global lock
+  held across initialization, and a fully async `GetByModelFileAsync` replaces the sync-over-async load.
+- **Lazy embeddings.** A generation-only model no longer loads a second copy of its weights up front; the
+  embedding context is created on first embedding request.
+- **Watson upgraded to 7.1.0**, enabling native HTTP-server telemetry: the server exposes a Prometheus
+  `/metrics` endpoint on its listener and emits request spans (exported via Radiant) when telemetry is on.
+- **Version normalized to `5.0.0`** across the core library, server, dashboard, C#/JS SDKs, Docker
+  images, and default configuration (previously split across 1.x/4.0.1/1.0.x tracks).
+- `.gitignore` now excludes Docker runtime artifacts (`docker/logs/`, `docker/models/`,
+  `docker/sharpai.db`), which are seeded from `docker/factory/`.
+
+### Removed
+
+- **Vision / llava** support removed entirely: deleted the bundled `llava_shared.dll`, its
+  `SharpAI.csproj` wiring, the `llava` package tag, and remaining vision doc references. (Core vision
+  code was retired in an earlier release; this completes the removal.)
+
+---
+
+## v4.0.1
 
 ### Added
 

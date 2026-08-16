@@ -606,9 +606,9 @@
                 });
             }
 
-            string prompt = ChatPromptBuilder.Build(
-                ChatFormatHelper.ModelFamilyToChatFormat(modelFile.Family, ChatFormatEnum.Simple),
-                messages);
+            // Prefer the model's embedded GGUF chat template; fall back to the family template.
+            ChatTemplateResult templateResult = ChatTemplateResolver.Resolve(engine, modelFile.Family, messages);
+            string prompt = templateResult.Prompt;
 
             OpenAIGenerateChatCompletionResult ret = new OpenAIGenerateChatCompletionResult
             {

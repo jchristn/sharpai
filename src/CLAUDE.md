@@ -16,7 +16,7 @@ The solution consists of:
 
 ### Core Components
 
-- **AIDriver** - Main entry point providing access to Chat, Completion, Embeddings, Models, and Vision APIs
+- **AIDriver** - Main entry point providing access to Chat, Completion, Embeddings, and Models APIs
 - **Engines** - Model execution engines (LlamaSharpEngine for local inference)
 - **Services** - ModelFileService for file management, ModelEngineService for engine coordination
 - **Models** - Data models including Ollama-compatible request/response objects
@@ -112,7 +112,6 @@ SharpAI.Server provides Ollama-compatible endpoints:
 
 - Supports GGUF format models via LlamaSharp
 - HuggingFace integration for model downloads
-- Multi-modal support with vision projector files (mmproj GGUF)
 - Local inference without cloud dependencies
 
 ## Coding Standards (STRICTLY ENFORCED)

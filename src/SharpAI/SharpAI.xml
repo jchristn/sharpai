@@ -152,6 +152,21 @@
         <member name="F:SharpAI.Classes.Runtime.SharpAIEnvironment.FlashAttention">
             <summary>Enables llama.cpp flash attention when supported by the selected backend/model.</summary>
         </member>
+        <member name="F:SharpAI.Classes.Runtime.SharpAIEnvironment.MaxConcurrentGenerations">
+            <summary>Maximum concurrent generations per model. Set to 0 or unset for the default of 1.</summary>
+        </member>
+        <member name="F:SharpAI.Classes.Runtime.SharpAIEnvironment.GenerationQueueTimeoutMs">
+            <summary>Milliseconds a generation request waits for a slot before being rejected. 0 = wait indefinitely.</summary>
+        </member>
+        <member name="F:SharpAI.Classes.Runtime.SharpAIEnvironment.KeepAliveSeconds">
+            <summary>Idle seconds after which a loaded model is evicted. 0 = never evict on idle.</summary>
+        </member>
+        <member name="F:SharpAI.Classes.Runtime.SharpAIEnvironment.MaxResidentModels">
+            <summary>Maximum number of models resident at once. 0 = unlimited.</summary>
+        </member>
+        <member name="F:SharpAI.Classes.Runtime.SharpAIEnvironment.ModelMemoryBudgetMb">
+            <summary>Total model-memory budget in megabytes (sum of resident model file sizes). 0 = unlimited.</summary>
+        </member>
         <member name="M:SharpAI.Classes.Runtime.SharpAIEnvironment.GetString(System.String)">
             <summary>
             Gets a normalized environment variable value, or null when unset, empty, or "null".
@@ -327,6 +342,878 @@
             <summary>
             SharpAI request ID header.
             </summary>
+        </member>
+        <member name="T:SharpAI.Database.DatabaseDriverBase">
+            <summary>
+            Abstract base for provider-specific database drivers. Provides connection-agnostic execution
+            helpers, a versioned/tracked migration runner, and the domain method interfaces. All access is
+            serialized with a semaphore, which is required for SQLite and harmless (registry traffic is low)
+            for server databases. Provider subclasses supply the connection and the dialect-specific DDL.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Database.DatabaseDriverBase.DatabaseType">
+            <summary>
+            Database provider type.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Database.DatabaseDriverBase.Models">
+            <summary>
+            Model registry data-access methods.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Database.DatabaseDriverBase.RequestHistory">
+            <summary>
+            Request-history data-access methods.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Database.DatabaseDriverBase.Tenants">
+            <summary>
+            Tenant data-access methods.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Database.DatabaseDriverBase.Users">
+            <summary>
+            User data-access methods.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Database.DatabaseDriverBase.Credentials">
+            <summary>
+            Credential data-access methods.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Database.DatabaseDriverBase.Sessions">
+            <summary>
+            Authentication session data-access methods.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Database.DatabaseDriverBase.Audit">
+            <summary>
+            Security audit-log data-access methods.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Database.DatabaseDriverBase.Roles">
+            <summary>
+            RBAC role data-access methods.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Database.DatabaseDriverBase.Permissions">
+            <summary>
+            RBAC permission data-access methods.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Database.DatabaseDriverBase.RolePermissionMaps">
+            <summary>
+            RBAC role↔permission mapping data-access methods.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Database.DatabaseDriverBase.UserRoleAssignments">
+            <summary>
+            RBAC user role assignment data-access methods.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Database.DatabaseDriverBase.CredentialScopeAssignments">
+            <summary>
+            RBAC credential scope assignment data-access methods.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Database.DatabaseDriverBase.IsInitialized">
+            <summary>
+            Whether the driver has been initialized (schema created and migrations applied).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Database.DatabaseDriverBase.Settings">
+            <summary>
+            Database settings.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Database.DatabaseDriverBase.Logging">
+            <summary>
+            Logging module.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Database.DatabaseDriverBase.#ctor(SharpAI.Database.DatabaseSettings,SyslogLogging.LoggingModule)">
+            <summary>
+            Instantiate the base driver.
+            </summary>
+            <param name="settings">Database settings. May not be null.</param>
+            <param name="logging">Logging module. May not be null.</param>
+        </member>
+        <member name="M:SharpAI.Database.DatabaseDriverBase.InitializeAsync(System.Threading.CancellationToken)">
+            <summary>
+            Initialize the schema: create the migrations tracking table and apply any pending migrations.
+            Safe to call repeatedly.
+            </summary>
+            <param name="token">Cancellation token.</param>
+            <returns>Task.</returns>
+        </member>
+        <member name="M:SharpAI.Database.DatabaseDriverBase.BuildPaging(System.Int32,System.Int32)">
+            <summary>
+            Provider-specific paging clause appended to a SELECT (for example "LIMIT n OFFSET m").
+            </summary>
+            <param name="limit">Maximum rows.</param>
+            <param name="offset">Rows to skip.</param>
+            <returns>Paging clause.</returns>
+        </member>
+        <member name="M:SharpAI.Database.DatabaseDriverBase.Dispose">
+            <summary>
+            Dispose the driver.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Database.DatabaseDriverBase.CreateConnection">
+            <summary>
+            Create a new, unopened provider connection.
+            </summary>
+            <returns>Connection.</returns>
+        </member>
+        <member name="M:SharpAI.Database.DatabaseDriverBase.SchemaMigrationsTableDdl">
+            <summary>
+            Provider-specific DDL that idempotently creates the <c>schema_migrations</c> tracking table.
+            </summary>
+            <returns>DDL statement.</returns>
+        </member>
+        <member name="P:SharpAI.Database.DatabaseDriverBase.Migrations">
+            <summary>
+            Ordered set of migrations for this provider (dialect-specific DDL).
+            </summary>
+        </member>
+        <member name="T:SharpAI.Database.DatabaseDriverFactory">
+            <summary>
+            Composition root for the data layer: creates the provider-specific database driver for the
+            configured <see cref="P:SharpAI.Database.DatabaseSettings.Type"/>.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Database.DatabaseDriverFactory.Create(SharpAI.Database.DatabaseSettings,SyslogLogging.LoggingModule)">
+            <summary>
+            Create a driver for the configured provider.
+            </summary>
+            <param name="settings">Database settings. May not be null.</param>
+            <param name="logging">Logging module. May not be null.</param>
+            <returns>Database driver.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when an argument is null.</exception>
+            <exception cref="T:System.ArgumentException">Thrown when the database type is unknown.</exception>
+        </member>
+        <member name="M:SharpAI.Database.DatabaseDriverFactory.CreateAndInitializeAsync(SharpAI.Database.DatabaseSettings,SyslogLogging.LoggingModule,System.Threading.CancellationToken)">
+            <summary>
+            Create and initialize (create schema, apply migrations) a driver for the configured provider.
+            </summary>
+            <param name="settings">Database settings.</param>
+            <param name="logging">Logging module.</param>
+            <param name="token">Cancellation token.</param>
+            <returns>Initialized database driver.</returns>
+        </member>
+        <member name="T:SharpAI.Database.DatabaseSettings">
+            <summary>
+            Provider-neutral database connection settings. For SQLite only <see cref="P:SharpAI.Database.DatabaseSettings.Filename"/> is required;
+            for server databases set <see cref="P:SharpAI.Database.DatabaseSettings.Hostname"/>, <see cref="P:SharpAI.Database.DatabaseSettings.Port"/>, <see cref="P:SharpAI.Database.DatabaseSettings.DatabaseName"/>,
+            <see cref="P:SharpAI.Database.DatabaseSettings.Username"/>, and <see cref="P:SharpAI.Database.DatabaseSettings.Password"/>.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Database.DatabaseSettings.Type">
+            <summary>
+            Database provider type. Default <see cref="F:SharpAI.Database.DatabaseTypeEnum.Sqlite"/>.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Database.DatabaseSettings.Filename">
+            <summary>
+            SQLite database file path. Used only when <see cref="P:SharpAI.Database.DatabaseSettings.Type"/> is Sqlite. Default "./sharpai.db".
+            </summary>
+        </member>
+        <member name="P:SharpAI.Database.DatabaseSettings.Hostname">
+            <summary>
+            Server hostname or IP for server databases. Prefer 127.0.0.1 over localhost for loopback.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Database.DatabaseSettings.Port">
+            <summary>
+            Server port. 0 uses the provider default (MySQL 3306, PostgreSQL 5432, SQL Server 1433).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Database.DatabaseSettings.DatabaseName">
+            <summary>
+            Database (catalog) name for server databases.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Database.DatabaseSettings.Username">
+            <summary>
+            Username for server databases.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Database.DatabaseSettings.Password">
+            <summary>
+            Password for server databases.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Database.DatabaseSettings.#ctor">
+            <summary>
+            Instantiate with defaults (SQLite).
+            </summary>
+        </member>
+        <member name="M:SharpAI.Database.DatabaseSettings.#ctor(System.String)">
+            <summary>
+            Instantiate a SQLite configuration with the specified file.
+            </summary>
+            <param name="filename">SQLite database file path.</param>
+        </member>
+        <member name="T:SharpAI.Database.DatabaseTypeEnum">
+            <summary>
+            Supported database providers.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Database.DatabaseTypeEnum.Sqlite">
+            <summary>
+            SQLite (file-based, the local default).
+            </summary>
+        </member>
+        <member name="F:SharpAI.Database.DatabaseTypeEnum.Mysql">
+            <summary>
+            MySQL / MariaDB.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Database.DatabaseTypeEnum.Postgresql">
+            <summary>
+            PostgreSQL.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Database.DatabaseTypeEnum.SqlServer">
+            <summary>
+            Microsoft SQL Server.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Database.Implementations.AuditMethods">
+            <summary>
+            Handwritten-SQL implementation of the security audit log.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Database.Implementations.AuthSessionMethods">
+            <summary>
+            Handwritten-SQL implementation of authentication session data access.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Database.Implementations.CredentialMethods">
+            <summary>
+            Handwritten-SQL implementation of credential data access. Enumeration is tenant-scoped.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Database.Implementations.CredentialScopeAssignmentMethods">
+            <summary>
+            Handwritten-SQL implementation of credential scope assignment data access.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Database.Implementations.DbRow">
+            <summary>
+            Portable helpers for reading provider-agnostic <see cref="T:System.Data.DataRow"/> values and formatting values
+            for storage. Timestamps are stored as sortable ISO-8601 UTC text; booleans as 0/1 integers.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Database.Implementations.ModelRegistryMethods">
+            <summary>
+            Handwritten-SQL implementation of the model registry methods. The SQL is portable ANSI executed
+            through the driver's connection-agnostic helpers, with only paging supplied by the provider. Values
+            are stored portably: GUIDs and timestamps as text, booleans as 0/1 integers.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Database.Implementations.PermissionMethods">
+            <summary>
+            Handwritten-SQL implementation of RBAC permission data access. Resource-type and operation-type lists
+            are stored as JSON text arrays.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Database.Implementations.RequestHistoryMethods">
+            <summary>
+            Handwritten-SQL implementation of the request-history methods. Scalar fields are typed columns;
+            header maps are stored as JSON (an explicit unmanaged property, since headers are schemaless).
+            Timestamps are stored as sortable ISO-8601 UTC text. The summary is bucketed in memory so the same
+            implementation works across all providers without dialect-specific date arithmetic.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Database.Implementations.RoleMethods">
+            <summary>
+            Handwritten-SQL implementation of RBAC role data access.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Database.Implementations.RolePermissionMapMethods">
+            <summary>
+            Handwritten-SQL implementation of role↔permission mapping data access.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Database.Implementations.TenantMethods">
+            <summary>
+            Handwritten-SQL implementation of tenant data access.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Database.Implementations.UserMethods">
+            <summary>
+            Handwritten-SQL implementation of user data access. Enumeration is tenant-scoped.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Database.Implementations.UserRoleAssignmentMethods">
+            <summary>
+            Handwritten-SQL implementation of user role assignment data access.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Database.Interfaces.IAuditMethods">
+            <summary>
+            Data-access methods for the security audit log. Handwritten, provider-aware SQL.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IAuditMethods.Create(SharpAI.Security.AuditLogEntry)">
+            <summary>Insert an audit entry.</summary>
+            <param name="entry">Entry.</param>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IAuditMethods.Read(System.String)">
+            <summary>Read an audit entry by identifier.</summary>
+            <param name="guid">Entry identifier.</param>
+            <returns>The entry, or null.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IAuditMethods.Enumerate(System.String,SharpAI.Models.EnumerationQuery)">
+            <summary>Page through audit entries, optionally scoped to a tenant.</summary>
+            <param name="tenantGuid">Tenant identifier, or null for all tenants.</param>
+            <param name="query">Enumeration query.</param>
+            <returns>Enumeration result.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IAuditMethods.Prune(System.DateTime)">
+            <summary>Prune audit entries created before the given UTC cutoff.</summary>
+            <param name="olderThanUtc">Cutoff.</param>
+            <returns>Number of rows deleted.</returns>
+        </member>
+        <member name="T:SharpAI.Database.Interfaces.IAuthSessionMethods">
+            <summary>
+            Data-access methods for authentication sessions. Handwritten, provider-aware SQL.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IAuthSessionMethods.Create(SharpAI.Security.AuthSession)">
+            <summary>Create a session.</summary>
+            <param name="session">Session.</param>
+            <returns>The created session.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IAuthSessionMethods.Read(System.String)">
+            <summary>Read a session by identifier.</summary>
+            <param name="guid">Session identifier.</param>
+            <returns>The session, or null.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IAuthSessionMethods.Revoke(System.String,System.String)">
+            <summary>Revoke a session (mark inactive with a reason).</summary>
+            <param name="guid">Session identifier.</param>
+            <param name="reason">Revocation reason.</param>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IAuthSessionMethods.Delete(System.String)">
+            <summary>Delete a session by identifier.</summary>
+            <param name="guid">Session identifier.</param>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IAuthSessionMethods.Prune(System.DateTime)">
+            <summary>Prune sessions that expired before the given UTC cutoff.</summary>
+            <param name="olderThanUtc">Cutoff.</param>
+            <returns>Number of rows deleted.</returns>
+        </member>
+        <member name="T:SharpAI.Database.Interfaces.ICredentialMethods">
+            <summary>
+            Data-access methods for credentials. Handwritten, provider-aware SQL. Enumeration is tenant-scoped.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.ICredentialMethods.Create(SharpAI.Security.Credential)">
+            <summary>Create a credential.</summary>
+            <param name="credential">Credential.</param>
+            <returns>The created credential.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.ICredentialMethods.Read(System.String)">
+            <summary>Read a credential by identifier.</summary>
+            <param name="guid">Credential identifier.</param>
+            <returns>The credential, or null.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.ICredentialMethods.GetByAccessKey(System.String)">
+            <summary>Read a credential by access key.</summary>
+            <param name="accessKey">Access key.</param>
+            <returns>The credential, or null.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.ICredentialMethods.Update(SharpAI.Security.Credential)">
+            <summary>Update a credential.</summary>
+            <param name="credential">Credential.</param>
+            <returns>The updated credential.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.ICredentialMethods.Delete(System.String)">
+            <summary>Delete a credential by identifier.</summary>
+            <param name="guid">Credential identifier.</param>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.ICredentialMethods.Enumerate(System.String,SharpAI.Models.EnumerationQuery)">
+            <summary>Page through credentials within a tenant.</summary>
+            <param name="tenantGuid">Tenant identifier.</param>
+            <param name="query">Enumeration query.</param>
+            <returns>Enumeration result.</returns>
+        </member>
+        <member name="T:SharpAI.Database.Interfaces.ICredentialScopeAssignmentMethods">
+            <summary>
+            Data-access methods for credential scope assignments. Handwritten, provider-aware SQL.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.ICredentialScopeAssignmentMethods.Create(SharpAI.Security.CredentialScopeAssignment)">
+            <summary>Create an assignment.</summary>
+            <param name="assignment">Assignment.</param>
+            <returns>The created assignment.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.ICredentialScopeAssignmentMethods.Read(System.String)">
+            <summary>Read an assignment by identifier.</summary>
+            <param name="guid">Assignment identifier.</param>
+            <returns>The assignment, or null.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.ICredentialScopeAssignmentMethods.GetForCredential(System.String,System.String)">
+            <summary>Get the active assignments for a credential within a tenant.</summary>
+            <param name="tenantGuid">Tenant identifier.</param>
+            <param name="credentialGuid">Credential identifier.</param>
+            <returns>Assignments; never null.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.ICredentialScopeAssignmentMethods.Delete(System.String)">
+            <summary>Delete an assignment by identifier.</summary>
+            <param name="guid">Assignment identifier.</param>
+        </member>
+        <member name="T:SharpAI.Database.Interfaces.IModelRegistryMethods">
+            <summary>
+            Domain-specific data-access methods for the model registry. Implementations use handwritten,
+            provider-aware SQL rather than a generic ORM.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IModelRegistryMethods.Enumerate(SharpAI.Models.EnumerationQuery)">
+            <summary>
+            Page through model file records using an enumeration query. This is the only list operation;
+            there is no unbounded "get all".
+            </summary>
+            <param name="query">Enumeration query (paging, ordering, filters). When null, defaults are used.</param>
+            <returns>Enumeration result.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IModelRegistryMethods.GetByGuid(System.Guid)">
+            <summary>
+            Retrieve a model file by GUID.
+            </summary>
+            <param name="guid">Model GUID.</param>
+            <returns>The model file, or null when not found.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IModelRegistryMethods.GetByName(System.String)">
+            <summary>
+            Retrieve a model file by name.
+            </summary>
+            <param name="name">Model name.</param>
+            <returns>The model file, or null when not found.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IModelRegistryMethods.GetMany(System.Collections.Generic.List{System.Guid})">
+            <summary>
+            Retrieve multiple model files by GUID.
+            </summary>
+            <param name="guids">Model GUIDs.</param>
+            <returns>Matching model files.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IModelRegistryMethods.ExistsByGuid(System.Guid)">
+            <summary>
+            Determine whether a model file with the given GUID exists.
+            </summary>
+            <param name="guid">Model GUID.</param>
+            <returns>True if a record exists.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IModelRegistryMethods.Add(SharpAI.Models.ModelFile)">
+            <summary>
+            Insert a model file. If a record with the same name already exists, the existing record is
+            returned unchanged.
+            </summary>
+            <param name="modelFile">Model file to insert.</param>
+            <returns>The stored model file.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IModelRegistryMethods.Update(SharpAI.Models.ModelFile)">
+            <summary>
+            Update an existing model file (matched by GUID).
+            </summary>
+            <param name="modelFile">Model file to update.</param>
+            <returns>The updated model file.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IModelRegistryMethods.Delete(System.Guid)">
+            <summary>
+            Delete a model file by GUID.
+            </summary>
+            <param name="guid">Model GUID.</param>
+        </member>
+        <member name="T:SharpAI.Database.Interfaces.IPermissionMethods">
+            <summary>
+            Data-access methods for RBAC permissions. Handwritten, provider-aware SQL.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IPermissionMethods.Create(SharpAI.Security.Permission)">
+            <summary>Create a permission.</summary>
+            <param name="permission">Permission.</param>
+            <returns>The created permission.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IPermissionMethods.Read(System.String)">
+            <summary>Read a permission by identifier.</summary>
+            <param name="guid">Permission identifier.</param>
+            <returns>The permission, or null.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IPermissionMethods.GetForRole(System.String)">
+            <summary>Get the active permissions mapped to a role.</summary>
+            <param name="roleGuid">Role identifier.</param>
+            <returns>Permissions; never null.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IPermissionMethods.Delete(System.String)">
+            <summary>Delete a permission by identifier.</summary>
+            <param name="guid">Permission identifier.</param>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IPermissionMethods.Enumerate(System.String,SharpAI.Models.EnumerationQuery)">
+            <summary>Page through permissions within a tenant.</summary>
+            <param name="tenantGuid">Tenant identifier.</param>
+            <param name="query">Enumeration query.</param>
+            <returns>Enumeration result.</returns>
+        </member>
+        <member name="T:SharpAI.Database.Interfaces.IRequestHistoryMethods">
+            <summary>
+            Domain-specific data-access methods for request history. Uses handwritten, provider-aware SQL.
+            There is no unbounded "get all" — listing is via <see cref="M:SharpAI.Database.Interfaces.IRequestHistoryMethods.Enumerate(SharpAI.Models.RequestHistoryQuery)"/>.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IRequestHistoryMethods.Create(SharpAI.Models.RequestHistoryEntry)">
+            <summary>
+            Insert a captured request record.
+            </summary>
+            <param name="entry">Entry to insert.</param>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IRequestHistoryMethods.Read(System.String)">
+            <summary>
+            Read a single entry by identifier, including headers and bodies.
+            </summary>
+            <param name="id">Entry identifier.</param>
+            <returns>The entry, or null when not found.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IRequestHistoryMethods.Enumerate(SharpAI.Models.RequestHistoryQuery)">
+            <summary>
+            Page through entries matching a filter. Returned entries omit request/response bodies (use
+            <see cref="M:SharpAI.Database.Interfaces.IRequestHistoryMethods.Read(System.String)"/> for the full record).
+            </summary>
+            <param name="query">Enumeration query.</param>
+            <returns>Enumeration result.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IRequestHistoryMethods.Summarize(SharpAI.Models.RequestHistoryQuery)">
+            <summary>
+            Produce a time-bucketed summary over a range, emitting a bucket for every interval including
+            empty ones.
+            </summary>
+            <param name="query">Query defining the range, bucket width, and filters.</param>
+            <returns>Summary.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IRequestHistoryMethods.Delete(System.String)">
+            <summary>
+            Delete a single entry by identifier.
+            </summary>
+            <param name="id">Entry identifier.</param>
+            <returns>True if a record was deleted.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IRequestHistoryMethods.DeleteMany(SharpAI.Models.RequestHistoryQuery)">
+            <summary>
+            Delete all entries matching a filter.
+            </summary>
+            <param name="query">Filter.</param>
+            <returns>Number of rows deleted.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IRequestHistoryMethods.Prune(System.DateTime)">
+            <summary>
+            Prune entries created before the given UTC cutoff.
+            </summary>
+            <param name="olderThanUtc">Cutoff; entries created before this are removed.</param>
+            <returns>Number of rows deleted.</returns>
+        </member>
+        <member name="T:SharpAI.Database.Interfaces.IRoleMethods">
+            <summary>
+            Data-access methods for RBAC roles. Handwritten, provider-aware SQL. Built-in roles carry a null
+            tenant identifier and are globally visible.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IRoleMethods.Create(SharpAI.Security.UserRole)">
+            <summary>Create a role.</summary>
+            <param name="role">Role.</param>
+            <returns>The created role.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IRoleMethods.Read(System.String)">
+            <summary>Read a role by identifier.</summary>
+            <param name="guid">Role identifier.</param>
+            <returns>The role, or null.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IRoleMethods.GetBuiltInByName(System.String)">
+            <summary>Read a built-in role by name (tenant identifier is null).</summary>
+            <param name="name">Role name.</param>
+            <returns>The role, or null.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IRoleMethods.GetByName(System.String,System.String)">
+            <summary>Read a tenant-scoped role by name.</summary>
+            <param name="tenantGuid">Tenant identifier.</param>
+            <param name="name">Role name.</param>
+            <returns>The role, or null.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IRoleMethods.Update(SharpAI.Security.UserRole)">
+            <summary>Update a role.</summary>
+            <param name="role">Role.</param>
+            <returns>The updated role.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IRoleMethods.Delete(System.String)">
+            <summary>Delete a role by identifier.</summary>
+            <param name="guid">Role identifier.</param>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IRoleMethods.Enumerate(System.String,SharpAI.Models.EnumerationQuery)">
+            <summary>Page through roles visible to a tenant (its own plus built-ins).</summary>
+            <param name="tenantGuid">Tenant identifier.</param>
+            <param name="query">Enumeration query.</param>
+            <returns>Enumeration result.</returns>
+        </member>
+        <member name="T:SharpAI.Database.Interfaces.IRolePermissionMapMethods">
+            <summary>
+            Data-access methods for role↔permission mappings. Handwritten, provider-aware SQL.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IRolePermissionMapMethods.Create(SharpAI.Security.RolePermissionMap)">
+            <summary>Create a mapping.</summary>
+            <param name="map">Mapping.</param>
+            <returns>The created mapping.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IRolePermissionMapMethods.GetByRole(System.String)">
+            <summary>Get the mappings for a role.</summary>
+            <param name="roleGuid">Role identifier.</param>
+            <returns>Mappings; never null.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IRolePermissionMapMethods.Delete(System.String)">
+            <summary>Delete a mapping by identifier.</summary>
+            <param name="guid">Mapping identifier.</param>
+        </member>
+        <member name="T:SharpAI.Database.Interfaces.ITenantMethods">
+            <summary>
+            Data-access methods for tenants. Handwritten, provider-aware SQL.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.ITenantMethods.Create(SharpAI.Security.Tenant)">
+            <summary>Create a tenant.</summary>
+            <param name="tenant">Tenant.</param>
+            <returns>The created tenant.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.ITenantMethods.Read(System.String)">
+            <summary>Read a tenant by identifier.</summary>
+            <param name="guid">Tenant identifier.</param>
+            <returns>The tenant, or null.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.ITenantMethods.GetByName(System.String)">
+            <summary>Read a tenant by name.</summary>
+            <param name="name">Tenant name.</param>
+            <returns>The tenant, or null.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.ITenantMethods.Update(SharpAI.Security.Tenant)">
+            <summary>Update a tenant.</summary>
+            <param name="tenant">Tenant.</param>
+            <returns>The updated tenant.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.ITenantMethods.Delete(System.String)">
+            <summary>Delete a tenant by identifier.</summary>
+            <param name="guid">Tenant identifier.</param>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.ITenantMethods.Enumerate(SharpAI.Models.EnumerationQuery)">
+            <summary>Page through tenants.</summary>
+            <param name="query">Enumeration query.</param>
+            <returns>Enumeration result.</returns>
+        </member>
+        <member name="T:SharpAI.Database.Interfaces.IUserMethods">
+            <summary>
+            Data-access methods for users. Handwritten, provider-aware SQL. Enumeration is tenant-scoped.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IUserMethods.Create(SharpAI.Security.User)">
+            <summary>Create a user.</summary>
+            <param name="user">User.</param>
+            <returns>The created user.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IUserMethods.Read(System.String)">
+            <summary>Read a user by identifier.</summary>
+            <param name="guid">User identifier.</param>
+            <returns>The user, or null.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IUserMethods.GetByEmail(System.String,System.String)">
+            <summary>Read a user by tenant-scoped email.</summary>
+            <param name="tenantGuid">Tenant identifier.</param>
+            <param name="email">Email address.</param>
+            <returns>The user, or null.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IUserMethods.Update(SharpAI.Security.User)">
+            <summary>Update a user.</summary>
+            <param name="user">User.</param>
+            <returns>The updated user.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IUserMethods.Delete(System.String)">
+            <summary>Delete a user by identifier.</summary>
+            <param name="guid">User identifier.</param>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IUserMethods.Enumerate(System.String,SharpAI.Models.EnumerationQuery)">
+            <summary>Page through users within a tenant.</summary>
+            <param name="tenantGuid">Tenant identifier.</param>
+            <param name="query">Enumeration query.</param>
+            <returns>Enumeration result.</returns>
+        </member>
+        <member name="T:SharpAI.Database.Interfaces.IUserRoleAssignmentMethods">
+            <summary>
+            Data-access methods for user role assignments. Handwritten, provider-aware SQL.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IUserRoleAssignmentMethods.Create(SharpAI.Security.UserRoleAssignment)">
+            <summary>Create an assignment.</summary>
+            <param name="assignment">Assignment.</param>
+            <returns>The created assignment.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IUserRoleAssignmentMethods.Read(System.String)">
+            <summary>Read an assignment by identifier.</summary>
+            <param name="guid">Assignment identifier.</param>
+            <returns>The assignment, or null.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IUserRoleAssignmentMethods.GetForUser(System.String,System.String)">
+            <summary>Get the active assignments for a user within a tenant.</summary>
+            <param name="tenantGuid">Tenant identifier.</param>
+            <param name="userGuid">User identifier.</param>
+            <returns>Assignments; never null.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IUserRoleAssignmentMethods.Delete(System.String)">
+            <summary>Delete an assignment by identifier.</summary>
+            <param name="guid">Assignment identifier.</param>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IUserRoleAssignmentMethods.Enumerate(System.String,System.String,SharpAI.Models.EnumerationQuery)">
+            <summary>Page through assignments for a user within a tenant.</summary>
+            <param name="tenantGuid">Tenant identifier.</param>
+            <param name="userGuid">User identifier.</param>
+            <param name="query">Enumeration query.</param>
+            <returns>Enumeration result.</returns>
+        </member>
+        <member name="T:SharpAI.Database.Mysql.MysqlDatabaseDriver">
+            <summary>
+            MySQL / MariaDB database driver. Provides MySQL dialect DDL and paging.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Database.Mysql.MysqlDatabaseDriver.DatabaseType">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Database.Mysql.MysqlDatabaseDriver.#ctor(SharpAI.Database.DatabaseSettings,SyslogLogging.LoggingModule)">
+            <summary>
+            Instantiate the MySQL driver.
+            </summary>
+            <param name="settings">Database settings.</param>
+            <param name="logging">Logging module.</param>
+        </member>
+        <member name="M:SharpAI.Database.Mysql.MysqlDatabaseDriver.BuildPaging(System.Int32,System.Int32)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Database.Mysql.MysqlDatabaseDriver.CreateConnection">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Database.Mysql.MysqlDatabaseDriver.SchemaMigrationsTableDdl">
+            <inheritdoc />
+        </member>
+        <member name="P:SharpAI.Database.Mysql.MysqlDatabaseDriver.Migrations">
+            <inheritdoc />
+        </member>
+        <member name="T:SharpAI.Database.Postgresql.PostgresqlDatabaseDriver">
+            <summary>
+            PostgreSQL database driver. Provides PostgreSQL dialect DDL and paging.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Database.Postgresql.PostgresqlDatabaseDriver.DatabaseType">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Database.Postgresql.PostgresqlDatabaseDriver.#ctor(SharpAI.Database.DatabaseSettings,SyslogLogging.LoggingModule)">
+            <summary>
+            Instantiate the PostgreSQL driver.
+            </summary>
+            <param name="settings">Database settings.</param>
+            <param name="logging">Logging module.</param>
+        </member>
+        <member name="M:SharpAI.Database.Postgresql.PostgresqlDatabaseDriver.BuildPaging(System.Int32,System.Int32)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Database.Postgresql.PostgresqlDatabaseDriver.CreateConnection">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Database.Postgresql.PostgresqlDatabaseDriver.SchemaMigrationsTableDdl">
+            <inheritdoc />
+        </member>
+        <member name="P:SharpAI.Database.Postgresql.PostgresqlDatabaseDriver.Migrations">
+            <inheritdoc />
+        </member>
+        <member name="T:SharpAI.Database.SchemaMigration">
+            <summary>
+            A versioned, ordered set of DDL statements applied to bring the schema to a given version. Migrations
+            are tracked in the <c>schema_migrations</c> table and are safe to run repeatedly (idempotent DDL).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Database.SchemaMigration.Version">
+            <summary>
+            Monotonic migration version. Minimum 1.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Database.SchemaMigration.Description">
+            <summary>
+            Human-readable description of the migration.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Database.SchemaMigration.Statements">
+            <summary>
+            Ordered DDL statements to apply. Never null.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Database.SchemaMigration.#ctor(System.Int32,System.String,System.Collections.Generic.List{System.String})">
+            <summary>
+            Instantiate.
+            </summary>
+            <param name="version">Migration version (minimum 1).</param>
+            <param name="description">Description.</param>
+            <param name="statements">Ordered DDL statements.</param>
+        </member>
+        <member name="T:SharpAI.Database.Sqlite.SqliteDatabaseDriver">
+            <summary>
+            SQLite database driver (file-based, the local default). Provides SQLite dialect DDL and paging.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Database.Sqlite.SqliteDatabaseDriver.DatabaseType">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Database.Sqlite.SqliteDatabaseDriver.#ctor(SharpAI.Database.DatabaseSettings,SyslogLogging.LoggingModule)">
+            <summary>
+            Instantiate the SQLite driver.
+            </summary>
+            <param name="settings">Database settings (Filename is used).</param>
+            <param name="logging">Logging module.</param>
+        </member>
+        <member name="M:SharpAI.Database.Sqlite.SqliteDatabaseDriver.BuildPaging(System.Int32,System.Int32)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Database.Sqlite.SqliteDatabaseDriver.CreateConnection">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Database.Sqlite.SqliteDatabaseDriver.SchemaMigrationsTableDdl">
+            <inheritdoc />
+        </member>
+        <member name="P:SharpAI.Database.Sqlite.SqliteDatabaseDriver.Migrations">
+            <inheritdoc />
+        </member>
+        <member name="T:SharpAI.Database.SqlServer.SqlServerDatabaseDriver">
+            <summary>
+            Microsoft SQL Server database driver. Provides SQL Server dialect DDL (existence-guarded, since it
+            has no CREATE TABLE IF NOT EXISTS) and OFFSET/FETCH paging.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Database.SqlServer.SqlServerDatabaseDriver.DatabaseType">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Database.SqlServer.SqlServerDatabaseDriver.#ctor(SharpAI.Database.DatabaseSettings,SyslogLogging.LoggingModule)">
+            <summary>
+            Instantiate the SQL Server driver.
+            </summary>
+            <param name="settings">Database settings.</param>
+            <param name="logging">Logging module.</param>
+        </member>
+        <member name="M:SharpAI.Database.SqlServer.SqlServerDatabaseDriver.BuildPaging(System.Int32,System.Int32)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Database.SqlServer.SqlServerDatabaseDriver.CreateConnection">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Database.SqlServer.SqlServerDatabaseDriver.SchemaMigrationsTableDdl">
+            <inheritdoc />
+        </member>
+        <member name="P:SharpAI.Database.SqlServer.SqlServerDatabaseDriver.Migrations">
+            <inheritdoc />
         </member>
         <member name="T:SharpAI.EmbeddingsDriver">
             <summary>
@@ -508,7 +1395,7 @@
         <member name="T:SharpAI.Engines.LlamaSharpEngine">
             <summary>
             LlamaSharp implementation of the AI provider base class.
-            Provides text generation, embeddings, chat completion and vision capabilities using the LlamaSharp library.
+            Provides text generation, embeddings, and chat completion using the LlamaSharp library.
             </summary>
         </member>
         <member name="P:SharpAI.Engines.LlamaSharpEngine.IsDisposed">
@@ -549,6 +1436,41 @@
         <member name="P:SharpAI.Engines.LlamaSharpEngine.IsInitialized">
             <summary>
             Gets whether this engine has been successfully initialized.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Engines.LlamaSharpEngine.SupportsEmbeddedChatTemplate">
+            <summary>
+            Gets whether the loaded model carries a usable embedded chat template (GGUF
+            <c>tokenizer.chat_template</c>). The result is probed once and cached. Returns false before the
+            engine is initialized.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Engines.LlamaSharpEngine.DefaultMaxTokens">
+            <summary>
+            Number of tokens to generate when a caller does not specify a positive value.
+            Applied only when the requested maximum is zero or negative; a positive request is honored
+            exactly (including small values). Default 512, minimum 1.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Engines.LlamaSharpEngine.EnableEmbeddingChunking">
+            <summary>
+            Whether inputs longer than the embedding context are split into chunks and averaged. Default
+            true. When false, an over-length embedding input throws instead of being silently chunked and
+            averaged, which changes the resulting vector's meaning.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Engines.LlamaSharpEngine.MaxConcurrentGenerations">
+            <summary>
+            Maximum number of generations that may run concurrently against this model. Default 1 (strictly
+            serialized). Values above 1 allow parallel decode slots; this must be set before the engine is
+            initialized to take effect. Minimum 1.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Engines.LlamaSharpEngine.GenerationQueueTimeoutMs">
+            <summary>
+            Milliseconds a generation request waits for a free slot before it is rejected with an
+            <see cref="T:SharpAI.Exceptions.EngineBusyException"/>. Default 0, which waits indefinitely.
+            Minimum 0.
             </summary>
         </member>
         <member name="M:SharpAI.Engines.LlamaSharpEngine.GetContextSize">
@@ -613,6 +1535,59 @@
         </member>
         <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateChatCompletionStreamAsync(System.String,System.Int32,System.Single,System.String[],System.Threading.CancellationToken)">
             <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Engines.LlamaSharpEngine.RenderEmbeddedChatPrompt(System.Collections.Generic.IReadOnlyList{SharpAI.Prompts.ChatMessage},System.Boolean)">
+            <inheritdoc />
+        </member>
+        <member name="T:SharpAI.Exceptions.EngineBusyException">
+            <summary>
+            Thrown when a generation request cannot acquire a generation slot within the configured admission
+            timeout because the engine is at capacity. Callers (for example a REST server) should map this to a
+            "server busy" response such as HTTP 503 or 429 rather than blocking indefinitely.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Exceptions.EngineBusyException.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Exceptions.EngineBusyException.#ctor(System.String)">
+            <summary>
+            Instantiate with a message.
+            </summary>
+            <param name="message">Message describing the condition.</param>
+        </member>
+        <member name="M:SharpAI.Exceptions.EngineBusyException.#ctor(System.String,System.Exception)">
+            <summary>
+            Instantiate with a message and inner exception.
+            </summary>
+            <param name="message">Message describing the condition.</param>
+            <param name="innerException">Inner exception.</param>
+        </member>
+        <member name="T:SharpAI.Exceptions.ModelAdmissionException">
+            <summary>
+            Thrown when a model cannot be admitted for loading because doing so would exceed the configured
+            model-memory budget and no idle model could be evicted to make room. Callers should surface this as
+            a capacity error rather than attempting the load, which would risk an out-of-memory condition.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Exceptions.ModelAdmissionException.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Exceptions.ModelAdmissionException.#ctor(System.String)">
+            <summary>
+            Instantiate with a message.
+            </summary>
+            <param name="message">Message describing the condition.</param>
+        </member>
+        <member name="M:SharpAI.Exceptions.ModelAdmissionException.#ctor(System.String,System.Exception)">
+            <summary>
+            Instantiate with a message and inner exception.
+            </summary>
+            <param name="message">Message describing the condition.</param>
+            <param name="innerException">Inner exception.</param>
         </member>
         <member name="T:SharpAI.Helpers.DataTableHelper">
             <summary>
@@ -1021,6 +1996,122 @@
             <param name="stream">Stream.</param>
             <returns>Tuple containing MD5, SHA1, and SHA256 hashes.</returns>
         </member>
+        <member name="T:SharpAI.Helpers.IdGenerator">
+            <summary>
+            Generates prefixed application identifiers. Prefixes make identifiers self-describing in logs and
+            APIs (for example <c>req_</c> for a request-history entry, <c>mdl_</c> for a model).
+            </summary>
+        </member>
+        <member name="F:SharpAI.Helpers.IdGenerator.RequestHistoryPrefix">
+            <summary>
+            Prefix for request-history entry identifiers.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Helpers.IdGenerator.ModelPrefix">
+            <summary>
+            Prefix for model identifiers.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Helpers.IdGenerator.TenantPrefix">
+            <summary>
+            Prefix for tenant identifiers.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Helpers.IdGenerator.UserPrefix">
+            <summary>
+            Prefix for user identifiers.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Helpers.IdGenerator.CredentialPrefix">
+            <summary>
+            Prefix for credential identifiers.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Helpers.IdGenerator.SessionPrefix">
+            <summary>
+            Prefix for session identifiers.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Helpers.IdGenerator.AuditPrefix">
+            <summary>
+            Prefix for audit log entry identifiers.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Helpers.IdGenerator.RolePrefix">
+            <summary>
+            Prefix for role identifiers.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Helpers.IdGenerator.PermissionPrefix">
+            <summary>
+            Prefix for permission identifiers.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Helpers.IdGenerator.AssignmentPrefix">
+            <summary>
+            Prefix for mapping/assignment identifiers.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Helpers.IdGenerator.GenerateTenantId">
+            <summary>
+            Generate a tenant identifier.
+            </summary>
+            <returns>Identifier.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.IdGenerator.GenerateUserId">
+            <summary>
+            Generate a user identifier.
+            </summary>
+            <returns>Identifier.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.IdGenerator.GenerateCredentialId">
+            <summary>
+            Generate a credential identifier.
+            </summary>
+            <returns>Identifier.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.IdGenerator.GenerateSessionId">
+            <summary>
+            Generate a session identifier.
+            </summary>
+            <returns>Identifier.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.IdGenerator.GenerateAuditId">
+            <summary>
+            Generate an audit log entry identifier.
+            </summary>
+            <returns>Identifier.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.IdGenerator.GenerateRequestHistoryId">
+            <summary>
+            Generate a request-history entry identifier.
+            </summary>
+            <returns>Identifier.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.IdGenerator.GenerateModelId">
+            <summary>
+            Generate a model identifier.
+            </summary>
+            <returns>Identifier.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.IdGenerator.GenerateRoleId">
+            <summary>
+            Generate a role identifier.
+            </summary>
+            <returns>Identifier.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.IdGenerator.GeneratePermissionId">
+            <summary>
+            Generate a permission identifier.
+            </summary>
+            <returns>Identifier.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.IdGenerator.GenerateAssignmentId">
+            <summary>
+            Generate a mapping/assignment identifier.
+            </summary>
+            <returns>Identifier.</returns>
+        </member>
         <member name="T:SharpAI.Helpers.StreamHelper">
             <summary>
             Stream helpers.
@@ -1108,9 +2199,10 @@
         </member>
         <member name="T:SharpAI.Helpers.ThinkingFilter">
             <summary>
-            Filters model thinking/reasoning tokens from generated output.
-            Models like Qwen3 emit &lt;think&gt;...&lt;/think&gt; blocks containing chain-of-thought
-            reasoning that should typically be hidden from end users.
+            Filters model thinking/reasoning tokens from generated output. Reasoning models emit a block of
+            chain-of-thought between an opening and closing marker (for example &lt;think&gt;...&lt;/think&gt;
+            for Qwen3/DeepSeek-R1) that should typically be hidden from end users. The markers are configurable
+            so the same filter serves models that use different tokens.
             </summary>
         </member>
         <member name="P:SharpAI.Helpers.ThinkingFilter.InsideThinkingBlock">
@@ -1118,12 +2210,47 @@
             Gets a value indicating whether the filter is currently inside a thinking block.
             </summary>
         </member>
+        <member name="P:SharpAI.Helpers.ThinkingFilter.OpenTag">
+            <summary>
+            The opening marker for a thinking block. Default "&lt;think&gt;".
+            </summary>
+        </member>
+        <member name="P:SharpAI.Helpers.ThinkingFilter.CloseTag">
+            <summary>
+            The closing marker for a thinking block. Default "&lt;/think&gt;".
+            </summary>
+        </member>
+        <member name="M:SharpAI.Helpers.ThinkingFilter.#ctor">
+            <summary>
+            Initialize a thinking filter with the default markers ("&lt;think&gt;" / "&lt;/think&gt;").
+            </summary>
+        </member>
+        <member name="M:SharpAI.Helpers.ThinkingFilter.#ctor(System.String,System.String)">
+            <summary>
+            Initialize a thinking filter with custom markers.
+            </summary>
+            <param name="openTag">Opening marker. May not be null or empty.</param>
+            <param name="closeTag">Closing marker. May not be null or empty.</param>
+            <exception cref="T:System.ArgumentNullException">Thrown when either marker is null or empty.</exception>
+        </member>
         <member name="M:SharpAI.Helpers.ThinkingFilter.RemoveThinkingBlocks(System.String)">
             <summary>
-            Filter a complete (non-streaming) response, removing all thinking blocks.
+            Filter a complete (non-streaming) response, removing all thinking blocks delimited by the
+            default markers.
             </summary>
             <param name="text">The full response text.</param>
             <returns>Text with thinking blocks removed.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.ThinkingFilter.RemoveThinkingBlocks(System.String,System.String,System.String)">
+            <summary>
+            Filter a complete (non-streaming) response, removing all thinking blocks delimited by the
+            supplied markers.
+            </summary>
+            <param name="text">The full response text.</param>
+            <param name="openTag">Opening marker. May not be null or empty.</param>
+            <param name="closeTag">Closing marker. May not be null or empty.</param>
+            <returns>Text with thinking blocks removed.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when either marker is null or empty.</exception>
         </member>
         <member name="M:SharpAI.Helpers.ThinkingFilter.ProcessToken(System.String)">
             <summary>
@@ -1137,7 +2264,7 @@
             <summary>
             Flush any remaining buffered content. Call this when the stream ends.
             </summary>
-            <returns>Any remaining buffered text that should be emitted.</returns>
+            <returns>Any remaining buffered text that should be emitted. Empty when the stream ended inside a thinking block.</returns>
         </member>
         <member name="T:SharpAI.Helpers.TimeHelper">
             <summary>
@@ -1941,31 +3068,22 @@
             Model directory.
             </summary>
         </member>
-        <member name="M:SharpAI.ModelDriver.#ctor(SyslogLogging.LoggingModule,Watson.ORM.Sqlite.WatsonORM,SharpAI.Serialization.Serializer,System.String,System.String)">
+        <member name="M:SharpAI.ModelDriver.#ctor(SyslogLogging.LoggingModule,SharpAI.Database.DatabaseDriverBase,SharpAI.Serialization.Serializer,System.String,System.String)">
             <summary>
             Model driver.
             </summary>
             <param name="logging">Logging module.</param>
-            <param name="orm">ORM.</param>
+            <param name="database">Database driver.</param>
             <param name="serializer">Serializer.</param>
             <param name="huggingFaceApiKey">HuggingFace API key.</param>
             <param name="modelDirectory">Model storage directory.</param>
         </member>
-        <member name="M:SharpAI.ModelDriver.All">
+        <member name="M:SharpAI.ModelDriver.Enumerate(SharpAI.Models.EnumerationQuery)">
             <summary>
-            Retrieve all.
+            Enumerate models using a paginated query. This is the only list operation; there is no
+            unbounded "get all".
             </summary>
-            <returns></returns>
-        </member>
-        <member name="M:SharpAI.ModelDriver.Enumerate(System.Nullable{System.Guid},System.Int32,System.Int32,System.Collections.Generic.Dictionary{System.String,System.String},SharpAI.Models.EnumerationOrderEnum)">
-            <summary>
-            Enumerate.
-            </summary>
-            <param name="continuationToken">Continuation token.</param>
-            <param name="maxResults">Maximum number of results to retrieve.</param>
-            <param name="skip">The number of records to skip.</param>
-            <param name="filter">Filters to add to the request.</param>
-            <param name="ordering">Ordering.</param>
+            <param name="query">Enumeration query. When null, defaults are used.</param>
             <returns>Enumeration result.</returns>
         </member>
         <member name="M:SharpAI.ModelDriver.GetByGuid(System.Guid)">
@@ -2002,13 +3120,6 @@
             </summary>        
             <param name="guid">GUID.</param>
             <returns>True if exists.</returns>
-        </member>
-        <member name="M:SharpAI.ModelDriver.First(ExpressionTree.Expr)">
-            <summary>
-            Retrieve first.
-            </summary>
-            <param name="expr">Expr.</param>
-            <returns>Instance.</returns>
         </member>
         <member name="M:SharpAI.ModelDriver.Add(System.String,System.Collections.Generic.Dictionary{System.String,System.Int32},System.Action{System.String,System.Int64,System.Decimal},System.Threading.CancellationToken)">
             <summary>
@@ -2067,6 +3178,74 @@
             <summary>
             KeyDescending.
             </summary>
+        </member>
+        <member name="T:SharpAI.Models.EnumerationQuery">
+            <summary>
+            Query parameters for paginated enumeration of the model registry. Supports page-based pagination,
+            ordering, creation-time filtering, and model-specific equality filters. This is the sole entry point
+            for listing models; there is no unbounded "get all" operation.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.EnumerationQuery.PageNumber">
+            <summary>
+            Page number (1-based). Default 1; values below 1 are clamped to 1.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.EnumerationQuery.PageSize">
+            <summary>
+            Number of results per page. Default 100, minimum 1, maximum 1000.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.EnumerationQuery.Order">
+            <summary>
+            Sort order. Default is CreatedDescending (newest first).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.EnumerationQuery.CreatedAfter">
+            <summary>
+            Filter to models created strictly after this UTC timestamp.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.EnumerationQuery.CreatedBefore">
+            <summary>
+            Filter to models created strictly before this UTC timestamp.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.EnumerationQuery.Name">
+            <summary>
+            Filter by exact model name.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.EnumerationQuery.Family">
+            <summary>
+            Filter by model family.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.EnumerationQuery.Quantization">
+            <summary>
+            Filter by quantization.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.EnumerationQuery.Format">
+            <summary>
+            Filter by model format.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.EnumerationQuery.Offset">
+            <summary>
+            SQL OFFSET derived from the page number and page size.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.EnumerationQuery.#ctor">
+            <summary>
+            Instantiate with defaults.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.EnumerationQuery.ApplyQuerystringOverrides(System.Func{System.String,System.String})">
+            <summary>
+            Apply query-string overrides. Any non-empty query-string value replaces the corresponding value.
+            </summary>
+            <param name="queryGetter">Function that retrieves a query-string value by key.</param>
         </member>
         <member name="T:SharpAI.Models.EnumerationResult`1">
             <summary>
@@ -2133,14 +3312,9 @@
             Metadata about a model.
             </summary>
         </member>
-        <member name="P:SharpAI.Models.ModelFile.Id">
-            <summary>
-            ID.
-            </summary>
-        </member>
         <member name="P:SharpAI.Models.ModelFile.GUID">
             <summary>
-            GUID.
+            GUID (primary identifier).
             </summary>
         </member>
         <member name="P:SharpAI.Models.ModelFile.Name">
@@ -5873,6 +7047,261 @@
             OpenAI usage.
             </summary>
         </member>
+        <member name="T:SharpAI.Models.RequestHistoryBucket">
+            <summary>
+            A single time bucket in a request-history summary. The server emits a bucket for every interval in
+            the requested range, including empty ones, so the dashboard can render a continuous chart.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryBucket.BucketStartUtc">
+            <summary>
+            UTC start of the bucket (inclusive).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryBucket.BucketEndUtc">
+            <summary>
+            UTC end of the bucket (exclusive).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryBucket.SuccessCount">
+            <summary>
+            Number of successful (status &lt; 400) requests in the bucket.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryBucket.FailureCount">
+            <summary>
+            Number of failed (status &gt;= 400) requests in the bucket.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryBucket.AverageDurationMs">
+            <summary>
+            Average request duration in milliseconds within the bucket.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.RequestHistoryBucket.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.RequestHistoryEntry">
+            <summary>
+            A captured HTTP request and its response, used by the dashboard's activity and request-history
+            views and for operational diagnostics. Scalar fields are typed columns; the header maps are
+            genuinely schemaless and stored as JSON.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryEntry.Id">
+            <summary>
+            Entry identifier (prefix "req_"). Never null or empty.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryEntry.TenantId">
+            <summary>
+            Tenant identifier, or null for unauthenticated requests.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryEntry.UserId">
+            <summary>
+            User identifier, or null for unauthenticated requests.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryEntry.PrincipalName">
+            <summary>
+            Principal display name, if resolved.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryEntry.Method">
+            <summary>
+            HTTP method (GET, POST, etc.).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryEntry.Path">
+            <summary>
+            Route template that matched, or the raw path when no template.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryEntry.Url">
+            <summary>
+            Full request URL including query string.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryEntry.StatusCode">
+            <summary>
+            Response HTTP status code.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryEntry.DurationMs">
+            <summary>
+            Request duration in milliseconds.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryEntry.SourceIp">
+            <summary>
+            Client source IP as observed by the server.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryEntry.RequestHeaders">
+            <summary>
+            Request headers with secrets redacted. Never null.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryEntry.RequestBody">
+            <summary>
+            Request body (may be truncated).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryEntry.RequestBodyBytes">
+            <summary>
+            Original request body length in bytes, before truncation.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryEntry.RequestBodyTruncated">
+            <summary>
+            Whether the request body was truncated.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryEntry.ResponseHeaders">
+            <summary>
+            Response headers. Never null.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryEntry.ResponseBody">
+            <summary>
+            Response body (may be truncated).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryEntry.ResponseBodyBytes">
+            <summary>
+            Original response body length in bytes, before truncation.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryEntry.ResponseBodyTruncated">
+            <summary>
+            Whether the response body was truncated.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryEntry.CreatedUtc">
+            <summary>
+            UTC time the request began.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryEntry.CompletedUtc">
+            <summary>
+            UTC time the response was sent, if known.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.RequestHistoryEntry.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Models.RequestHistoryQuery">
+            <summary>
+            Query parameters for paginated enumeration and summarization of request history. This is the sole
+            list operation over request history; there is no unbounded "get all".
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryQuery.PageNumber">
+            <summary>
+            Page number (1-based). Default 1; values below 1 are clamped to 1.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryQuery.PageSize">
+            <summary>
+            Number of results per page. Default 25, minimum 1, maximum 1000.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryQuery.TenantId">
+            <summary>
+            Filter by tenant identifier.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryQuery.UserId">
+            <summary>
+            Filter by user identifier.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryQuery.Method">
+            <summary>
+            Filter by HTTP method.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryQuery.StatusCode">
+            <summary>
+            Filter by exact HTTP status code.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryQuery.PathContains">
+            <summary>
+            Filter to requests whose path contains this substring.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryQuery.FromUtc">
+            <summary>
+            Filter to requests created at or after this UTC timestamp.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryQuery.ToUtc">
+            <summary>
+            Filter to requests created before this UTC timestamp.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryQuery.BucketMinutes">
+            <summary>
+            Bucket width in minutes for the summary endpoint. Default 15, minimum 1, maximum 1440.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryQuery.Offset">
+            <summary>
+            SQL OFFSET derived from the page number and page size.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.RequestHistoryQuery.#ctor">
+            <summary>
+            Instantiate with defaults.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.RequestHistoryQuery.ApplyQuerystringOverrides(System.Func{System.String,System.String})">
+            <summary>
+            Apply query-string overrides. Any non-empty query-string value replaces the corresponding value.
+            </summary>
+            <param name="queryGetter">Function that retrieves a query-string value by key.</param>
+        </member>
+        <member name="T:SharpAI.Models.RequestHistorySummary">
+            <summary>
+            Time-bucketed summary of request history for chart rendering.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistorySummary.TotalCount">
+            <summary>
+            Total number of requests in the range.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistorySummary.TotalSuccess">
+            <summary>
+            Total successful (status &lt; 400) requests.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistorySummary.TotalFailure">
+            <summary>
+            Total failed (status &gt;= 400) requests.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistorySummary.AverageDurationMs">
+            <summary>
+            Average request duration in milliseconds across the range.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistorySummary.Buckets">
+            <summary>
+            Buckets covering the range, including empty ones. Never null.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.RequestHistorySummary.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
         <member name="T:SharpAI.Prompts.ChatFormatEnum">
             <summary>
             Defines common chat/prompt formats used by different language models.
@@ -6168,6 +7597,72 @@
             <param name="messages">List of chat messages to format into a prompt.</param>
             <returns>A formatted prompt string ready for model inference.</returns>
         </member>
+        <member name="T:SharpAI.Prompts.ChatTemplateResolver">
+            <summary>
+            Resolves a chat prompt for a model, preferring the model's embedded chat template (the GGUF
+            <c>tokenizer.chat_template</c>) and falling back to a hand-maintained family template only when the
+            model has no usable embedded template or rendering fails. This mirrors how llama.cpp and Ollama
+            format prompts and avoids the subtle mis-formatting that a family-based guess can produce.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Prompts.ChatTemplateResolver.Resolve(SharpAI.Prompts.IChatTemplateSource,System.String,System.Collections.Generic.List{SharpAI.Prompts.ChatMessage},System.Boolean)">
+            <summary>
+            Resolve the prompt and accompanying stop sequences for a chat request.
+            </summary>
+            <param name="source">The model's template source. May be null, in which case only the fallback
+            path is used.</param>
+            <param name="modelFamily">Model family name used to select the fallback template.</param>
+            <param name="messages">Ordered conversation messages. May not be null.</param>
+            <param name="addGenerationPrompt">When true, append the assistant generation prefix.</param>
+            <returns>The resolved prompt, stop sequences, and which path was taken. Never null.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="messages"/> is null.</exception>
+        </member>
+        <member name="T:SharpAI.Prompts.ChatTemplateResult">
+            <summary>
+            Result of resolving a chat prompt: the rendered prompt, the stop sequences that should accompany
+            it, and whether the model's embedded template was used (versus a family-based fallback).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Prompts.ChatTemplateResult.Prompt">
+            <summary>
+            The rendered prompt string. Never null; empty when there were no messages.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Prompts.ChatTemplateResult.StopSequences">
+            <summary>
+            Stop sequences to apply during generation. Empty when the embedded template is used, because
+            the model's native end-of-turn tokens terminate generation. Never null.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Prompts.ChatTemplateResult.UsedEmbeddedTemplate">
+            <summary>
+            Whether the model's embedded chat template produced this prompt. False indicates a family-based
+            fallback was used.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Prompts.IChatTemplateSource">
+            <summary>
+            Abstraction over a loaded model's ability to render chat prompts using the chat template embedded
+            in the model itself (the GGUF <c>tokenizer.chat_template</c>). Implemented by the inference engine
+            and consumed by <see cref="T:SharpAI.Prompts.ChatTemplateResolver"/>. Kept as an interface so the resolver's
+            decision logic can be tested without loading a native model.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Prompts.IChatTemplateSource.SupportsEmbeddedChatTemplate">
+            <summary>
+            Gets whether the loaded model carries a usable embedded chat template. When false, callers
+            should fall back to a family-based template.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Prompts.IChatTemplateSource.RenderEmbeddedChatPrompt(System.Collections.Generic.IReadOnlyList{SharpAI.Prompts.ChatMessage},System.Boolean)">
+            <summary>
+            Render the supplied messages into a prompt string using the model's embedded chat template.
+            </summary>
+            <param name="messages">Ordered conversation messages. May not be null.</param>
+            <param name="addGenerationPrompt">When true, append the assistant generation prefix so the
+            model continues as the assistant.</param>
+            <returns>The rendered prompt.</returns>
+        </member>
         <member name="T:SharpAI.Prompts.TextGenerationFormatEnum">
             <summary>
             Defines common text generation prompt patterns.
@@ -6319,6 +7814,1344 @@
             <param name="instruction">The instruction to follow.</param>
             <param name="systemContext">Optional system context to prepend.</param>
             <returns>A formatted instruction prompt.</returns>
+        </member>
+        <member name="T:SharpAI.Security.AuditLogEntry">
+            <summary>
+            A durable security audit event. Authorization denials and privileged control-plane operations are
+            recorded here.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.AuditLogEntry.Guid">
+            <summary>
+            Audit entry identifier (prefix "aud_").
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.AuditLogEntry.TenantGuid">
+            <summary>
+            Tenant identifier, if resolved.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.AuditLogEntry.EventType">
+            <summary>
+            Event type (for example "AuthenticationFailure", "AuthorizationDenied", "SessionCreated").
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.AuditLogEntry.PrincipalType">
+            <summary>
+            Principal type.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.AuditLogEntry.PrincipalGuid">
+            <summary>
+            Principal identifier, if resolved.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.AuditLogEntry.Method">
+            <summary>
+            HTTP method.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.AuditLogEntry.Path">
+            <summary>
+            Request path.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.AuditLogEntry.IpAddress">
+            <summary>
+            Client IP address.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.AuditLogEntry.AuthResult">
+            <summary>
+            Whether authentication succeeded.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.AuditLogEntry.AuthzResult">
+            <summary>
+            Whether authorization succeeded.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.AuditLogEntry.DenialReason">
+            <summary>
+            Reason for a denial, if any.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.AuditLogEntry.StatusCode">
+            <summary>
+            Response status code.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.AuditLogEntry.CreatedUtc">
+            <summary>
+            Event time in UTC.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Security.AuditLogEntry.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Security.AuthenticationEngine">
+             <summary>
+             Resolves request principals against the persisted account store and issues/validates session
+             tokens. This is the functional heart of authentication and is deliberately free of any HTTP
+             framework dependency so it can be unit-tested directly against a database driver.
+            
+             It layers three credentialed schemes on top of the anonymous/admin-key decision made by
+             <see cref="T:SharpAI.Security.AuthEvaluator"/>: interactive login (email + password) that mints a revocable
+             server-side <see cref="T:SharpAI.Security.AuthSession"/> referenced by an encrypted bearer token, bearer-token
+             resolution, and non-interactive access-key / secret-key resolution. Secrets are compared only as
+             SHA-256 digests, in constant time.
+             </summary>
+        </member>
+        <member name="P:SharpAI.Security.AuthenticationEngine.DefaultSessionTtlMinutes">
+            <summary>
+            Default session lifetime in minutes when a login does not specify one. Default 60; clamped to
+            the range 1..43200 (30 days).
+            </summary>
+        </member>
+        <member name="M:SharpAI.Security.AuthenticationEngine.#ctor(SharpAI.Database.DatabaseDriverBase,SharpAI.Security.SessionTokenService)">
+            <summary>
+            Instantiate.
+            </summary>
+            <param name="database">Initialized database driver. May not be null.</param>
+            <param name="tokens">Session token service. May not be null.</param>
+        </member>
+        <member name="M:SharpAI.Security.AuthenticationEngine.Authenticate(System.Boolean,System.String,System.String,System.Collections.Generic.IReadOnlyList{System.String},System.String,System.String,System.String)">
+            <summary>
+            Evaluate a request's authentication decision across every supported scheme. When authentication
+            is disabled the result is the implicit system principal. When enabled: anonymous endpoints are
+            allowed, then a valid admin API key, then a valid bearer session token, then a valid
+            access-key / secret-key pair are tried in order; anything else is flagged to be challenged.
+            </summary>
+            <param name="authEnabled">Whether authentication is enabled.</param>
+            <param name="path">Request path (without query string).</param>
+            <param name="apiKey">Admin API key (x-api-key), or null.</param>
+            <param name="adminApiKeys">Configured valid admin API keys, or null/empty.</param>
+            <param name="bearerToken">Bearer session token, or null.</param>
+            <param name="accessKey">Access key, or null.</param>
+            <param name="secretKey">Secret key, or null.</param>
+            <returns>The established request context. Never null.</returns>
+        </member>
+        <member name="M:SharpAI.Security.AuthenticationEngine.Login(System.String,System.String,System.String,System.Int32,SharpAI.Security.AuthSession@)">
+            <summary>
+            Validate an email/password login within a tenant and, on success, create a revocable session and
+            return its encrypted bearer token. Returns null on any failure (unknown tenant/user, inactive
+            user, or bad password); the failure is intentionally indistinguishable to the caller.
+            </summary>
+            <param name="tenantGuid">Tenant identifier. When null/empty the tenant named "default" is used.</param>
+            <param name="email">Email address.</param>
+            <param name="password">Plaintext password.</param>
+            <param name="ttlMinutes">Session lifetime in minutes; values &lt; 1 fall back to <see cref="P:SharpAI.Security.AuthenticationEngine.DefaultSessionTtlMinutes"/>.</param>
+            <param name="session">On success, the created session; otherwise null.</param>
+            <returns>An encrypted bearer token, or null on failure.</returns>
+        </member>
+        <member name="M:SharpAI.Security.AuthenticationEngine.ReadSession(System.String)">
+            <summary>
+            Resolve a bearer token to a live session, or null when the token is invalid, the session is
+            unknown, revoked (inactive), or expired.
+            </summary>
+            <param name="bearerToken">Bearer token.</param>
+            <returns>The live session, or null.</returns>
+        </member>
+        <member name="M:SharpAI.Security.AuthenticationEngine.RevokeSession(System.String,System.String)">
+            <summary>
+            Revoke a session by identifier, marking it inactive with a reason.
+            </summary>
+            <param name="sessionGuid">Session identifier.</param>
+            <param name="reason">Revocation reason.</param>
+        </member>
+        <member name="T:SharpAI.Security.AuthEvaluator">
+            <summary>
+            Pure authentication decision logic, independent of any HTTP framework so it can be unit-tested. It
+            establishes a <see cref="T:SharpAI.Security.RequestContext"/> from the request path and credentials. When auth is
+            disabled the result is the implicit system principal (open server, Ollama parity). When enabled,
+            anonymous endpoints are always allowed, a valid admin API key yields an administrator context, and
+            anything else is flagged to be challenged.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Security.AuthEvaluator.AnonymousPathPrefixes">
+            <summary>
+            Path prefixes that are always served anonymously, even when authentication is enabled:
+            the homepage, health/readiness probes, the favicon, the OpenAPI document / Swagger UI, and the
+            token endpoint (login must be reachable without a prior credential; the token handlers enforce
+            their own session checks for read/revoke).
+            </summary>
+        </member>
+        <member name="M:SharpAI.Security.AuthEvaluator.IsAnonymousPath(System.String)">
+            <summary>
+            Determine whether a request path is served anonymously regardless of authentication mode.
+            </summary>
+            <param name="path">Request path (without query string).</param>
+            <returns>True if the path is anonymous.</returns>
+        </member>
+        <member name="M:SharpAI.Security.AuthEvaluator.Evaluate(System.Boolean,System.String,System.String,System.Collections.Generic.IReadOnlyList{System.String})">
+            <summary>
+            Evaluate the authentication decision for a request.
+            </summary>
+            <param name="authEnabled">Whether authentication is enabled.</param>
+            <param name="path">Request path (without query string).</param>
+            <param name="apiKey">Admin API key supplied on the request (x-api-key), or null.</param>
+            <param name="validAdminApiKeys">Configured valid admin API keys, or null/empty.</param>
+            <returns>The established request context. Never null.</returns>
+        </member>
+        <member name="M:SharpAI.Security.AuthEvaluator.SecureEquals(System.String,System.String)">
+            <summary>
+            Compare two secret strings in constant time to avoid leaking length/content via timing.
+            </summary>
+            <param name="a">First value.</param>
+            <param name="b">Second value.</param>
+            <returns>True if equal.</returns>
+        </member>
+        <member name="T:SharpAI.Security.AuthorizationDecision">
+            <summary>
+            The outcome of an authorization decision, suitable for both enforcement and the denial response body
+            (reason + required permission) described by the authentication requirements.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.AuthorizationDecision.Result">
+            <summary>
+            The decision result.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.AuthorizationDecision.IsPermitted">
+            <summary>
+            Whether access is permitted.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.AuthorizationDecision.Reason">
+            <summary>
+            Short human-readable explanation of the decision.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.AuthorizationDecision.ResourceType">
+            <summary>
+            The resource type that was evaluated.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.AuthorizationDecision.Operation">
+            <summary>
+            The operation that was evaluated.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.AuthorizationDecision.BypassReason">
+            <summary>
+            When authorization was skipped via a bypass rule, the reason for the bypass; otherwise null.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Security.AuthorizationDecision.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Security.AuthorizationDecision.Permit(System.String,System.String)">
+            <summary>
+            Create a permitted decision.
+            </summary>
+            <param name="reason">Explanation.</param>
+            <param name="bypassReason">Bypass reason, or null.</param>
+            <returns>Decision.</returns>
+        </member>
+        <member name="M:SharpAI.Security.AuthorizationDecision.Deny(SharpAI.Security.AuthorizationResultEnum,System.String)">
+            <summary>
+            Create a denied decision.
+            </summary>
+            <param name="result">Explicit or implicit denial.</param>
+            <param name="reason">Explanation.</param>
+            <returns>Decision.</returns>
+        </member>
+        <member name="T:SharpAI.Security.AuthorizationRequest">
+            <summary>
+            The immutable input to an authorization decision: the resolved principal plus the resource and
+            operation being attempted. For credential principals, <see cref="P:SharpAI.Security.AuthorizationRequest.OwnerUserGuid"/> enables the
+            owner-ceiling intersection.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.AuthorizationRequest.TenantGuid">
+            <summary>
+            Tenant identifier the request is scoped to.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.AuthorizationRequest.PrincipalType">
+            <summary>
+            Principal type.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.AuthorizationRequest.PrincipalGuid">
+            <summary>
+            Principal identifier (user or credential GUID).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.AuthorizationRequest.IsAdmin">
+            <summary>
+            Whether the principal has the global-administrator bypass.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.AuthorizationRequest.IsTenantAdmin">
+            <summary>
+            Whether the principal has the tenant-administrator bypass (within its own tenant).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.AuthorizationRequest.ResourceType">
+            <summary>
+            The resource type the operation targets (see <see cref="T:SharpAI.Security.ResourceTypes"/>).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.AuthorizationRequest.Operation">
+            <summary>
+            The operation being attempted.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.AuthorizationRequest.ResourceGuid">
+            <summary>
+            The specific resource identifier being targeted, or null for a tenant-level operation.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.AuthorizationRequest.OwnerUserGuid">
+            <summary>
+            For credential principals, the owning user's identifier (used for the owner-ceiling intersection).
+            </summary>
+        </member>
+        <member name="M:SharpAI.Security.AuthorizationRequest.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Security.AuthorizationResultEnum">
+            <summary>
+            The outcome of an authorization decision.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Security.AuthorizationResultEnum.Permitted">
+            <summary>Access is permitted (a matching permit with no matching deny, or an authorized bypass).</summary>
+        </member>
+        <member name="F:SharpAI.Security.AuthorizationResultEnum.DeniedExplicit">
+            <summary>Access is denied because a matching deny permission was found.</summary>
+        </member>
+        <member name="F:SharpAI.Security.AuthorizationResultEnum.DeniedImplicit">
+            <summary>Access is denied because no permission matched the request.</summary>
+        </member>
+        <member name="T:SharpAI.Security.AuthSchemeEnum">
+            <summary>
+            The authentication scheme that established a request's principal.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Security.AuthSchemeEnum.None">
+            <summary>
+            No scheme (anonymous, or authentication disabled).
+            </summary>
+        </member>
+        <member name="F:SharpAI.Security.AuthSchemeEnum.AdminApiKey">
+            <summary>
+            Administrator API key (x-api-key).
+            </summary>
+        </member>
+        <member name="F:SharpAI.Security.AuthSchemeEnum.BearerToken">
+            <summary>
+            Bearer session token (Authorization: Bearer / x-token).
+            </summary>
+        </member>
+        <member name="F:SharpAI.Security.AuthSchemeEnum.PasswordHeaders">
+            <summary>
+            Header-based user login (x-email / x-password).
+            </summary>
+        </member>
+        <member name="F:SharpAI.Security.AuthSchemeEnum.AccessKeySecret">
+            <summary>
+            Access-key / secret-key direct headers.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Security.AuthSchemeEnum.AccessKeySignature">
+            <summary>
+            AWS-style signed request.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Security.AuthSession">
+            <summary>
+            A server-side, revocable authentication session referenced by a short-lived bearer token. Each
+            session resolves to exactly one principal within one tenant.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.AuthSession.Guid">
+            <summary>
+            Session identifier (prefix "ses_"). This is the value carried inside the encrypted bearer token.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.AuthSession.UserGuid">
+            <summary>
+            Principal (user) identifier.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.AuthSession.TenantGuid">
+            <summary>
+            Tenant identifier.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.AuthSession.PrincipalType">
+            <summary>
+            Principal type.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.AuthSession.Active">
+            <summary>
+            Whether the session is active (not revoked).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.AuthSession.IsProtected">
+            <summary>
+            Whether the session is protected.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.AuthSession.CreatedUtc">
+            <summary>
+            Creation time in UTC.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.AuthSession.ExpiresUtc">
+            <summary>
+            Expiry time in UTC.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.AuthSession.LastUsedUtc">
+            <summary>
+            Last used time in UTC, if ever.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.AuthSession.RevokedUtc">
+            <summary>
+            Revocation time in UTC, if revoked.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.AuthSession.RevocationReason">
+            <summary>
+            Revocation reason, if revoked.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Security.AuthSession.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Security.BuiltInRoleDefinition">
+            <summary>
+            A built-in role definition: a role name plus the permissions it grants. Used to seed the immutable,
+            globally-visible platform roles at startup.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.BuiltInRoleDefinition.Name">
+            <summary>
+            Role name.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.BuiltInRoleDefinition.Permissions">
+            <summary>
+            The permissions this role grants. Never null.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Security.BuiltInRoleDefinition.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Security.BuiltInRoles">
+            <summary>
+            The catalog of built-in RBAC roles seeded at database initialization and available to every tenant.
+            Built-in roles carry a null tenant identifier, are marked built-in and protected, and are immutable
+            through tenant REST APIs (clone before customizing).
+            </summary>
+        </member>
+        <member name="F:SharpAI.Security.BuiltInRoles.TenantAdmin">
+            <summary>Tenant-wide administrator: all operations on all resource types. Inherits to children.</summary>
+        </member>
+        <member name="F:SharpAI.Security.BuiltInRoles.SecurityAdmin">
+            <summary>Security administrator: Admin on security/tenancy resources.</summary>
+        </member>
+        <member name="F:SharpAI.Security.BuiltInRoles.Auditor">
+            <summary>Read-only auditor across security and audit surfaces.</summary>
+        </member>
+        <member name="F:SharpAI.Security.BuiltInRoles.Editor">
+            <summary>Editor: read/write/delete on domain data resources.</summary>
+        </member>
+        <member name="F:SharpAI.Security.BuiltInRoles.Viewer">
+            <summary>Viewer: read-only on domain data resources.</summary>
+        </member>
+        <member name="F:SharpAI.Security.BuiltInRoles.TenantMember">
+            <summary>Minimal tenant-presence role (self-read).</summary>
+        </member>
+        <member name="M:SharpAI.Security.BuiltInRoles.Definitions">
+            <summary>
+            The built-in role definitions, in seed order.
+            </summary>
+            <returns>Definitions; never null.</returns>
+        </member>
+        <member name="T:SharpAI.Security.Credential">
+            <summary>
+            A non-interactive credential (access key / secret key) owned by a user within a tenant. The secret
+            is stored only as a SHA-256 hex digest; the plaintext is shown once at creation and never persisted.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.Credential.Guid">
+            <summary>
+            Credential identifier (prefix "crd_").
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.Credential.UserGuid">
+            <summary>
+            Owning user identifier.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.Credential.TenantGuid">
+            <summary>
+            Owning tenant identifier.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.Credential.Name">
+            <summary>
+            Human-readable name.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.Credential.AccessKey">
+            <summary>
+            Access key (prefix "access_"). Safe to store and display.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.Credential.SecretSha256">
+            <summary>
+            SHA-256 hex digest of the secret key. Never the plaintext.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.Credential.Active">
+            <summary>
+            Whether the credential is active.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.Credential.IsProtected">
+            <summary>
+            Whether the credential is protected from deletion/modification via tenant APIs.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.Credential.CreatedUtc">
+            <summary>
+            Creation time in UTC.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.Credential.LastUpdateUtc">
+            <summary>
+            Last update time in UTC.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.Credential.LastUsedUtc">
+            <summary>
+            Last used time in UTC, if ever.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.Credential.ExpiresUtc">
+            <summary>
+            Expiry time in UTC, if the credential expires.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Security.Credential.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Security.CredentialKeyGenerator">
+            <summary>
+            Generates access keys and secret keys for credentials. Access keys carry the prefix "access_" and
+            secret keys "secret_", each followed by a run of high-entropy alphanumerics.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Security.CredentialKeyGenerator.GenerateAccessKey">
+            <summary>
+            Generate an access key (prefix "access_", 32 random characters).
+            </summary>
+            <returns>Access key.</returns>
+        </member>
+        <member name="M:SharpAI.Security.CredentialKeyGenerator.GenerateSecretKey">
+            <summary>
+            Generate a secret key (prefix "secret_", 48 random characters).
+            </summary>
+            <returns>Secret key.</returns>
+        </member>
+        <member name="T:SharpAI.Security.CredentialScopeAssignment">
+            <summary>
+            Binds a credential to a role (or a role-less direct grant) at a specific scope. Mirrors
+            <see cref="T:SharpAI.Security.UserRoleAssignment"/> but is keyed on a credential, so a credential can be scoped below its
+            owning user (least privilege). Direct <see cref="P:SharpAI.Security.CredentialScopeAssignment.Permissions"/>/<see cref="P:SharpAI.Security.CredentialScopeAssignment.ResourceTypes"/> enable
+            role-less grants.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.CredentialScopeAssignment.Guid">
+            <summary>
+            Assignment identifier (prefix "asn_").
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.CredentialScopeAssignment.TenantGuid">
+            <summary>
+            Tenant identifier.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.CredentialScopeAssignment.CredentialGuid">
+            <summary>
+            Credential identifier.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.CredentialScopeAssignment.RoleGuid">
+            <summary>
+            Role identifier, or null for a role-less direct grant.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.CredentialScopeAssignment.RoleName">
+            <summary>
+            Role name fallback, or null.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.CredentialScopeAssignment.ResourceScope">
+            <summary>
+            Resource scope of the grant.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.CredentialScopeAssignment.ResourceGuid">
+            <summary>
+            Target resource identifier when resource-scoped.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.CredentialScopeAssignment.InheritsToChildren">
+            <summary>
+            Whether a tenant-scoped grant flows to child resources inside the tenant.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.CredentialScopeAssignment.Permissions">
+            <summary>
+            Direct operation grants (<see cref="T:SharpAI.Security.OperationTypeEnum"/> names) for a role-less assignment. Never null.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.CredentialScopeAssignment.ResourceTypes">
+            <summary>
+            Direct resource-type grants for a role-less assignment. Never null.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.CredentialScopeAssignment.Active">
+            <summary>
+            Whether the assignment is active.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.CredentialScopeAssignment.IsProtected">
+            <summary>
+            Whether the assignment is protected.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.CredentialScopeAssignment.CreatedUtc">
+            <summary>
+            Creation time in UTC.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.CredentialScopeAssignment.LastUpdateUtc">
+            <summary>
+            Last update time in UTC.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Security.CredentialScopeAssignment.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Security.EffectivePermission">
+            <summary>
+            A single expanded, scoped grant that applies to a principal: the atomic unit the authorization
+            evaluator matches against a request. Returned by effective-permission inspection.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.EffectivePermission.ResourceType">
+            <summary>
+            Resource type this grant applies to (or <see cref="F:SharpAI.Security.ResourceTypes.All"/>).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.EffectivePermission.Operation">
+            <summary>
+            Operation this grant covers.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.EffectivePermission.Effect">
+            <summary>
+            Whether this grant permits or denies.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.EffectivePermission.ResourceScope">
+            <summary>
+            Scope of the grant.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.EffectivePermission.ResourceGuid">
+            <summary>
+            Target resource identifier when resource-scoped, otherwise null.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.EffectivePermission.InheritsToChildren">
+            <summary>
+            Whether a tenant-scoped grant flows to child resources.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Security.EffectivePermission.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Security.OperationTypeEnum">
+            <summary>
+            The operation a request performs against a resource, used for authorization. <see cref="F:SharpAI.Security.OperationTypeEnum.Write"/> is a
+            mutating shorthand that expands to <see cref="F:SharpAI.Security.OperationTypeEnum.Create"/>, <see cref="F:SharpAI.Security.OperationTypeEnum.Update"/>, and <see cref="F:SharpAI.Security.OperationTypeEnum.Delete"/>.
+            <see cref="F:SharpAI.Security.OperationTypeEnum.All"/> is a wildcard that matches any operation.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Security.OperationTypeEnum.All">
+            <summary>Wildcard — matches any operation.</summary>
+        </member>
+        <member name="F:SharpAI.Security.OperationTypeEnum.Create">
+            <summary>Create a new resource.</summary>
+        </member>
+        <member name="F:SharpAI.Security.OperationTypeEnum.Read">
+            <summary>Retrieve or view a resource.</summary>
+        </member>
+        <member name="F:SharpAI.Security.OperationTypeEnum.Write">
+            <summary>Mutating shorthand that expands to Create, Update, and Delete.</summary>
+        </member>
+        <member name="F:SharpAI.Security.OperationTypeEnum.Update">
+            <summary>Modify an existing resource.</summary>
+        </member>
+        <member name="F:SharpAI.Security.OperationTypeEnum.Delete">
+            <summary>Remove a resource.</summary>
+        </member>
+        <member name="F:SharpAI.Security.OperationTypeEnum.Execute">
+            <summary>Run or trigger an operation.</summary>
+        </member>
+        <member name="F:SharpAI.Security.OperationTypeEnum.Admin">
+            <summary>Manage security, tenancy, configuration, or other privileged control-plane surfaces.</summary>
+        </member>
+        <member name="T:SharpAI.Security.PasswordHasher">
+            <summary>
+            Hashes and verifies passwords and secrets using SHA-256. Verification is constant-time. Plaintext
+            is never stored; only the hex digest is persisted.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Security.PasswordHasher.Hash(System.String)">
+            <summary>
+            Compute the lowercase SHA-256 hex digest of the input.
+            </summary>
+            <param name="plaintext">Input; null is treated as empty.</param>
+            <returns>Hex digest.</returns>
+        </member>
+        <member name="M:SharpAI.Security.PasswordHasher.Verify(System.String,System.String)">
+            <summary>
+            Verify a plaintext against a stored hex digest in constant time.
+            </summary>
+            <param name="plaintext">Candidate plaintext.</param>
+            <param name="hashHex">Stored hex digest.</param>
+            <returns>True if the plaintext matches.</returns>
+        </member>
+        <member name="T:SharpAI.Security.Permission">
+            <summary>
+            A granular RBAC permission: it permits or denies a set of operations on a set of resource types. Both
+            lists accept the wildcard value <c>"All"</c>. Built-in permissions carry a null <see cref="P:SharpAI.Security.Permission.TenantGuid"/>.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.Permission.Guid">
+            <summary>
+            Permission identifier (prefix "perm_").
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.Permission.TenantGuid">
+            <summary>
+            Owning tenant identifier, or null for a globally-visible built-in permission.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.Permission.Name">
+            <summary>
+            Human-readable name (for example "Manage Users").
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.Permission.ResourceTypes">
+            <summary>
+            Resource types this permission applies to. Use <see cref="F:SharpAI.Security.ResourceTypes.All"/> for a wildcard.
+            Never null.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.Permission.OperationTypes">
+            <summary>
+            Operation types this permission covers, as <see cref="T:SharpAI.Security.OperationTypeEnum"/> names. Use
+            <c>"All"</c> for a wildcard. Never null.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.Permission.Effect">
+            <summary>
+            Whether this permission permits or explicitly denies.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.Permission.Active">
+            <summary>
+            Whether the permission is active.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.Permission.IsProtected">
+            <summary>
+            Whether the permission is protected from deletion/mutation through tenant APIs.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.Permission.CreatedUtc">
+            <summary>
+            Creation time in UTC.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.Permission.LastUpdateUtc">
+            <summary>
+            Last update time in UTC.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Security.Permission.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Security.PermissionEffectEnum">
+            <summary>
+            Whether a permission grants or explicitly denies access. Explicit <see cref="F:SharpAI.Security.PermissionEffectEnum.Deny"/> always wins over
+            any matching <see cref="F:SharpAI.Security.PermissionEffectEnum.Permit"/> within the same tenant and resource scope.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Security.PermissionEffectEnum.Permit">
+            <summary>Grant access when this permission matches.</summary>
+        </member>
+        <member name="F:SharpAI.Security.PermissionEffectEnum.Deny">
+            <summary>Explicitly deny access when this permission matches; overrides any permit.</summary>
+        </member>
+        <member name="T:SharpAI.Security.PrincipalTypeEnum">
+            <summary>
+            The type of principal that authenticated a request.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Security.PrincipalTypeEnum.None">
+            <summary>
+            No authenticated principal (anonymous).
+            </summary>
+        </member>
+        <member name="F:SharpAI.Security.PrincipalTypeEnum.System">
+            <summary>
+            The implicit system principal used when authentication is disabled (open server, Ollama parity).
+            </summary>
+        </member>
+        <member name="F:SharpAI.Security.PrincipalTypeEnum.Administrator">
+            <summary>
+            A platform administrator (admin API key).
+            </summary>
+        </member>
+        <member name="F:SharpAI.Security.PrincipalTypeEnum.User">
+            <summary>
+            An interactive user.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Security.PrincipalTypeEnum.Credential">
+            <summary>
+            A non-interactive credential (access key / signed request).
+            </summary>
+        </member>
+        <member name="T:SharpAI.Security.RbacEngine">
+            <summary>
+            The RBAC authorization evaluator. Given a resolved principal and a requested (resource, operation),
+            it computes the effective permission set and applies explicit-deny-wins evaluation with tenant and
+            resource scoping. It honors the administrator bypass rules, tenant/resource scope with
+            <see cref="P:SharpAI.Security.UserRoleAssignment.InheritsToChildren"/>, and the credential owner-ceiling. It is free of
+            any HTTP framework dependency so it can be unit-tested directly against a database driver.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.RbacEngine.EnforceOwnerCeiling">
+            <summary>
+            Whether a credential's effective access is capped at its owning user's access (least privilege).
+            Default true.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Security.RbacEngine.#ctor(SharpAI.Database.DatabaseDriverBase)">
+            <summary>
+            Instantiate.
+            </summary>
+            <param name="database">Initialized database driver. May not be null.</param>
+        </member>
+        <member name="M:SharpAI.Security.RbacEngine.Authorize(SharpAI.Security.AuthorizationRequest)">
+            <summary>
+            Evaluate an authorization request. Administrators and tenant administrators bypass RBAC (with an
+            accounted bypass reason); otherwise the principal's effective permissions are evaluated with
+            explicit deny overriding permit, and no matching permission yields an implicit denial.
+            </summary>
+            <param name="request">Authorization request. May not be null.</param>
+            <returns>The decision. Never null.</returns>
+        </member>
+        <member name="M:SharpAI.Security.RbacEngine.GetEffectivePermissions(SharpAI.Security.PrincipalTypeEnum,System.String,System.String)">
+            <summary>
+            Compute the effective permission set for a principal within a tenant. For credentials this is the
+            credential's own grants (before the owner-ceiling is applied at decision time).
+            </summary>
+            <param name="principalType">Principal type (User or Credential).</param>
+            <param name="principalGuid">Principal identifier.</param>
+            <param name="tenantGuid">Tenant identifier.</param>
+            <returns>Effective permissions; never null.</returns>
+        </member>
+        <member name="T:SharpAI.Security.RbacSeeder">
+            <summary>
+            Seeds the immutable, globally-visible built-in roles (and their permissions and role↔permission
+            mappings) into the database if they are missing. Idempotent: a role that already exists is left
+            untouched, so historical assignments keep resolving by name.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Security.RbacSeeder.Seed(SharpAI.Database.DatabaseDriverBase)">
+            <summary>
+            Seed any missing built-in roles.
+            </summary>
+            <param name="database">Initialized database driver. May not be null.</param>
+            <returns>The number of roles created.</returns>
+        </member>
+        <member name="T:SharpAI.Security.RequestContext">
+            <summary>
+            Authenticated request context established by the authentication layer and attached to the HTTP
+            context metadata. Route handlers read this to make authorization decisions. When authentication is
+            disabled, this represents the implicit system principal (fully authorized).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.RequestContext.IsAuthenticated">
+            <summary>
+            Whether the request is authenticated.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.RequestContext.IsAnonymousEndpoint">
+            <summary>
+            Whether the request targets an anonymous (unauthenticated) endpoint that is always allowed.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.RequestContext.ShouldChallenge">
+            <summary>
+            Whether the authentication layer should challenge the request (respond 401). True when auth is
+            enabled, the endpoint is not anonymous, and no valid principal was established.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.RequestContext.PrincipalType">
+            <summary>
+            Principal type.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.RequestContext.PrincipalGuid">
+            <summary>
+            Principal identifier, if any.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.RequestContext.SessionGuid">
+            <summary>
+            Session identifier, when authenticated via a bearer session token.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.RequestContext.TenantGuid">
+            <summary>
+            Tenant identifier, if any.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.RequestContext.OwnerUserGuid">
+            <summary>
+            For a credential principal, the owning user's identifier (used for the RBAC owner-ceiling).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.RequestContext.IsAdmin">
+            <summary>
+            Whether the principal is a global administrator.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.RequestContext.IsTenantAdmin">
+            <summary>
+            Whether the principal is a tenant administrator.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.RequestContext.AuthScheme">
+            <summary>
+            The authentication scheme used.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Security.RequestContext.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Security.ResourceScopeEnum">
+            <summary>
+            The breadth of a role assignment or permission grant.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Security.ResourceScopeEnum.Tenant">
+            <summary>
+            The grant applies to the entire tenant. It covers every resource of the listed types inside the
+            tenant when the assignment inherits to children; otherwise only tenant-level operations.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Security.ResourceScopeEnum.Resource">
+            <summary>
+            The grant applies only to one specific resource, identified by its GUID.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Security.ResourceTypes">
+            <summary>
+            Well-known resource-type identifiers used in permissions. Resource types are strings (not an enum) so
+            the permission model stays open to new domain resources without a code change. <see cref="F:SharpAI.Security.ResourceTypes.All"/> is the
+            wildcard that matches any resource type.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Security.ResourceTypes.All">
+            <summary>Wildcard — matches any resource type.</summary>
+        </member>
+        <member name="F:SharpAI.Security.ResourceTypes.Tenant">
+            <summary>Tenant records and tenant-level metadata.</summary>
+        </member>
+        <member name="F:SharpAI.Security.ResourceTypes.User">
+            <summary>User records.</summary>
+        </member>
+        <member name="F:SharpAI.Security.ResourceTypes.Credential">
+            <summary>Credential records.</summary>
+        </member>
+        <member name="F:SharpAI.Security.ResourceTypes.Session">
+            <summary>Authentication session records.</summary>
+        </member>
+        <member name="F:SharpAI.Security.ResourceTypes.Role">
+            <summary>RBAC role records.</summary>
+        </member>
+        <member name="F:SharpAI.Security.ResourceTypes.Permission">
+            <summary>RBAC permission records.</summary>
+        </member>
+        <member name="F:SharpAI.Security.ResourceTypes.Assignment">
+            <summary>RBAC assignment records.</summary>
+        </member>
+        <member name="F:SharpAI.Security.ResourceTypes.Audit">
+            <summary>Security audit records.</summary>
+        </member>
+        <member name="F:SharpAI.Security.ResourceTypes.Admin">
+            <summary>Privileged control-plane surface (administration, backup, configuration).</summary>
+        </member>
+        <member name="F:SharpAI.Security.ResourceTypes.Model">
+            <summary>Model registry records.</summary>
+        </member>
+        <member name="F:SharpAI.Security.ResourceTypes.Inference">
+            <summary>Inference operations (chat, completion, embeddings).</summary>
+        </member>
+        <member name="F:SharpAI.Security.ResourceTypes.Settings">
+            <summary>Server settings.</summary>
+        </member>
+        <member name="F:SharpAI.Security.ResourceTypes.RequestHistory">
+            <summary>Request-history records.</summary>
+        </member>
+        <member name="T:SharpAI.Security.RolePermissionMap">
+            <summary>
+            Associates a role with a permission (the many-to-many role↔permission relationship). Built-in maps
+            carry a null <see cref="P:SharpAI.Security.RolePermissionMap.TenantGuid"/>.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.RolePermissionMap.Guid">
+            <summary>
+            Mapping identifier (prefix "asn_").
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.RolePermissionMap.TenantGuid">
+            <summary>
+            Owning tenant identifier, or null for a built-in mapping.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.RolePermissionMap.RoleGuid">
+            <summary>
+            Role identifier.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.RolePermissionMap.PermissionGuid">
+            <summary>
+            Permission identifier.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.RolePermissionMap.Active">
+            <summary>
+            Whether the mapping is active.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.RolePermissionMap.IsProtected">
+            <summary>
+            Whether the mapping is protected.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.RolePermissionMap.CreatedUtc">
+            <summary>
+            Creation time in UTC.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.RolePermissionMap.LastUpdateUtc">
+            <summary>
+            Last update time in UTC.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Security.RolePermissionMap.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Security.SessionTokenService">
+            <summary>
+            Encrypts and decrypts opaque bearer tokens that reference a server-side session. Tokens carry only
+            the internal session identifier, encrypted with AES-256-CBC using a fresh random IV per token (the
+            IV is prepended to the ciphertext). The AES key is derived from the configured key material.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Security.SessionTokenService.#ctor(System.String)">
+            <summary>
+            Instantiate with key material. The 256-bit AES key is derived as SHA-256 of the material.
+            </summary>
+            <param name="keyMaterial">Key material. May not be null or empty.</param>
+        </member>
+        <member name="M:SharpAI.Security.SessionTokenService.Encrypt(System.String)">
+            <summary>
+            Encrypt a session identifier into an opaque base64 token (random IV prepended).
+            </summary>
+            <param name="sessionId">Session identifier. May not be null or empty.</param>
+            <returns>Opaque token.</returns>
+        </member>
+        <member name="M:SharpAI.Security.SessionTokenService.Decrypt(System.String)">
+            <summary>
+            Decrypt an opaque token back into its session identifier, or null when the token is invalid.
+            </summary>
+            <param name="token">Opaque token.</param>
+            <returns>Session identifier, or null.</returns>
+        </member>
+        <member name="T:SharpAI.Security.Tenant">
+            <summary>
+            A tenant. Every user, credential, and session belongs to exactly one tenant.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.Tenant.Guid">
+            <summary>
+            Tenant identifier (prefix "ten_").
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.Tenant.Name">
+            <summary>
+            Tenant name.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.Tenant.Active">
+            <summary>
+            Whether the tenant is active.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.Tenant.IsProtected">
+            <summary>
+            Whether the tenant is protected from deletion/modification via tenant APIs.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.Tenant.CreatedUtc">
+            <summary>
+            Creation time in UTC.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.Tenant.LastUpdateUtc">
+            <summary>
+            Last update time in UTC.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Security.Tenant.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Security.User">
+            <summary>
+            A tenant user. Passwords are stored only as a SHA-256 hex digest; the plaintext is never persisted.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.User.Guid">
+            <summary>
+            User identifier (prefix "usr_").
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.User.TenantGuid">
+            <summary>
+            Owning tenant identifier.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.User.FirstName">
+            <summary>
+            First name.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.User.LastName">
+            <summary>
+            Last name.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.User.Email">
+            <summary>
+            Email address (unique within a tenant).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.User.PasswordSha256">
+            <summary>
+            SHA-256 hex digest of the user's password. Never the plaintext.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.User.IsAdmin">
+            <summary>
+            Whether the user is a global administrator.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.User.IsTenantAdmin">
+            <summary>
+            Whether the user is a tenant administrator.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.User.Active">
+            <summary>
+            Whether the user is active.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.User.IsProtected">
+            <summary>
+            Whether the user is protected from deletion/modification via tenant APIs.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.User.CreatedUtc">
+            <summary>
+            Creation time in UTC.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.User.LastUpdateUtc">
+            <summary>
+            Last update time in UTC.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Security.User.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Security.UserRole">
+            <summary>
+            A named container of permissions within a tenant (RBAC). Built-in roles are seeded with a null
+            <see cref="P:SharpAI.Security.UserRole.TenantGuid"/> so they are globally visible but not editable through tenant REST APIs;
+            tenant-defined custom roles carry their tenant's identifier.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.UserRole.Guid">
+            <summary>
+            Role identifier (prefix "role_").
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.UserRole.TenantGuid">
+            <summary>
+            Owning tenant identifier, or null for a globally-visible built-in role.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.UserRole.Name">
+            <summary>
+            Human-readable role name (for example "TenantAdmin", "Viewer").
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.UserRole.IsBuiltIn">
+            <summary>
+            Whether the role is seeded and maintained by the platform.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.UserRole.Active">
+            <summary>
+            Whether the role is active.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.UserRole.IsProtected">
+            <summary>
+            Whether the role is protected from deletion/mutation through tenant APIs.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.UserRole.CreatedUtc">
+            <summary>
+            Creation time in UTC.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.UserRole.LastUpdateUtc">
+            <summary>
+            Last update time in UTC.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Security.UserRole.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Security.UserRoleAssignment">
+            <summary>
+            Binds a user to a role at a specific scope. A role may be referenced by GUID or by name (the name
+            fallback keeps assignments resilient when built-in role records are recreated with new GUIDs).
+            Tenant-scoped assignments may optionally inherit to child resources.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.UserRoleAssignment.Guid">
+            <summary>
+            Assignment identifier (prefix "asn_").
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.UserRoleAssignment.TenantGuid">
+            <summary>
+            Tenant identifier.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.UserRoleAssignment.UserGuid">
+            <summary>
+            User identifier.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.UserRoleAssignment.RoleGuid">
+            <summary>
+            Role identifier, or null when the assignment references a role by name.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.UserRoleAssignment.RoleName">
+            <summary>
+            Role name, used as a fallback when <see cref="P:SharpAI.Security.UserRoleAssignment.RoleGuid"/> is null or unresolved.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.UserRoleAssignment.ResourceScope">
+            <summary>
+            Resource scope of the grant.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.UserRoleAssignment.ResourceGuid">
+            <summary>
+            Target resource identifier when <see cref="P:SharpAI.Security.UserRoleAssignment.ResourceScope"/> is <see cref="F:SharpAI.Security.ResourceScopeEnum.Resource"/>.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.UserRoleAssignment.InheritsToChildren">
+            <summary>
+            Whether a tenant-scoped grant flows to child resources inside the tenant.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.UserRoleAssignment.Active">
+            <summary>
+            Whether the assignment is active.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.UserRoleAssignment.IsProtected">
+            <summary>
+            Whether the assignment is protected.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.UserRoleAssignment.CreatedUtc">
+            <summary>
+            Creation time in UTC.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Security.UserRoleAssignment.LastUpdateUtc">
+            <summary>
+            Last update time in UTC.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Security.UserRoleAssignment.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
         </member>
         <member name="T:SharpAI.Serialization.DateTimeConverter">
             <summary>
@@ -6553,9 +9386,62 @@
             <param name="options">JSON serializer options.</param>
             <returns>JsonConverter.</returns>
         </member>
+        <member name="T:SharpAI.Services.ModelEngineEntry">
+            <summary>
+            Cache entry for a loaded (or loading) model engine, tracking the deferred initialization task, the
+            model file size used for memory-budget admission, and the last-access time used for idle eviction.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Services.ModelEngineEntry.Lazy">
+            <summary>
+            Deferred, single-initialization task that produces the engine.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Services.ModelEngineEntry.FileSizeBytes">
+            <summary>
+            Size of the model file in bytes, used for memory-budget admission.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Services.ModelEngineEntry.LoadedUtc">
+            <summary>
+            UTC time this entry was created.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Services.ModelEngineEntry.LastAccessUtc">
+            <summary>
+            UTC time the engine was last handed to a caller. Updated on each successful acquisition and used
+            to select idle and least-recently-used models for eviction.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Services.ModelEngineEntry.#ctor(System.Lazy{System.Threading.Tasks.Task{SharpAI.Engines.LlamaSharpEngine}},System.Int64,System.DateTime)">
+            <summary>
+            Instantiate.
+            </summary>
+            <param name="lazy">Deferred initialization task.</param>
+            <param name="fileSizeBytes">Model file size in bytes.</param>
+            <param name="nowUtc">Current UTC time.</param>
+        </member>
         <member name="T:SharpAI.Services.ModelEngineService">
             <summary>
-            Model engine service.
+            Manages the lifecycle of loaded model engines. Each model is loaded at most once and cached;
+            loading one model never blocks access to a different, already-loaded model. Admission enforces an
+            optional resident-count cap and memory budget (evicting least-recently-used models to make room),
+            and an optional keep-alive timeout evicts idle models. Thread-safe.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Services.ModelEngineService.KeepAliveSeconds">
+            <summary>
+            Idle seconds after which a loaded model is evicted. 0 disables idle eviction.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Services.ModelEngineService.MaxResidentModels">
+            <summary>
+            Maximum number of models resident at once. 0 means unlimited.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Services.ModelEngineService.ModelMemoryBudgetBytes">
+            <summary>
+            Total model-memory budget in bytes (sum of resident model file sizes). 0 means unlimited.
             </summary>
         </member>
         <member name="M:SharpAI.Services.ModelEngineService.#ctor(SyslogLogging.LoggingModule)">
@@ -6567,9 +9453,41 @@
         <member name="M:SharpAI.Services.ModelEngineService.GetLoadedModelPaths">
             <summary>
             Get a snapshot of the model file paths that currently have a live, non-disposed engine loaded.
-            Disposed engines encountered during enumeration are removed from the cache.
             </summary>
             <returns>List of model file paths for currently loaded engines.</returns>
+        </member>
+        <member name="M:SharpAI.Services.ModelEngineService.GetByModelFile(System.String)">
+            <summary>
+            Get the engine for a given model file, loading and initializing it if necessary. This
+            synchronous overload blocks the caller until the requested model is ready; prefer
+            <see cref="M:SharpAI.Services.ModelEngineService.GetByModelFileAsync(System.String,System.Threading.CancellationToken)"/> in async code.
+            </summary>
+            <param name="filename">Path and filename to the model.</param>
+            <returns>Instance.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="filename"/> is null or empty.</exception>
+            <exception cref="T:System.IO.FileNotFoundException">Thrown when the model file does not exist.</exception>
+            <exception cref="T:SharpAI.Exceptions.ModelAdmissionException">Thrown when the model cannot be admitted within the memory budget.</exception>
+        </member>
+        <member name="M:SharpAI.Services.ModelEngineService.GetByModelFileAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Get the engine for a given model file asynchronously, loading and initializing it if necessary.
+            Concurrent callers for the same model share a single initialization; different models load
+            concurrently. Admission may evict least-recently-used models to honor the configured caps.
+            </summary>
+            <param name="filename">Path and filename to the model.</param>
+            <param name="token">Cancellation token that cancels the caller's wait (not the shared load).</param>
+            <returns>Instance.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="filename"/> is null or empty.</exception>
+            <exception cref="T:System.IO.FileNotFoundException">Thrown when the model file does not exist.</exception>
+            <exception cref="T:SharpAI.Exceptions.ModelAdmissionException">Thrown when the model cannot be admitted within the memory budget.</exception>
+        </member>
+        <member name="M:SharpAI.Services.ModelEngineService.GetExpiryUtc(System.String)">
+            <summary>
+            Get the UTC time at which a loaded model will be evicted for inactivity, or null when idle
+            eviction is disabled or the model is not loaded.
+            </summary>
+            <param name="filename">Path and filename to the model.</param>
+            <returns>Eviction time in UTC, or null.</returns>
         </member>
         <member name="M:SharpAI.Services.ModelEngineService.UnloadModel(System.String)">
             <summary>
@@ -6577,6 +9495,7 @@
             </summary>
             <param name="filename">Path and filename to the model.</param>
             <returns>True if the model was found and unloaded, false if no engine was loaded for this path.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="filename"/> is null or empty.</exception>
         </member>
         <member name="M:SharpAI.Services.ModelEngineService.UnloadAllModels">
             <summary>
@@ -6584,41 +9503,32 @@
             </summary>
             <returns>The number of models that were unloaded.</returns>
         </member>
-        <member name="M:SharpAI.Services.ModelEngineService.GetByModelFile(System.String)">
+        <member name="M:SharpAI.Services.ModelEngineService.Dispose">
             <summary>
-            Get the engine for a given model file.
+            Dispose the service, stopping the eviction sweep and unloading all models.
             </summary>
-            <param name="filename">Path and filename to the model.</param>
-            <returns>Instance.</returns>
         </member>
         <member name="T:SharpAI.Services.ModelFileService">
             <summary>
-            Model file service.
+            Model file service. A thin facade over the model registry data-access methods that adds
+            storage-path resolution. Persistence is handled by the provider-specific database driver behind
+            <see cref="T:SharpAI.Database.Interfaces.IModelRegistryMethods"/>.
             </summary>
         </member>
-        <member name="M:SharpAI.Services.ModelFileService.#ctor(SyslogLogging.LoggingModule,Watson.ORM.Sqlite.WatsonORM,System.String)">
+        <member name="M:SharpAI.Services.ModelFileService.#ctor(SyslogLogging.LoggingModule,SharpAI.Database.Interfaces.IModelRegistryMethods,System.String)">
             <summary>
             Model file service.
             </summary>
             <param name="logging">Logging module.</param>
-            <param name="orm">ORM.</param>
+            <param name="registry">Model registry data-access methods.</param>
             <param name="storageDirectory">Storage directory.</param>
         </member>
-        <member name="M:SharpAI.Services.ModelFileService.All">
+        <member name="M:SharpAI.Services.ModelFileService.Enumerate(SharpAI.Models.EnumerationQuery)">
             <summary>
-            Retrieve all.
+            Enumerate model files using a paginated query. This is the only list operation; there is no
+            unbounded "get all".
             </summary>
-            <returns></returns>
-        </member>
-        <member name="M:SharpAI.Services.ModelFileService.Enumerate(System.Nullable{System.Guid},System.Int32,System.Int32,System.Collections.Generic.Dictionary{System.String,System.String},SharpAI.Models.EnumerationOrderEnum)">
-            <summary>
-            Enumerate.
-            </summary>
-            <param name="continuationToken">Continuation token.</param>
-            <param name="maxResults">Maximum number of results to retrieve.</param>
-            <param name="skip">The number of records to skip.</param>
-            <param name="filter">Filters to add to the request.</param>
-            <param name="ordering">Ordering.</param>
+            <param name="query">Enumeration query. When null, defaults are used.</param>
             <returns>Enumeration result.</returns>
         </member>
         <member name="M:SharpAI.Services.ModelFileService.GetByGuid(System.Guid)">
@@ -6626,14 +9536,14 @@
             Get by GUID.
             </summary>
             <param name="guid">GUID.</param>
-            <returns>Instance.</returns>
+            <returns>Instance, or null when not found.</returns>
         </member>
         <member name="M:SharpAI.Services.ModelFileService.GetByName(System.String)">
             <summary>
             Get by name.
             </summary>
             <param name="name">Name.</param>
-            <returns>Instance.</returns>
+            <returns>Instance, or null when not found.</returns>
         </member>
         <member name="M:SharpAI.Services.ModelFileService.GetFilename(System.String)">
             <summary>
@@ -6641,6 +9551,7 @@
             </summary>
             <param name="name">Name.</param>
             <returns>Path and filename.</returns>
+            <exception cref="T:System.Collections.Generic.KeyNotFoundException">Thrown when the model file is not found.</exception>
         </member>
         <member name="M:SharpAI.Services.ModelFileService.GetMany(System.Collections.Generic.List{System.Guid})">
             <summary>
@@ -6656,13 +9567,6 @@
             <param name="guid">GUID.</param>
             <returns>True if exists.</returns>
         </member>
-        <member name="M:SharpAI.Services.ModelFileService.First(ExpressionTree.Expr)">
-            <summary>
-            Retrieve first.
-            </summary>
-            <param name="expr">Expr.</param>
-            <returns>Instance.</returns>
-        </member>
         <member name="M:SharpAI.Services.ModelFileService.Add(SharpAI.Models.ModelFile)">
             <summary>
             Add.
@@ -6672,7 +9576,7 @@
         </member>
         <member name="M:SharpAI.Services.ModelFileService.Update(SharpAI.Models.ModelFile)">
             <summary>
-            Update an existing ModelFile row.
+            Update an existing ModelFile.
             </summary>
             <param name="obj">ModelFile to update.</param>
             <returns>The updated instance.</returns>
@@ -6682,6 +9586,98 @@
             Delete.
             </summary>
             <param name="guid">GUID.</param>
+        </member>
+        <member name="T:SharpAI.Telemetry.SharpAITelemetry">
+             <summary>
+             Central telemetry surface for the SharpAI core library. Instruments are emitted through the .NET
+             BCL (<see cref="T:System.Diagnostics.Metrics.Meter"/> and <see cref="T:System.Diagnostics.ActivitySource"/>) so the core carries no dependency on any
+             telemetry host or exporter. A host process (for example the server, via Radiant) subscribes to the
+             meter and activity source by name; when nothing subscribes, recording is a near-zero-cost no-op.
+            
+             Metric names follow OpenTelemetry conventions; after Prometheus suffixing they render as
+             <c>sharpai_inference_requests_total</c>, <c>sharpai_inference_tokens_generated_total</c>,
+             <c>sharpai_inference_latency_seconds</c>, and <c>sharpai_models_resident</c>.
+             </summary>
+        </member>
+        <member name="F:SharpAI.Telemetry.SharpAITelemetry.MeterName">
+            <summary>
+            Name of the inference meter and activity source. Subscribe to this name to receive inference
+            metrics and spans. This is a stable public contract.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Telemetry.SharpAITelemetry.ModelsMeterName">
+            <summary>
+            Name of the models meter, which emits gauges about loaded models. Stable public contract.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Telemetry.SharpAITelemetry.ActivitySourceName">
+            <summary>
+            Name of the inference activity (trace) source. Stable public contract.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Telemetry.SharpAITelemetry.Source">
+            <summary>
+            Activity source used to create inference spans. Never null.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Telemetry.SharpAITelemetry.SetResidentModelCountProvider(System.Func{System.Int32})">
+            <summary>
+            Register a callback that reports the number of models currently resident in memory. The most
+            recent non-null provider wins. Passing null is ignored.
+            </summary>
+            <param name="provider">Callback returning the resident model count.</param>
+        </member>
+        <member name="M:SharpAI.Telemetry.SharpAITelemetry.StartInference(System.String,System.String)">
+            <summary>
+            Start an inference span. The returned activity may be null when no trace listener is active;
+            callers must null-check or use it inside a <c>using</c> that tolerates null.
+            </summary>
+            <param name="operation">Operation name, for example "chat" or "completion".</param>
+            <param name="model">Model identifier, or null.</param>
+            <returns>Started activity, or null when nothing is sampling.</returns>
+        </member>
+        <member name="M:SharpAI.Telemetry.SharpAITelemetry.RecordInference(System.String,System.String,System.Double,System.Int64,System.Boolean)">
+            <summary>
+            Record the outcome of an inference call: the request count, its latency, and the number of
+            tokens generated. Only low-cardinality tags (operation, model, outcome) are attached to metrics.
+            </summary>
+            <param name="operation">Operation type, for example "chat", "completion", or "embedding".</param>
+            <param name="model">Model identifier, or null.</param>
+            <param name="seconds">Elapsed time in seconds. Negative values are clamped to zero.</param>
+            <param name="tokensGenerated">Number of tokens generated. Values below zero are treated as zero.</param>
+            <param name="success">True when the call completed successfully.</param>
+        </member>
+        <member name="T:SharpAI.Tools.ParsedToolCall">
+            <summary>
+            A tool/function call extracted from a model's raw output: the function name and its arguments as a
+            JSON string. Used to translate model output into OpenAI/Ollama <c>tool_calls</c> structures.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Tools.ParsedToolCall.Name">
+            <summary>
+            The tool/function name. Never null.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Tools.ParsedToolCall.ArgumentsJson">
+            <summary>
+            The call arguments as a JSON object string. Defaults to "{}"; never null.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Tools.ToolCallParser">
+            <summary>
+            Extracts tool/function calls from a model's raw text output. Handles the common formats emitted by
+            tool-capable GGUF models: one or more <c>&lt;tool_call&gt;{...}&lt;/tool_call&gt;</c> blocks
+            (Qwen/Hermes style), a bare JSON object, or a JSON array of calls. Each call may use either
+            <c>{"name","arguments"}</c> or a nested <c>{"function":{"name",...}}</c> shape. Output that
+            contains no recognizable tool call yields an empty list, so ordinary text responses are unaffected.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Tools.ToolCallParser.Parse(System.String)">
+            <summary>
+            Parse tool calls from model output.
+            </summary>
+            <param name="modelOutput">The raw text produced by the model.</param>
+            <returns>The tool calls found, in order. Empty when the output is not a tool call.</returns>
         </member>
     </members>
 </doc>

@@ -1,6 +1,7 @@
 {
   "CreatedUtc": "2026-04-11T00:00:00.000000Z",
-  "SoftwareVersion": "4.0.1",
+  "SchemaVersion": "5.0.0",
+  "SoftwareVersion": "5.0.0",
   "Logging": {
     "Servers": [
       {
@@ -22,14 +23,13 @@
     "ModelsDirectory": "./models/"
   },
   "Database": {
-    "Filename": "./sharpai.db",
     "Type": "Sqlite",
+    "Filename": "./sharpai.db",
+    "Hostname": "127.0.0.1",
     "Port": 0,
-    "RequireEncryption": false,
-    "Debug": {
-      "EnableForQueries": false,
-      "EnableForResults": false
-    }
+    "DatabaseName": "sharpai",
+    "Username": null,
+    "Password": null
   },
   "HuggingFace": {
     "ApiKey": "My HuggingFace API Key"
@@ -132,6 +132,31 @@
     "GpuBackendPath": null,
     "MetalBackendPath": null,
     "EnableNativeLogging": false
+  },
+  "Telemetry": {
+    "Enable": true,
+    "ServiceName": "sharpai",
+    "OtlpEndpoint": "http://otel-collector:4317",
+    "OtlpProtocol": "grpc",
+    "PrometheusEnable": false,
+    "PrometheusHostname": "localhost",
+    "PrometheusPort": 9464,
+    "PrometheusPath": "/metrics",
+    "EnableMetrics": true,
+    "EnableTraces": true,
+    "EnableLogs": false
+  },
+  "RequestHistory": {
+    "Enabled": true,
+    "MaxRequestBodyBytes": 65536,
+    "MaxResponseBodyBytes": 65536,
+    "RetentionDays": 30
+  },
+  "Auth": {
+    "Enabled": false,
+    "AdminApiKeys": [],
+    "TokenSigningKey": "",
+    "SessionTtlMinutes": 60
   },
   "Debug": {
     "RequestBody": false

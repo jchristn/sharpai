@@ -1,31 +1,24 @@
-﻿namespace SharpAI.Services
+namespace SharpAI.Services
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
+    using System.IO;
 
-    using DatabaseWrapper.Core;
-    using ExpressionTree;
+    using SharpAI.Database.Interfaces;
     using SharpAI.Models;
     using SyslogLogging;
-    using Watson.ORM.Sqlite;
-    using Watson.ORM.Core;
-    using System.IO;
-    using System.Collections.Concurrent;
 
     /// <summary>
-    /// Model file service.
+    /// Model file service. A thin facade over the model registry data-access methods that adds
+    /// storage-path resolution. Persistence is handled by the provider-specific database driver behind
+    /// <see cref="IModelRegistryMethods"/>.
     /// </summary>
     public class ModelFileService
     {
-        #region Public-Members
-
-        #endregion
-
         #region Private-Members
 
         private LoggingModule _Logging = null;
-        private WatsonORM _ORM = null;
+        private IModelRegistryMethods _Registry = null;
         private string _StorageDirectory = null;
 
         #endregion
@@ -36,12 +29,12 @@
         /// Model file service.
         /// </summary>
         /// <param name="logging">Logging module.</param>
-        /// <param name="orm">ORM.</param>
+        /// <param name="registry">Model registry data-access methods.</param>
         /// <param name="storageDirectory">Storage directory.</param>
-        public ModelFileService(LoggingModule logging, WatsonORM orm, string storageDirectory)
+        public ModelFileService(LoggingModule logging, IModelRegistryMethods registry, string storageDirectory)
         {
             _Logging = logging ?? throw new ArgumentNullException(nameof(logging));
-            _ORM = orm ?? throw new ArgumentNullException(nameof(orm));
+            _Registry = registry ?? throw new ArgumentNullException(nameof(registry));
             _StorageDirectory = !String.IsNullOrEmpty(storageDirectory) ? storageDirectory : throw new ArgumentNullException(nameof(storageDirectory));
         }
 
@@ -50,116 +43,34 @@
         #region Public-Methods
 
         /// <summary>
-        /// Retrieve all.
+        /// Enumerate model files using a paginated query. This is the only list operation; there is no
+        /// unbounded "get all".
         /// </summary>
-        /// <returns></returns>
-        public List<ModelFile> All()
-        {
-            Expr expr = new(
-                _ORM.GetColumnName<ModelFile>(nameof(ModelFile.GUID)),
-                OperatorEnum.IsNotNull,
-                null);
-
-            return _ORM.SelectMany<ModelFile>(expr);
-        }
-
-        /// <summary>
-        /// Enumerate.
-        /// </summary>
-        /// <param name="continuationToken">Continuation token.</param>
-        /// <param name="maxResults">Maximum number of results to retrieve.</param>
-        /// <param name="skip">The number of records to skip.</param>
-        /// <param name="filter">Filters to add to the request.</param>
-        /// <param name="ordering">Ordering.</param>
+        /// <param name="query">Enumeration query. When null, defaults are used.</param>
         /// <returns>Enumeration result.</returns>
-        public EnumerationResult<ModelFile> Enumerate(
-            Guid? continuationToken = null,
-            int maxResults = 100,
-            int skip = 0,
-            Dictionary<string, string> filter = null,
-            EnumerationOrderEnum ordering = EnumerationOrderEnum.CreatedDescending)
+        public EnumerationResult<ModelFile> Enumerate(EnumerationQuery query)
         {
-            if (maxResults < 1) throw new ArgumentOutOfRangeException(nameof(maxResults));
-            if (maxResults > 1000) maxResults = 1000;
-            if (skip < 0) throw new ArgumentOutOfRangeException(nameof(skip));
-            if (continuationToken != null && skip > 0) throw new ArgumentException("Skip count and enumeration tokens cannot be used in the same enumeration request.");
-
-            Models.EnumerationResult<ModelFile> result = new Models.EnumerationResult<ModelFile>
-            {
-                MaxResults = maxResults
-            };
-
-            Expr expr = new Expr(_ORM.GetColumnName<ModelFile>(nameof(ModelFile.GUID)), OperatorEnum.IsNotNull, null);
-            if (filter != null)
-                foreach (KeyValuePair<string, string> kvp in filter)
-                    expr = expr.PrependAnd(_ORM.GetColumnName<ModelFile>(kvp.Key), OperatorEnum.Equals, kvp.Value);
-
-            result.TotalRecords = _ORM.Count<ModelFile>(expr);
-
-            DateTime? lastCreated = GetCreatedUtcFromGuid(continuationToken);
-            if (lastCreated != null) expr.PrependAnd(_ORM.GetColumnName<ModelFile>(nameof(ModelFile.CreatedUtc)), OperatorEnum.LessThan, lastCreated.Value);
-
-            ResultOrder[] order = EnumerationOrderToResultOrder(ordering);
-
-            if (skip > 0)
-            {
-                List<ModelFile> skippedResults = _ORM.SelectMany<ModelFile>(null, skip, expr, order);
-                if (skippedResults != null && skippedResults.Count == skip)
-                {
-                    DateTime skipCreated = skippedResults.Min(r => r.CreatedUtc);
-                    expr.PrependAnd(_ORM.GetColumnName<ModelFile>(nameof(ModelFile.CreatedUtc)), OperatorEnum.LessThan, skipCreated);
-                }
-            }
-
-            result.RecordsRemaining = _ORM.Count<ModelFile>(expr);
-
-            result.Objects = _ORM.SelectMany<ModelFile>(null, maxResults, expr, order);
-            result.IterationsRequired = 1;
-
-            if (result.Objects == null) result.Objects = new List<ModelFile>();
-            result.RecordsRemaining -= result.Objects.Count;
-
-            if (result.Objects != null
-                && result.Objects.Count > 0
-                && result.RecordsRemaining > 0)
-            {
-                result.EndOfResults = false;
-                result.ContinuationToken = result.Objects.Last().GUID;
-            }
-
-            return result;
+            return _Registry.Enumerate(query);
         }
 
         /// <summary>
         /// Get by GUID.
         /// </summary>
         /// <param name="guid">GUID.</param>
-        /// <returns>Instance.</returns>
+        /// <returns>Instance, or null when not found.</returns>
         public ModelFile GetByGuid(Guid guid)
         {
-            Expr expr = new(
-                _ORM.GetColumnName<ModelFile>(nameof(ModelFile.GUID)),
-                OperatorEnum.Equals,
-                guid);
-
-            return _ORM.SelectFirst<ModelFile>(expr);
+            return _Registry.GetByGuid(guid);
         }
 
         /// <summary>
         /// Get by name.
         /// </summary>
         /// <param name="name">Name.</param>
-        /// <returns>Instance.</returns>
+        /// <returns>Instance, or null when not found.</returns>
         public ModelFile GetByName(string name)
         {
-            if (String.IsNullOrEmpty(name)) throw new ArgumentNullException(nameof(name));
-
-            Expr expr = new(
-                _ORM.GetColumnName<ModelFile>(nameof(ModelFile.Name)),
-                OperatorEnum.Equals,
-                name);
-
-            return _ORM.SelectFirst<ModelFile>(expr);
+            return _Registry.GetByName(name);
         }
 
         /// <summary>
@@ -167,6 +78,7 @@
         /// </summary>
         /// <param name="name">Name.</param>
         /// <returns>Path and filename.</returns>
+        /// <exception cref="KeyNotFoundException">Thrown when the model file is not found.</exception>
         public string GetFilename(string name)
         {
             if (String.IsNullOrEmpty(name)) throw new ArgumentNullException(nameof(name));
@@ -184,20 +96,7 @@
         /// <returns>List.</returns>
         public List<ModelFile> GetMany(List<Guid> guids)
         {
-            List<ModelFile> ret = new List<ModelFile>();
-
-            if (guids != null && guids.Count > 0)
-            {
-                Expr expr = new(
-                    _ORM.GetColumnName<ModelFile>(nameof(ModelFile.GUID)),
-                    OperatorEnum.In,
-                    guids.Distinct().ToList()
-                    );
-
-                ret = _ORM.SelectMany<ModelFile>(expr);
-            }
-
-            return ret;
+            return _Registry.GetMany(guids);
         }
 
         /// <summary>
@@ -207,24 +106,7 @@
         /// <returns>True if exists.</returns>
         public bool ExistsByGuid(Guid guid)
         {
-            Expr expr = new(
-                _ORM.GetColumnName<ModelFile>(nameof(ModelFile.GUID)),
-                OperatorEnum.Equals,
-                guid);
-
-            return _ORM.Exists<ModelFile>(expr);
-        }
-
-        /// <summary>
-        /// Retrieve first.
-        /// </summary>
-        /// <param name="expr">Expr.</param>
-        /// <returns>Instance.</returns>
-        public ModelFile First(Expr expr)
-        {
-            if (expr == null) throw new ArgumentNullException(nameof(expr));
-
-            return _ORM.SelectFirst<ModelFile>(expr);
+            return _Registry.ExistsByGuid(guid);
         }
 
         /// <summary>
@@ -234,23 +116,17 @@
         /// <returns>Instance.</returns>
         public ModelFile Add(ModelFile obj)
         {
-            if (obj == null) throw new ArgumentNullException(nameof(obj));
-
-            ModelFile existing = GetByName(obj.Name);
-            if (existing != null) return existing;
-
-            return _ORM.Insert<ModelFile>(obj);
+            return _Registry.Add(obj);
         }
 
         /// <summary>
-        /// Update an existing ModelFile row.
+        /// Update an existing ModelFile.
         /// </summary>
         /// <param name="obj">ModelFile to update.</param>
         /// <returns>The updated instance.</returns>
         public ModelFile Update(ModelFile obj)
         {
-            if (obj == null) throw new ArgumentNullException(nameof(obj));
-            return _ORM.Update<ModelFile>(obj);
+            return _Registry.Update(obj);
         }
 
         /// <summary>
@@ -259,60 +135,7 @@
         /// <param name="guid">GUID.</param>
         public void Delete(Guid guid)
         {
-            ModelFile existing = GetByGuid(guid);
-            if (existing == null) throw new KeyNotFoundException("The specified object does not exist.");
-
-            Expr expr = new(
-                _ORM.GetColumnName<ModelFile>(nameof(ModelFile.GUID)),
-                OperatorEnum.Equals,
-                guid);
-
-            _ORM.DeleteMany<ModelFile>(expr);
-        }
-
-        #endregion
-
-        #region Private-Methods
-
-        private DateTime? GetCreatedUtcFromGuid(Guid? guid)
-        {
-            if (guid != null)
-            {
-                Expr e = new Expr(_ORM.GetColumnName<ModelFile>(nameof(ModelFile.GUID)), OperatorEnum.Equals, guid);
-                ModelFile obj = _ORM.SelectFirst<ModelFile>(e);
-                return (obj != null ? obj.CreatedUtc : null);
-            }
-            return null;
-        }
-
-        private ResultOrder[] EnumerationOrderToResultOrder(EnumerationOrderEnum ordering)
-        {
-            ResultOrder[] order = new ResultOrder[1];
-            order[0] = new ResultOrder(_ORM.GetColumnName<ModelFile>(nameof(ModelFile.CreatedUtc)), OrderDirectionEnum.Descending);
-
-            switch (ordering)
-            {
-                case EnumerationOrderEnum.SizeAscending:
-                    order[0] = new ResultOrder(_ORM.GetColumnName<ModelFile>(nameof(ModelFile.ContentLength)), OrderDirectionEnum.Ascending);
-                    break;
-                case EnumerationOrderEnum.SizeDescending:
-                    order[0] = new ResultOrder(_ORM.GetColumnName<ModelFile>(nameof(ModelFile.ContentLength)), OrderDirectionEnum.Descending);
-                    break;
-                case EnumerationOrderEnum.NameAscending:
-                    order[0] = new ResultOrder(_ORM.GetColumnName<ModelFile>(nameof(ModelFile.Name)), OrderDirectionEnum.Ascending);
-                    break;
-                case EnumerationOrderEnum.NameDescending:
-                    order[0] = new ResultOrder(_ORM.GetColumnName<ModelFile>(nameof(ModelFile.Name)), OrderDirectionEnum.Descending);
-                    break;
-                case EnumerationOrderEnum.CreatedAscending:
-                    order[0] = new ResultOrder(_ORM.GetColumnName<ModelFile>(nameof(ModelFile.CreatedUtc)), OrderDirectionEnum.Ascending);
-                    break;
-                case EnumerationOrderEnum.CreatedDescending:
-                default:
-                    break;
-            }
-
-            return order;
+            _Registry.Delete(guid);
         }
 
         #endregion

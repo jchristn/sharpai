@@ -517,7 +517,7 @@
             ApiRequest req,
             CancellationToken token = default)
         {
-            List<ModelFile> modelFiles = _ModelFileService.All();
+            List<ModelFile> modelFiles = CollectAllModels();
             if (modelFiles == null || modelFiles.Count < 1)
             {
                 _Logging.Debug(_Header + "no models downloaded");
@@ -536,6 +536,28 @@
             }
 
             return ret;
+        }
+
+        private List<ModelFile> CollectAllModels()
+        {
+            // The Ollama /api/tags contract returns the full model list. There is no "get all" data-access
+            // method; page through the enumeration to materialize the full set.
+            List<ModelFile> all = new List<ModelFile>();
+            EnumerationQuery query = new EnumerationQuery
+            {
+                PageSize = 1000,
+                Order = EnumerationOrderEnum.CreatedDescending
+            };
+
+            while (true)
+            {
+                EnumerationResult<ModelFile> page = _ModelFileService.Enumerate(query);
+                if (page.Objects != null && page.Objects.Count > 0) all.AddRange(page.Objects);
+                if (page.EndOfResults) break;
+                query.PageNumber = query.PageNumber + 1;
+            }
+
+            return all;
         }
 
         internal async Task<object> ListRunningModels(
@@ -582,7 +604,7 @@
                     Digest = modelFile.SHA256Hash,
                     Size = modelFile.ContentLength,
                     SizeVRAM = isGpuBackend ? modelFile.ContentLength : 0,
-                    ExpiresAt = null,
+                    ExpiresAt = _ModelEngineService.GetExpiryUtc(loadedPath),
                     Details = new OllamaModelDetails
                     {
                         ParentModel = modelFile.ParentModel ?? String.Empty,
@@ -866,14 +888,15 @@
                 });
             }
 
-            ChatFormatEnum chatFormat = ChatFormatHelper.ModelFamilyToChatFormat(modelFile.Family, ChatFormatEnum.Simple);
+            // Prefer the model's embedded GGUF chat template; fall back to the family template.
+            ChatTemplateResult templateResult = ChatTemplateResolver.Resolve(engine, modelFile.Family, messages);
+            string prompt = templateResult.Prompt;
 
-            string prompt = ChatPromptBuilder.Build(chatFormat, messages);
-
-            // Use client-provided stop sequences, or derive from chat format
+            // Use client-provided stop sequences, or those the resolver derived (empty for embedded
+            // templates, which rely on the model's native end-of-turn tokens).
             string[] stopSequences = gcr.Options.Stop?.ToArray();
             if (stopSequences == null || stopSequences.Length == 0)
-                stopSequences = ChatFormatHelper.GetDefaultStopSequences(chatFormat);
+                stopSequences = templateResult.StopSequences;
 
             bool displayThinking = gcr.Options.DisplayThinking ?? false;
 

@@ -145,7 +145,7 @@
                 Console.WriteLine("");
 
                 // Check for existing models
-                var models = _AIDriver.Models.All();
+                var models = _AIDriver.Models.Enumerate(new SharpAI.Models.EnumerationQuery { PageSize = 1000 }).Objects;
                 if (models.Count > 0)
                 {
                     Console.WriteLine($"Found {models.Count} existing model(s):");
@@ -229,7 +229,7 @@
 
         static void SetCurrentModel()
         {
-            var models = _AIDriver.Models.All();
+            var models = _AIDriver.Models.Enumerate(new SharpAI.Models.EnumerationQuery { PageSize = 1000 }).Objects;
             if (models.Count == 0)
             {
                 Console.WriteLine("No models available. Use 'models add' to download a model.");
@@ -299,7 +299,7 @@
 
         static void ListModels()
         {
-            var models = _AIDriver.Models.All();
+            var models = _AIDriver.Models.Enumerate(new SharpAI.Models.EnumerationQuery { PageSize = 1000 }).Objects;
             if (models.Count == 0)
             {
                 Console.WriteLine("No models found.");
@@ -325,7 +325,7 @@
 
         static void DeleteModel()
         {
-            var models = _AIDriver.Models.All();
+            var models = _AIDriver.Models.Enumerate(new SharpAI.Models.EnumerationQuery { PageSize = 1000 }).Objects;
             if (models.Count == 0)
             {
                 Console.WriteLine("No models available to delete.");

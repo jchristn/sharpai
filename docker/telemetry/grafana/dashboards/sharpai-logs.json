@@ -1,0 +1,56 @@
+{
+  "id": null,
+  "uid": "sharpai-logs",
+  "title": "SharpAI — Logs",
+  "tags": ["sharpai", "logs"],
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "refresh": "10s",
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "templating": { "list": [] },
+  "annotations": { "list": [] },
+  "panels": [
+    {
+      "id": 1,
+      "type": "logs",
+      "title": "SharpAI logs",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 0 },
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true,
+        "dedupStrategy": "none",
+        "sortOrder": "Descending"
+      },
+      "targets": [
+        { "refId": "A", "expr": "{service_name=\"sharpai\"} |= ``", "queryType": "range" }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "logs",
+      "title": "Warnings & errors",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 12 },
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true,
+        "dedupStrategy": "none",
+        "sortOrder": "Descending"
+      },
+      "targets": [
+        { "refId": "A", "expr": "{service_name=\"sharpai\"} |~ `(?i)warn|error|fail|exception`", "queryType": "range" }
+      ]
+    }
+  ]
+}

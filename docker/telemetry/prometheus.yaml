@@ -1,0 +1,27 @@
+# Prometheus scrape configuration for SharpAI.
+#
+# Two sources of metrics:
+#   1. The OpenTelemetry Collector's Prometheus exposition (OTLP metrics pushed by the app).
+#   2. The SharpAI server's own /metrics endpoint (Watson 7.1 in-process HTTP-server
+#      metrics). The 'sharpai' job stays DOWN until W17.T3 enables that endpoint — this is
+#      expected and harmless before then.
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'otel-collector'
+    static_configs:
+      - targets: ['otel-collector:8889']
+
+  - job_name: 'sharpai'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['sharpai:8000']
+        labels:
+          service: 'sharpai'
+
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

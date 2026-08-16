@@ -2,7 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
-    using DatabaseWrapper.Core;
+    using SharpAI.Database;
     using WatsonWebserver.Core;
 
     /// <summary>
@@ -16,6 +16,22 @@
         /// Timestamp from creation, in UTC time.
         /// </summary>
         public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
+
+        /// <summary>
+        /// Configuration schema version, used to migrate settings across major releases. Defaults to the
+        /// current schema version when absent from a loaded file.
+        /// </summary>
+        public string SchemaVersion
+        {
+            get
+            {
+                return _SchemaVersion;
+            }
+            set
+            {
+                _SchemaVersion = String.IsNullOrEmpty(value) ? "5.0.0" : value;
+            }
+        }
 
         /// <summary>
         /// Software version.
@@ -154,10 +170,59 @@
             }
         }
 
+        /// <summary>
+        /// Telemetry settings for OpenTelemetry metrics, traces, and logs.
+        /// </summary>
+        public TelemetrySettings Telemetry
+        {
+            get
+            {
+                return _Telemetry;
+            }
+            set
+            {
+                if (value == null) value = new TelemetrySettings();
+                _Telemetry = value;
+            }
+        }
+
+        /// <summary>
+        /// Request-history capture settings.
+        /// </summary>
+        public RequestHistorySettings RequestHistory
+        {
+            get
+            {
+                return _RequestHistory;
+            }
+            set
+            {
+                if (value == null) value = new RequestHistorySettings();
+                _RequestHistory = value;
+            }
+        }
+
+        /// <summary>
+        /// Authentication settings. Disabled by default (open server, Ollama parity).
+        /// </summary>
+        public AuthSettings Auth
+        {
+            get
+            {
+                return _Auth;
+            }
+            set
+            {
+                if (value == null) value = new AuthSettings();
+                _Auth = value;
+            }
+        }
+
         #endregion
 
         #region Private-Members
 
+        private string _SchemaVersion = "5.0.0";
         private string _SoftwareVersion = "unknown";
         private LoggingSettings _Logging = new LoggingSettings();
         private StorageSettings _Storage = new StorageSettings();
@@ -167,6 +232,9 @@
         private DebugSettings _Debug = new DebugSettings();
         private Dictionary<string, int> _QuantizationPriority = new Dictionary<string, int>(StringComparer.InvariantCultureIgnoreCase);
         private RuntimeSettings _Runtime = new RuntimeSettings();
+        private TelemetrySettings _Telemetry = new TelemetrySettings();
+        private RequestHistorySettings _RequestHistory = new RequestHistorySettings();
+        private AuthSettings _Auth = new AuthSettings();
 
         #endregion
 

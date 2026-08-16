@@ -2,11 +2,11 @@
 {
     using System;
     using System.Collections.Generic;
+    using SharpAI.Database;
     using SharpAI.Helpers;
     using SharpAI.Models;
     using SharpAI.Serialization;
     using SyslogLogging;
-    using Watson.ORM.Sqlite;
 
     /// <summary>
     /// AI driver.
@@ -69,7 +69,7 @@
         private string _DatabaseFilename = null;
         private string _HuggingFaceApiKey = null;
         private string _ModelDirectory = "./models/";
-        private WatsonORM _ORM = null;
+        private DatabaseDriverBase _Database = null;
 
         private EmbeddingsDriver _Embeddings = null;
         private CompletionDriver _Completion = null;
@@ -103,14 +103,10 @@
             _HuggingFaceApiKey = huggingFaceApiKey;
             _ModelDirectory = modelDirectory;
 
-            _ORM = new WatsonORM(new DatabaseWrapper.Core.DatabaseSettings(_DatabaseFilename));
-            _ORM.InitializeDatabase();
-            _ORM.InitializeTables(new List<Type>
-            {
-                typeof(ModelFile)
-            });
+            _Database = DatabaseDriverFactory.Create(new DatabaseSettings(_DatabaseFilename), _Logging);
+            _Database.InitializeAsync().GetAwaiter().GetResult();
 
-            _Models = new ModelDriver(_Logging, _ORM, _Serializer, _HuggingFaceApiKey, _ModelDirectory);
+            _Models = new ModelDriver(_Logging, _Database, _Serializer, _HuggingFaceApiKey, _ModelDirectory);
             _Embeddings = new EmbeddingsDriver(_Logging, _Serializer, _Models);
             _Completion = new CompletionDriver(_Logging, _Serializer, _Models);
             _Chat = new ChatDriver(_Logging, _Serializer, _Models);

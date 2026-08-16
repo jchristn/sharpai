@@ -36,6 +36,16 @@ namespace SharpAI.Classes.Runtime
         public const string UseMlock = "SHARPAI_USE_MLOCK";
         /// <summary>Enables llama.cpp flash attention when supported by the selected backend/model.</summary>
         public const string FlashAttention = "SHARPAI_FLASH_ATTENTION";
+        /// <summary>Maximum concurrent generations per model. Set to 0 or unset for the default of 1.</summary>
+        public const string MaxConcurrentGenerations = "SHARPAI_MAX_CONCURRENT_GENERATIONS";
+        /// <summary>Milliseconds a generation request waits for a slot before being rejected. 0 = wait indefinitely.</summary>
+        public const string GenerationQueueTimeoutMs = "SHARPAI_GENERATION_QUEUE_TIMEOUT_MS";
+        /// <summary>Idle seconds after which a loaded model is evicted. 0 = never evict on idle.</summary>
+        public const string KeepAliveSeconds = "SHARPAI_KEEP_ALIVE_SECONDS";
+        /// <summary>Maximum number of models resident at once. 0 = unlimited.</summary>
+        public const string MaxResidentModels = "SHARPAI_MAX_RESIDENT_MODELS";
+        /// <summary>Total model-memory budget in megabytes (sum of resident model file sizes). 0 = unlimited.</summary>
+        public const string ModelMemoryBudgetMb = "SHARPAI_MODEL_MEMORY_BUDGET_MB";
 
         /// <summary>
         /// Gets a normalized environment variable value, or null when unset, empty, or "null".

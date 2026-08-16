@@ -1,8 +1,6 @@
 ﻿namespace SharpAI
 {
     using CommunityToolkit.HighPerformance;
-    using DatabaseWrapper.Core;
-    using ExpressionTree;
     using SharpAI.Engines;
     using SharpAI.Helpers;
     using SharpAI.Hosting;
@@ -10,7 +8,6 @@
     using SharpAI.Models;
     using SharpAI.Serialization;
     using SharpAI.Services;
-    using SQLitePCL;
     using SyslogLogging;
     using System;
     using System.Collections.Concurrent;
@@ -22,7 +19,7 @@
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Watson.ORM.Sqlite;
+    using SharpAI.Database;
 
     /// <summary>
     /// Model driver.
@@ -59,7 +56,7 @@
 
         private string _Header = "[ModelDriver] ";
         private LoggingModule _Logging = null;
-        private WatsonORM _ORM = null;
+        private DatabaseDriverBase _Database = null;
         private Serializer _Serializer = null;
         private string _HuggingFaceApiKey = null;
         private string _ModelDirectory = "./models/";
@@ -77,13 +74,13 @@
         /// Model driver.
         /// </summary>
         /// <param name="logging">Logging module.</param>
-        /// <param name="orm">ORM.</param>
+        /// <param name="database">Database driver.</param>
         /// <param name="serializer">Serializer.</param>
         /// <param name="huggingFaceApiKey">HuggingFace API key.</param>
         /// <param name="modelDirectory">Model storage directory.</param>
         public ModelDriver(
             LoggingModule logging,
-            WatsonORM orm,
+            DatabaseDriverBase database,
             Serializer serializer,
             string huggingFaceApiKey,
             string modelDirectory = "./models/")
@@ -94,12 +91,12 @@
             modelDirectory = DirectoryHelper.NormalizeDirectory(modelDirectory);
 
             _Logging = logging ?? new LoggingModule();
-            _ORM = orm ?? throw new ArgumentNullException(nameof(orm));
+            _Database = database ?? throw new ArgumentNullException(nameof(database));
             _Serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
             _HuggingFaceApiKey = huggingFaceApiKey;
             _ModelDirectory = modelDirectory;
             _ModelEngines = new ModelEngineService(_Logging);
-            _ModelFiles = new ModelFileService(_Logging, _ORM, _ModelDirectory);
+            _ModelFiles = new ModelFileService(_Logging, _Database.Models, _ModelDirectory);
             _HuggingFace = new HuggingFaceClient(_Logging, HuggingFaceApiKey);
 
             _Logging.Debug(_Header + "initialized");
@@ -110,31 +107,14 @@
         #region Public-Methods
 
         /// <summary>
-        /// Retrieve all.
+        /// Enumerate models using a paginated query. This is the only list operation; there is no
+        /// unbounded "get all".
         /// </summary>
-        /// <returns></returns>
-        public List<ModelFile> All()
-        {
-            return _ModelFiles.All();
-        }
-
-        /// <summary>
-        /// Enumerate.
-        /// </summary>
-        /// <param name="continuationToken">Continuation token.</param>
-        /// <param name="maxResults">Maximum number of results to retrieve.</param>
-        /// <param name="skip">The number of records to skip.</param>
-        /// <param name="filter">Filters to add to the request.</param>
-        /// <param name="ordering">Ordering.</param>
+        /// <param name="query">Enumeration query. When null, defaults are used.</param>
         /// <returns>Enumeration result.</returns>
-        public EnumerationResult<ModelFile> Enumerate(
-            Guid? continuationToken = null,
-            int maxResults = 100,
-            int skip = 0,
-            Dictionary<string, string> filter = null,
-            EnumerationOrderEnum ordering = EnumerationOrderEnum.CreatedDescending)
+        public EnumerationResult<ModelFile> Enumerate(EnumerationQuery query)
         {
-            return _ModelFiles.Enumerate(continuationToken, maxResults, skip, filter, ordering);
+            return _ModelFiles.Enumerate(query);
         }
 
         /// <summary>
@@ -185,16 +165,6 @@
         public bool ExistsByGuid(Guid guid)
         {
             return _ModelFiles.ExistsByGuid(guid);
-        }
-
-        /// <summary>
-        /// Retrieve first.
-        /// </summary>
-        /// <param name="expr">Expr.</param>
-        /// <returns>Instance.</returns>
-        public ModelFile First(Expr expr)
-        {
-            return _ModelFiles.First(expr);
         }
 
         /// <summary>
